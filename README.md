@@ -77,6 +77,12 @@ It returns `{"status":"ok"}` for a basic smoke check.
 - The backend WAR packaging pulls the frontend build output from `frontend/dist` into the WAR.
 - The parent POM imports the WildFly BOM to align Jakarta EE / RESTEasy versions for WildFly deployments.
 
+## How the application works
+
+- The frontend is a Vite + React UI that builds static assets into `frontend/dist`.
+- The backend is a Jakarta EE WAR that exposes JAX-RS endpoints (including `GET /api/health`) and can be deployed on WildFly.
+- During a full Maven build (with the frontend profile enabled), the frontend assets are packaged into the backend WAR so a single deployment serves both API and UI.
+
 ## Useful scripts
 
 From `frontend/package.json`:
