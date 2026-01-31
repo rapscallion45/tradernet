@@ -1,0 +1,46 @@
+# ========================
+# Maven / Java
+# ========================
+target/
+**/target/
+
+*.log
+
+# ========================
+# IntelliJ
+# ========================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ========================
+# OS junk
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Local env / secrets
+# ========================
+.env
+.env.local
+.env.*.local
+
+# ========================
+# Build artifacts
+# ========================
+*.war
+*.ear
+*.jar
+
+# ========================
+# Node tool caches (root only if ever created)
+# ========================
+node_modules/
+
+# ========================
+# Frontend build output (root accidental)
+# ========================
+dist/

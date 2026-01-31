@@ -1,0 +1,833 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Tradernet/ActionCard CardGrid smoke-test 1`] = `
+<div class="m_0 mantine-Group-root"
+     style="--group-gap: var(--mantine-spacing-lg); --group-align: center; --group-justify: left; --group-wrap: wrap;"
+>
+  <div class="c_0 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Invoice Search (Featured)"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Invoice Search (Featured)
+        </h3>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="plus"
+             class="svg-inline--fa fa-plus "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 448 512"
+             data-testid="icon-plus"
+        >
+          <path fill="currentColor"
+                d="M248 72l0-24-48 0 0 24 0 160L40 232l-24 0 0 48 24 0 160 0 0 160 0 24 48 0 0-24 0-160 160 0 24 0 0-48-24 0-160 0 0-160z"
+          >
+          </path>
+        </svg>
+      </div>
+      <div class="c_4 m_0 mantine-Group-root"
+           data-testid="ActionCard-Invoice Search (Featured)-Secondary-Section"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+      >
+        <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+          More Info
+        </p>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="pen-to-square"
+             class="svg-inline--fa fa-pen-to-square "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 512 512"
+             data-testid="icon-pen-to-square"
+        >
+          <path fill="currentColor"
+                d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+          >
+          </path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="c_6 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Invoice Search"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Invoice Search
+        </h3>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="arrow-right"
+             class="svg-inline--fa fa-arrow-right "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 448 512"
+             data-testid="icon-arrow-right"
+        >
+          <path fill="currentColor"
+                d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+          >
+          </path>
+        </svg>
+      </div>
+      <div class="c_4 m_0 mantine-Group-root"
+           data-testid="ActionCard-Invoice Search-Secondary-Section"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+      >
+        <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+          More Info
+        </p>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="pen-to-square"
+             class="svg-inline--fa fa-pen-to-square "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 512 512"
+             data-testid="icon-pen-to-square"
+        >
+          <path fill="currentColor"
+                d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+          >
+          </path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="c_7 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Disabled Search"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Disabled Search
+        </h3>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="arrow-right"
+             class="svg-inline--fa fa-arrow-right "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 448 512"
+             data-testid="icon-arrow-right"
+        >
+          <path fill="currentColor"
+                d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+          >
+          </path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="c_6 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Editable Search"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Editable Search
+        </h3>
+      </div>
+      <div class="c_4 m_0 mantine-Group-root"
+           data-testid="ActionCard-Editable Search-Secondary-Section"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+      >
+        <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+          More Info
+        </p>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="pen-to-square"
+             class="svg-inline--fa fa-pen-to-square "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 512 512"
+             data-testid="icon-pen-to-square"
+        >
+          <path fill="currentColor"
+                d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+          >
+          </path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="c_6 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Runnable Search"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Runnable Search
+        </h3>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="arrow-right"
+             class="svg-inline--fa fa-arrow-right "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 448 512"
+             data-testid="icon-arrow-right"
+        >
+          <path fill="currentColor"
+                d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+          >
+          </path>
+        </svg>
+      </div>
+      <div class="c_4 m_0 mantine-Group-root"
+           data-testid="ActionCard-Runnable Search-Secondary-Section"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+      >
+        <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+          More Info
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="c_6 c_1 c_2 m_1 mantine-Card-root m_2 mantine-Paper-root"
+       data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card"
+       style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+  >
+    <div class="m_3 mantine-Stack-root"
+         style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+    >
+      <div class="m_0 mantine-Group-root"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+      >
+        <h3 class="c_3 m_4 mantine-Title-root"
+            data-order="3"
+            style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+        >
+          Runnable Search, not editable, and is too big to fit on the card
+        </h3>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="arrow-right"
+             class="svg-inline--fa fa-arrow-right "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 448 512"
+             data-testid="icon-arrow-right"
+        >
+          <path fill="currentColor"
+                d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+          >
+          </path>
+        </svg>
+      </div>
+      <div class="c_4 m_0 mantine-Group-root"
+           data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card-Secondary-Section"
+           style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+      >
+        <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+          More Info
+        </p>
+        <svg aria-hidden="true"
+             focusable="false"
+             data-prefix="fasr"
+             data-icon="pen-to-square"
+             class="svg-inline--fa fa-pen-to-square "
+             role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             viewbox="0 0 512 512"
+             data-testid="icon-pen-to-square"
+        >
+          <path fill="currentColor"
+                d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+          >
+          </path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard DisabledCard play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Disabled Search"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Disabled Search
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard FeaturedCard play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Invoice Search (Featured)"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Invoice Search (Featured)
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="plus"
+           class="svg-inline--fa fa-plus "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-plus"
+      >
+        <path fill="currentColor"
+              d="M248 72l0-24-48 0 0 24 0 160L40 232l-24 0 0 48 24 0 160 0 0 160 0 24 48 0 0-24 0-160 160 0 24 0 0-48-24 0-160 0 0-160z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Invoice Search (Featured)-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+           aria-describedby=":rt:"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard LongSecondaryText smoke-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Runnable Search, not editable, and is too big to fit on the card
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        You can click this card to perform a search, or click the icon to edit the search
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard LongText smoke-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Runnable Search, not editable"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Runnable Search, not editable
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Runnable Search, not editable-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard MinimalContent smoke-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Create new search"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Create new search
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Create new search-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard ModifiedCard play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-modified="true"
+     data-testid="ActionCard-Invoice Search (Modified)"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Invoice Search (Modified)
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Invoice Search (Modified)-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+           aria-describedby=":r1g:"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard NoPrimaryAction play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Editable Search"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Editable Search
+      </h3>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Editable Search-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+           aria-describedby=":r2d:"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard NoSecondaryAction play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Runnable Search"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Runnable Search
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Runnable Search-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard RegularCard play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Invoice Search"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Invoice Search
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Invoice Search-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+           aria-describedby=":ra:"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Tradernet/ActionCard TruncatedText play-test 1`] = `
+<div class="c_0 c_1 c_2 m_0 mantine-Card-root m_1 mantine-Paper-root"
+     data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card"
+     style="--paper-radius: var(--mantine-radius-sm); --paper-shadow: var(--mantine-shadow-xs); padding: var(--mantine-spacing-md); width: calc(22rem * var(--mantine-scale)); height: calc(8rem * var(--mantine-scale));"
+>
+  <div class="m_2 mantine-Stack-root"
+       style="--stack-gap: var(--mantine-spacing-md); --stack-align: stretch; --stack-justify: space-between; height: 100%;"
+  >
+    <div class="m_3 mantine-Group-root"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: flex-start; --group-justify: space-between; --group-wrap: nowrap;"
+    >
+      <h3 class="c_3 m_4 mantine-Title-root"
+          data-order="3"
+          style="--title-fw: var(--mantine-h3-font-weight); --title-lh: var(--mantine-h3-line-height); --title-fz: var(--mantine-h3-font-size);"
+      >
+        Runnable Search, not editable, and is too big to fit on the card
+      </h3>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="arrow-right"
+           class="svg-inline--fa fa-arrow-right "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-arrow-right"
+      >
+        <path fill="currentColor"
+              d="M429.8 273l17-17-17-17L276.2 85.4l-17-17-33.9 33.9 17 17L354.9 232 24 232 0 232l0 48 24 0 330.9 0L242.2 392.6l-17 17 33.9 33.9 17-17L429.8 273z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="c_4 m_3 mantine-Group-root"
+         data-testid="ActionCard-Runnable Search, not editable, and is too big to fit on the card-Secondary-Section"
+         style="--group-gap: var(--mantine-spacing-md); --group-align: center; --group-justify: space-between; --group-wrap: wrap;"
+    >
+      <p class="mantine-focus-auto c_5 m_5 mantine-Text-root">
+        More Info
+      </p>
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="pen-to-square"
+           class="svg-inline--fa fa-pen-to-square "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-pen-to-square"
+      >
+        <path fill="currentColor"
+              d="M330 137.9L374.1 182 233.7 322.4l-50.4 6.3 6.3-50.4L330 137.9zM425 199l17-17 36.1-36.1L512 112 478.1 78.1 433.9 33.9 400 0 366.1 33.9 330 70 313 87l-17 17L144 256l-9.9 78.9L128 384l49.1-6.1L256 368 408 216l17-17zm-17-50.9L363.9 104 400 67.9 444.1 112 408 148.1zM24 64L0 64 0 88 0 488l0 24 24 0 400 0 24 0 0-24 0-176 0-24-48 0 0 24 0 152L48 464l0-352 152 0 24 0 0-48-24 0L24 64z"
+        >
+        </path>
+      </svg>
+    </div>
+  </div>
+</div>
+`;

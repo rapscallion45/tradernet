@@ -1,0 +1,20 @@
+.input {
+  composes: animate from "../../global/animation.module.css";
+
+  /* Bits for time picker only */
+
+  &::-webkit-datetime-edit-hour-field,
+  &::-webkit-datetime-edit-minute-field,
+  &::-webkit-datetime-edit-second-field,
+  &::-webkit-datetime-edit-ampm-field {
+    &:focus {
+      color: var(--mantine-color-white);
+    }
+  }
+
+  composes: outline from "../../global/forms.module.css";
+}
+
+.section {
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-5));
+}

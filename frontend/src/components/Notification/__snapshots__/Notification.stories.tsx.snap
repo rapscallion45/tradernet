@@ -1,0 +1,767 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Mantine/Notification Default smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="circle-info"
+           class="svg-inline--fa fa-circle-info "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-circle-info"
+      >
+        <path fill="currentColor"
+              d="M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l-24 0 0 48 24 0 80 0 24 0 0-48-24 0-8 0 0-88 0-24-24 0-48 0-24 0 0 48 24 0 24 0 0 64-24 0zm72-144l0-64-64 0 0 64 64 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_6 c_4 m_7 mantine-Notification-closeButton m_8 mantine-CloseButton-root m_9 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification Error smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="error"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="triangle-exclamation"
+           class="svg-inline--fa fa-triangle-exclamation "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-triangle-exclamation"
+      >
+        <path fill="currentColor"
+              d="M27.4 432L0 480l55.3 0 401.4 0 55.3 0-27.4-48L283.6 80.4 256 32 228.4 80.4 27.4 432zm401.9 0L82.7 432 256 128.7 429.3 432zM232 296l0 24 48 0 0-24 0-88-48 0 0 88zm48 104l0-48-48 0 0 48 48 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_6 c_4 m_7 mantine-Notification-closeButton m_8 mantine-CloseButton-root m_9 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification ErrorLoading smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="error"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <span class="m_2 c_1 m_3 mantine-Notification-loader m_4 mantine-Loader-root"
+          style="--loader-size: calc(1.75rem * var(--mantine-scale));"
+    >
+    </span>
+    <div class="m_5 mantine-Notification-body">
+      <div class="c_2 m_6 mantine-Notification-title">
+        Something is happening...
+      </div>
+      <div class="c_3 m_7 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_8 c_4 m_9 mantine-Notification-closeButton m_10 mantine-CloseButton-root m_11 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification Info smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="circle-info"
+           class="svg-inline--fa fa-circle-info "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-circle-info"
+      >
+        <path fill="currentColor"
+              d="M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l-24 0 0 48 24 0 80 0 24 0 0-48-24 0-8 0 0-88 0-24-24 0-48 0-24 0 0 48 24 0 24 0 0 64-24 0zm72-144l0-64-64 0 0 64 64 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_6 c_4 m_7 mantine-Notification-closeButton m_8 mantine-CloseButton-root m_9 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification InfoLoading smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <span class="m_2 c_1 m_3 mantine-Notification-loader m_4 mantine-Loader-root"
+          style="--loader-size: calc(1.75rem * var(--mantine-scale));"
+    >
+    </span>
+    <div class="m_5 mantine-Notification-body">
+      <div class="c_2 m_6 mantine-Notification-title">
+        Something is happening...
+      </div>
+      <div class="c_3 m_7 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_8 c_4 m_9 mantine-Notification-closeButton m_10 mantine-CloseButton-root m_11 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification LongText smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="circle-info"
+           class="svg-inline--fa fa-circle-info "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-circle-info"
+      >
+        <path fill="currentColor"
+              d="M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l-24 0 0 48 24 0 80 0 24 0 0-48-24 0-8 0 0-88 0-24-24 0-48 0-24 0 0 48 24 0 24 0 0 64-24 0zm72-144l0-64-64 0 0 64 64 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        A super long message that you better pay attention to, buddy, or there'll be hell to pay!
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_6 c_4 m_7 mantine-Notification-closeButton m_8 mantine-CloseButton-root m_9 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification MultipleLines smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="circle-info"
+           class="svg-inline--fa fa-circle-info "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-circle-info"
+      >
+        <path fill="currentColor"
+              d="M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l-24 0 0 48 24 0 80 0 24 0 0-48-24 0-8 0 0-88 0-24-24 0-48 0-24 0 0 48 24 0 24 0 0 64-24 0zm72-144l0-64-64 0 0 64 64 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        <div class="m_6 mantine-Stack-root"
+             style="--stack-gap: var(--mantine-spacing-xs); --stack-align: stretch; --stack-justify: flex-start;"
+        >
+          <p class="mantine-focus-auto m_7 mantine-Text-root"
+             style="font-size: var(--mantine-font-size-sm);"
+          >
+            A rather long message...
+          </p>
+          <p class="mantine-focus-auto m_7 mantine-Text-root"
+             style="font-size: var(--mantine-font-size-sm);"
+          >
+            ... that is spread over two lines.
+          </p>
+        </div>
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_8 c_4 m_9 mantine-Notification-closeButton m_10 mantine-CloseButton-root m_11 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification ProgressError smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="error"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="triangle-exclamation"
+           class="svg-inline--fa fa-triangle-exclamation "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-triangle-exclamation"
+      >
+        <path fill="currentColor"
+              d="M27.4 432L0 480l55.3 0 401.4 0 55.3 0-27.4-48L283.6 80.4 256 32 228.4 80.4 27.4 432zm401.9 0L82.7 432 256 128.7 429.3 432zM232 296l0 24 48 0 0-24 0-88-48 0 0 88zm48 104l0-48-48 0 0 48 48 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        <div class="m_6 mantine-Stack-root"
+             style="--stack-gap: var(--mantine-spacing-xs); --stack-align: stretch; --stack-justify: flex-start;"
+        >
+          <p class="mantine-focus-auto m_7 mantine-Text-root"
+             style="font-size: var(--mantine-font-size-sm);"
+          >
+            This is the message...
+          </p>
+          <div class="c_4 m_8 mantine-Progress-root"
+               data-variant="error"
+               data-size="sm"
+               radius="xl"
+               style="--progress-size: var(--progress-size-sm); --progress-radius: var(--mantine-radius-xl);"
+          >
+            <div class="c_5 m_9 mantine-Progress-section"
+                 role="progressbar"
+                 aria-valuemax="100"
+                 aria-valuemin="0"
+                 aria-valuenow="50"
+                 aria-valuetext="50%"
+                 style="--progress-section-width: 50%; --progress-section-color: var(--mantine-color-secondary-filled); --progress-label-color: var(--mantine-color-white);"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_10 c_6 m_11 mantine-Notification-closeButton m_12 mantine-CloseButton-root m_13 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification ProgressInfo smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="info"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="circle-info"
+           class="svg-inline--fa fa-circle-info "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 512 512"
+           data-testid="icon-circle-info"
+      >
+        <path fill="currentColor"
+              d="M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l-24 0 0 48 24 0 80 0 24 0 0-48-24 0-8 0 0-88 0-24-24 0-48 0-24 0 0 48 24 0 24 0 0 64-24 0zm72-144l0-64-64 0 0 64 64 0z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        <div class="m_6 mantine-Stack-root"
+             style="--stack-gap: var(--mantine-spacing-xs); --stack-align: stretch; --stack-justify: flex-start;"
+        >
+          <p class="mantine-focus-auto m_7 mantine-Text-root"
+             style="font-size: var(--mantine-font-size-sm);"
+          >
+            This is the message...
+          </p>
+          <div class="c_4 m_8 mantine-Progress-root"
+               data-variant="info"
+               data-size="sm"
+               radius="xl"
+               style="--progress-size: var(--progress-size-sm); --progress-radius: var(--mantine-radius-xl);"
+          >
+            <div class="c_5 m_9 mantine-Progress-section"
+                 role="progressbar"
+                 aria-valuemax="100"
+                 aria-valuemin="0"
+                 aria-valuenow="50"
+                 aria-valuetext="50%"
+                 style="--progress-section-width: 50%; --progress-section-color: var(--mantine-color-secondary-filled); --progress-label-color: var(--mantine-color-white);"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_10 c_6 m_11 mantine-Notification-closeButton m_12 mantine-CloseButton-root m_13 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification ProgressSuccess smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="success"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="check"
+           class="svg-inline--fa fa-check "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-check"
+      >
+        <path fill="currentColor"
+              d="M448 130L431 147 177.5 399.2l-16.9 16.9-16.9-16.9L17 273.1 0 256.2l33.9-34 17 16.9L160.6 348.3 397.1 112.9l17-16.9L448 130z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        <div class="m_6 mantine-Stack-root"
+             style="--stack-gap: var(--mantine-spacing-xs); --stack-align: stretch; --stack-justify: flex-start;"
+        >
+          <p class="mantine-focus-auto m_7 mantine-Text-root"
+             style="font-size: var(--mantine-font-size-sm);"
+          >
+            This is the message...
+          </p>
+          <div class="c_4 m_8 mantine-Progress-root"
+               data-variant="success"
+               data-size="sm"
+               radius="xl"
+               style="--progress-size: var(--progress-size-sm); --progress-radius: var(--mantine-radius-xl);"
+          >
+            <div class="c_5 m_9 mantine-Progress-section"
+                 role="progressbar"
+                 aria-valuemax="100"
+                 aria-valuemin="0"
+                 aria-valuenow="50"
+                 aria-valuetext="50%"
+                 style="--progress-section-width: 50%; --progress-section-color: var(--mantine-color-secondary-filled); --progress-label-color: var(--mantine-color-white);"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_10 c_6 m_11 mantine-Notification-closeButton m_12 mantine-CloseButton-root m_13 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification Success smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="success"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <div class="c_1 m_2 mantine-Notification-icon">
+      <svg aria-hidden="true"
+           focusable="false"
+           data-prefix="fasr"
+           data-icon="check"
+           class="svg-inline--fa fa-check "
+           role="img"
+           xmlns="http://www.w3.org/2000/svg"
+           viewbox="0 0 448 512"
+           data-testid="icon-check"
+      >
+        <path fill="currentColor"
+              d="M448 130L431 147 177.5 399.2l-16.9 16.9-16.9-16.9L17 273.1 0 256.2l33.9-34 17 16.9L160.6 348.3 397.1 112.9l17-16.9L448 130z"
+        >
+        </path>
+      </svg>
+    </div>
+    <div class="m_3 mantine-Notification-body">
+      <div class="c_2 m_4 mantine-Notification-title">
+        Notification title
+      </div>
+      <div class="c_3 m_5 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_6 c_4 m_7 mantine-Notification-closeButton m_8 mantine-CloseButton-root m_9 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Mantine/Notification SuccessLoading smoke-test 1`] = `
+<div class="m_0 mantine-Flex-root __m__-0"
+     style="width: calc(25rem * var(--mantine-scale));"
+>
+  <div class="c_0 m_1 mantine-Notification-root"
+       data-variant="success"
+       data-with-icon="true"
+       role="alert"
+       style="padding: var(--mantine-spacing-md); width: 100%;"
+  >
+    <span class="m_2 c_1 m_3 mantine-Notification-loader m_4 mantine-Loader-root"
+          style="--loader-size: calc(1.75rem * var(--mantine-scale));"
+    >
+    </span>
+    <div class="m_5 mantine-Notification-body">
+      <div class="c_2 m_6 mantine-Notification-title">
+        Something is happening...
+      </div>
+      <div class="c_3 m_7 mantine-Notification-description"
+           data-with-title="true"
+      >
+        Notification message
+      </div>
+    </div>
+    <button class="mantine-focus-auto mantine-active m_8 c_4 m_9 mantine-Notification-closeButton m_10 mantine-CloseButton-root m_11 mantine-UnstyledButton-root"
+            data-variant="subtle"
+            type="button"
+            color="gray"
+            style="--cb-icon-size: calc(1rem * var(--mantine-scale));"
+    >
+      <svg viewbox="0 0 15 15"
+           fill="none"
+           xmlns="http://www.w3.org/2000/svg"
+           style="width: var(--cb-icon-size, 70%); height: var(--cb-icon-size, 70%);"
+      >
+        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+        >
+        </path>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
