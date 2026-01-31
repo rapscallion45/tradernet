@@ -23,6 +23,27 @@ Tradernet is a multi-module project with a Java backend (WAR) and a Vite-based f
 mvn clean package
 ```
 
+## Run with Docker
+
+The Docker image builds the full Maven project (including the frontend assets) and deploys the WAR on WildFly.
+
+### Build and run with Docker
+
+```bash
+docker build -t tradernet .
+docker run --rm -p 8080:8080 tradernet
+```
+
+Then open `http://localhost:8080` or check the health endpoint at `http://localhost:8080/api/health`.
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+These commands work with Docker Desktop (which includes Docker Engine and Compose).
+
 The backend WAR includes the frontend `dist/` output (wired via the `maven-war-plugin`).
 
 ### Build without running the frontend Maven profile
