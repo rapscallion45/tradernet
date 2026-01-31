@@ -15,6 +15,10 @@
     <artifactId>tradernet-backend</artifactId>
     <packaging>war</packaging>
 
+    <properties>
+        <hibernate.show_sql>false</hibernate.show_sql>
+    </properties>
+
     <dependencies>
 
         <!-- Jakarta EE API for WildFly -->
@@ -69,6 +73,13 @@
     <build>
         <finalName>tradernet</finalName>
 
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+
         <plugins>
 
             <plugin>
@@ -89,6 +100,10 @@
                         </resource>
                     </webResources>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
             </plugin>
 
         </plugins>
