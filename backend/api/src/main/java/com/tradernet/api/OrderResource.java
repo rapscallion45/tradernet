@@ -69,7 +69,7 @@ public class OrderResource {
                 .build();
         }
 
-        Order order = new Order(symbol.trim(), request.getQuantity(), request.getPrice(), side);
+        Order order = new Order(symbol.trim(), request.getQuantity().intValue(), request.getPrice(), side);
         orderService.createOrder(order);
 
         return Response.status(Response.Status.CREATED)
