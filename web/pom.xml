@@ -14,7 +14,7 @@
 
     <name>Web</name>
 
-    <artifactId>tradernet-web</artifactId>
+    <artifactId>web</artifactId>
     <packaging>war</packaging>
 
     <properties>

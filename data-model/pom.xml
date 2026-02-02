@@ -12,7 +12,9 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>tradernet-data-model</artifactId>
+    <name>Data Model</name>
+
+    <artifactId>data-model</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
