@@ -1,4 +1,4 @@
-package com.tradernet.service;
+package com.tradernet.user;
 
 import com.tradernet.model.User;
 import jakarta.ejb.Singleton;

@@ -1,4 +1,4 @@
-package com.tradernet.service;
+package com.tradernet.trade;
 
 import com.tradernet.model.Order;
 import com.tradernet.model.Trade;

@@ -5,7 +5,7 @@ Tradernet is a multi-module project with a Java backend (WAR) and a Vite-based f
 ## Project layout
 
 - `frontend/` — Vite + React frontend, built with Yarn and bundled into `dist/`.
-- `backend/` — Jakarta EE/Spring-based backend packaged as a WAR.
+- `backend/` — Jakarta EE/Spring-based backend split into `data-model`, `services`, and `api` modules (the `api` module produces the WAR).
 - `pom.xml` — Maven parent project that aggregates both modules and aligns WildFly versions.
 
 ## Requirements
@@ -74,13 +74,13 @@ yarn dev
 
 The `dev` script starts the Vite dev server.
 
-### Build just the backend
+### Build just the backend API module
 
 ```bash
-mvn -pl backend -am package
+mvn -pl backend/api -am package
 ```
 
-The backend module produces a WAR file that can be deployed to your application server (for example, WildFly).
+The backend API module produces a WAR file that can be deployed to your application server (for example, WildFly).
 
 ### Health check endpoint
 
@@ -95,13 +95,14 @@ It returns `{"status":"ok"}` for a basic smoke check.
 ## Notes
 
 - The frontend module uses a Maven build profile (`build-frontend`) to install Node/Yarn and to run `yarn install` and `yarn build` during the Maven lifecycle.
-- The backend WAR packaging pulls the frontend build output from `frontend/dist` into the WAR.
+- The backend API WAR packaging pulls the frontend build output from `frontend/dist` into the WAR.
 - The parent POM imports the WildFly BOM to align Jakarta EE / RESTEasy versions for WildFly deployments.
+- If Maven reports cached resolution failures for the WildFly BOM, re-run the build/import with `-U` to force dependency updates (for example: `mvn -U -pl backend/api -am package`).
 
 ## How the application works
 
 - The frontend is a Vite + React UI that builds static assets into `frontend/dist`.
-- The backend is a Jakarta EE WAR that exposes JAX-RS endpoints (including `GET /api/health`) and can be deployed on WildFly.
+- The backend API module is a Jakarta EE WAR that exposes JAX-RS endpoints (including `GET /api/health`) and can be deployed on WildFly.
 - During a full Maven build (with the frontend profile enabled), the frontend assets are packaged into the backend WAR so a single deployment serves both API and UI.
 
 ## Useful scripts
