@@ -1,23 +1,34 @@
-package com.tradernet.service.order.dto;
+package com.tradernet.order.dto;
 
 import com.tradernet.model.Order;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Response payload for order data.
+ * Request payload for creating an order.
  */
-public class OrderResponseDto implements Serializable {
+public class OrderRequestDto implements Serializable {
+
+    @NotBlank
     private String symbol;
-    private String side;
+
+    @NotNull
+    private Order.Side side;
+
+    @Positive
     private Double quantity;
+
+    @Positive
     private Double price;
 
-    public OrderResponseDto() {
+    public OrderRequestDto() {
     }
 
-    public OrderResponseDto(String symbol, String side, Double quantity, Double price) {
+    public OrderRequestDto(String symbol, Order.Side side, Double quantity, Double price) {
         this.symbol = symbol;
         this.side = side;
         this.quantity = quantity;
@@ -32,11 +43,11 @@ public class OrderResponseDto implements Serializable {
         this.symbol = symbol;
     }
 
-    public String getSide() {
+    public Order.Side getSide() {
         return side;
     }
 
-    public void setSide(String side) {
+    public void setSide(Order.Side side) {
         this.side = side;
     }
 
@@ -56,15 +67,6 @@ public class OrderResponseDto implements Serializable {
         this.price = price;
     }
 
-    public static OrderResponseDto fromOrder(Order order) {
-        return new OrderResponseDto(
-            order.getSymbol(),
-            order.getSide().name(),
-            order.getQuantity(),
-            order.getPrice()
-        );
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -73,9 +75,9 @@ public class OrderResponseDto implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        OrderResponseDto that = (OrderResponseDto) o;
+        OrderRequestDto that = (OrderRequestDto) o;
         return Objects.equals(symbol, that.symbol)
-            && Objects.equals(side, that.side)
+            && side == that.side
             && Objects.equals(quantity, that.quantity)
             && Objects.equals(price, that.price);
     }
@@ -87,9 +89,9 @@ public class OrderResponseDto implements Serializable {
 
     @Override
     public String toString() {
-        return "OrderResponseDto{" +
+        return "OrderRequestDto{" +
             "symbol='" + symbol + '\'' +
-            ", side='" + side + '\'' +
+            ", side=" + side +
             ", quantity=" + quantity +
             ", price=" + price +
             '}';

@@ -18,8 +18,9 @@
     <dependencies>
         <dependency>
             <groupId>com.tradernet</groupId>
-            <artifactId>tradernet-services</artifactId>
+            <artifactId>order-service</artifactId>
             <version>${project.version}</version>
+            <type>ejb</type>
         </dependency>
 
         <dependency>

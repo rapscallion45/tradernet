@@ -1,4 +1,4 @@
-package com.tradernet.service;
+package com.tradernet.signal;
 
 import com.tradernet.core.TradingSignal;
 import com.tradernet.model.Order;

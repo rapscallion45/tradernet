@@ -1,9 +1,9 @@
 package com.tradernet.api;
 
-import com.tradernet.service.order.dto.OrderRequestDto;
-import com.tradernet.service.order.dto.OrderResponseDto;
+import com.tradernet.order.dto.OrderRequestDto;
+import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.model.Order;
-import com.tradernet.service.OrderService;
+import com.tradernet.order.OrderService;
 import jakarta.ejb.EJB;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;

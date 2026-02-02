@@ -1,4 +1,4 @@
-package com.tradernet.service;
+package com.tradernet.order;
 
 import com.tradernet.model.Order;
 import jakarta.ejb.Singleton;
