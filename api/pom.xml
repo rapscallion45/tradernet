@@ -73,7 +73,7 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                     <webResources>
                         <resource>
-                            <directory>${project.basedir}/../web/dist</directory>
+                            <directory>${project.basedir}/../web/src/main/react/dist</directory>
                             <targetPath>/</targetPath>
                         </resource>
                     </webResources>

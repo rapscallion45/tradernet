@@ -10,7 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": "src"
+    "baseUrl": ".",
+    "paths": {
+      "components/*": ["components/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["**/*"]
 }

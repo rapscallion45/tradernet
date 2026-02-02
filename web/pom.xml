@@ -18,9 +18,9 @@
     <packaging>war</packaging>
 
     <properties>
-        <webapp.local.sources>${project.basedir}</webapp.local.sources>
+        <webapp.local.sources>${project.basedir}/src/main/react</webapp.local.sources>
         <webapp.build.sources>${project.build.directory}/sources</webapp.build.sources>
-        <webapp.build.output>${project.basedir}/dist</webapp.build.output>
+        <webapp.build.output>${project.basedir}/src/main/react/dist</webapp.build.output>
     </properties>
 
     <build>

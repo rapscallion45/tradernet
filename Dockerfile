@@ -11,7 +11,7 @@ COPY services/signal-service/pom.xml services/signal-service/pom.xml
 COPY services/trade-service/pom.xml services/trade-service/pom.xml
 COPY services/user-service/pom.xml services/user-service/pom.xml
 COPY web/pom.xml web/pom.xml
-COPY web/package.json web/yarn.lock web/
+COPY web/src/main/react/package.json web/src/main/react/yarn.lock web/src/main/react/
 
 COPY . .
 
