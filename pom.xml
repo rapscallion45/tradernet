@@ -20,8 +20,14 @@
     </organization>
 
     <modules>
-        <module>frontend</module>
-        <module>backend</module>
+        <module>web</module>
+        <module>data-model</module>
+        <module>services/order-service</module>
+        <module>services/trade-service</module>
+        <module>services/user-service</module>
+        <module>services/signal-service</module>
+        <module>services/facade-service</module>
+        <module>api</module>
     </modules>
 
     <properties>

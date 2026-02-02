@@ -1,0 +1,74 @@
+/* This file sets global CSS and makes CSS variables globally available */
+/* Names are suffixed with -light and -dark to indicate which color scheme they should be used in */
+
+body.resizing,
+body.resizing * {
+    cursor: row-resize !important;
+    user-select: none !important;
+}
+
+:root {
+    /* Styles scrollbars globally */
+
+    /* Width */
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    /* Track */
+
+    ::-webkit-scrollbar-track {
+        background: var(--mantine-color-body);
+    }
+
+    /* Handle */
+
+    ::-webkit-scrollbar-thumb {
+        background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-6));
+        border-radius: 8px;
+    }
+
+    /* Handle on hover */
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-7));
+    }
+
+    /* Colours for disabled buttons */
+    --disabled-color-light: var(--mantine-color-gray-5);
+    --disabled-color-dark: var(--mantine-color-gray-6);
+    --disabled-bg-color-light: var(--mantine-color-gray-1);
+    --disabled-bg-color-dark: var(--mantine-color-dark-6);
+
+    /* Colours for outline and subtle button hover */
+    --hover-bg-light: var(--mantine-color-secondary-0);
+    --hover-bg-dark: var(--mantine-color-gray-8);
+
+    /* Colours for solid dark purple buttons, cards, etc. */
+    --solid-purple-color-light: var(--mantine-color-secondary-8);
+    --solid-purple-color-dark: var(--mantine-color-secondary-4);
+    --solid-purple-color-hover-light: var(--mantine-color-secondary-9);
+    --solid-purple-color-hover-dark: var(--mantine-color-secondary-5);
+
+    /* Colours for outline borders */
+    --outline-color-light: var(--mantine-color-secondary-8);
+    --outline-color-dark: var(--mantine-color-secondary-4);
+
+    /* Lighter purple colour - The 'true' Tradernet purple! */
+    --formpipe-purple-light: var(--mantine-color-primary-6);
+    --formpipe-purple-dark: var(--mantine-color-primary-4);
+
+    /* Colours for error states */
+    --error-color-light: var(--mantine-color-red-8);
+    --error-color-dark: var(--mantine-color-red-6);
+
+    /* Colours for success states */
+    --success-color-light: var(--mantine-color-green-8);
+    --success-color-dark: var(--mantine-color-green-6);
+
+    /* Borders */
+    --border-color-light: var(--mantine-color-gray-3);
+    --border-color-dark: var(--mantine-color-dark-4);
+}

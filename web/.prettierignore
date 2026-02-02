@@ -1,0 +1,16 @@
+# Public
+public/static
+
+# Node
+node_modules
+
+# Yarn
+.yarn
+yarn.lock
+build
+dist
+
+# Misc
+README.md
+.env
+*.d.ts
