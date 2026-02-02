@@ -1,5 +1,0 @@
-.root {
-  @media (max-width: $mantine-breakpoint-sm) {
-    font-size: var(--mantine-h3-font-size);
-  }
-}

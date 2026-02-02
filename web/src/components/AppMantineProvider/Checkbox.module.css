@@ -1,0 +1,30 @@
+.root {
+  /* For some unknown reason, setting this in the variable resolver does not work. */
+  --checkbox-icon-color: light-dark(var(--mantine-color-black), var(--mantine-color-white)) !important;
+}
+
+.input {
+  border-radius: 2px;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black)) !important;
+  border-color: light-dark(var(--outline-color-light), var(--outline-color-dark)) !important;
+
+  &:disabled {
+    border-color: var(--disabled-color-light) !important;
+  }
+}
+
+.icon {
+  height: 90%;
+  width: 90%;
+}
+
+.description {
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-5));
+}
+
+.error {
+  color: light-dark(var(--error-color-light), var(--error-color-dark)) !important;
+}
+
+.indicator {
+}

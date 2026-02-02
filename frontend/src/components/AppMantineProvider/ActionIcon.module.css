@@ -1,6 +1,0 @@
-.root {
-  composes: animate from "../../global/animation.module.css";
-  composes: filled from "../../global/buttons.module.css";
-  composes: outline from "../../global/buttons.module.css";
-  composes: subtle from "../../global/buttons.module.css";
-}

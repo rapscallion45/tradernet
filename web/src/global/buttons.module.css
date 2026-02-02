@@ -1,0 +1,51 @@
+/* Main button variants, which are deliberately restrictive */
+
+.filled {
+  &[data-variant="filled"] {
+    background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+
+    &:hover {
+      background-color: light-dark(var(--solid-purple-color-hover-light), var(--solid-purple-color-hover-dark));
+    }
+
+    &[disabled] {
+      background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark));
+      color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+    }
+  }
+}
+
+.outline {
+  &[data-variant="outline"] {
+    border-color: light-dark(var(--outline-color-light), var(--outline-color-dark));
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+
+    &:hover {
+      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+      color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    }
+
+    &[disabled] {
+      background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark));
+      color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+      border: none;
+    }
+  }
+}
+
+.subtle {
+  &[data-variant="subtle"] {
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    text-decoration: underline;
+
+    &:hover {
+      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+      color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    }
+
+    &[disabled] {
+      background-color: light-dark(transparent, transparent);
+      color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+    }
+  }
+}

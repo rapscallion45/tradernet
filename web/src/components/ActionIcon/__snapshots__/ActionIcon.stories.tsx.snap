@@ -1,0 +1,331 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Tradernet/ActionIcon Default smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="lg"
+        type="button"
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon ExtraLarge smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="xl"
+        type="button"
+        style="--ai-size: var(--ai-size-xl); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon ExtraSmall smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="xs"
+        type="button"
+        style="--ai-size: var(--ai-size-xs); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Filled smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="filled"
+        data-size="lg"
+        type="button"
+        style="--ai-size: var(--ai-size-lg); --ai-bg: var(--mantine-color-secondary-filled); --ai-hover: var(--mantine-color-secondary-filled-hover); --ai-color: var(--mantine-color-white); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid transparent;"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon FilledDisabled smoke-test 1`] = `
+<button class="mantine-focus-auto c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="filled"
+        data-size="lg"
+        data-disabled="true"
+        type="button"
+        disabled
+        style="--ai-size: var(--ai-size-lg); --ai-bg: var(--mantine-color-secondary-filled); --ai-hover: var(--mantine-color-secondary-filled-hover); --ai-color: var(--mantine-color-white); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid transparent;"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Large smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="lg"
+        type="button"
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Medium smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="md"
+        type="button"
+        style="--ai-size: var(--ai-size-md); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Outline smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="lg"
+        type="button"
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon OutlineDisabled smoke-test 1`] = `
+<button class="mantine-focus-auto c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="lg"
+        data-disabled="true"
+        type="button"
+        disabled
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Small smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="outline"
+        data-size="sm"
+        type="button"
+        style="--ai-size: var(--ai-size-sm); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-outline-hover); --ai-color: var(--mantine-color-secondary-outline); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-secondary-outline);"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon Subtle smoke-test 1`] = `
+<button class="mantine-focus-auto mantine-active c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="subtle"
+        data-size="lg"
+        type="button"
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-light-hover); --ai-color: var(--mantine-color-secondary-light-color); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid transparent;"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;
+
+exports[`Tradernet/ActionIcon SubtleDisabled smoke-test 1`] = `
+<button class="mantine-focus-auto c_0 c_1 c_2 c_3 c_4 m_0 mantine-ActionIcon-root m_1 mantine-UnstyledButton-root"
+        data-variant="subtle"
+        data-size="lg"
+        data-disabled="true"
+        type="button"
+        disabled
+        style="--ai-size: var(--ai-size-lg); --ai-bg: transparent; --ai-hover: var(--mantine-color-secondary-light-hover); --ai-color: var(--mantine-color-secondary-light-color); --ai-bd: calc(0.0625rem * var(--mantine-scale)) solid transparent;"
+>
+  <span class="m_2 mantine-ActionIcon-icon">
+    <svg aria-hidden="true"
+         focusable="false"
+         data-prefix="fasr"
+         data-icon="lock-keyhole"
+         class="svg-inline--fa fa-lock-keyhole "
+         role="img"
+         xmlns="http://www.w3.org/2000/svg"
+         viewbox="0 0 448 512"
+         data-testid="icon-lock-keyhole"
+    >
+      <path fill="currentColor"
+            d="M224 48c44.2 0 80 35.8 80 80l0 64-160 0 0-64c0-44.2 35.8-80 80-80zM96 128l0 64-48 0L0 192l0 48L0 464l0 48 48 0 352 0 48 0 0-48 0-224 0-48-48 0-48 0 0-64C352 57.3 294.7 0 224 0S96 57.3 96 128zM48 240l352 0 0 224L48 464l0-224zm200 80l0-24-48 0 0 24 0 64 0 24 48 0 0-24 0-64z"
+      >
+      </path>
+    </svg>
+  </span>
+</button>
+`;

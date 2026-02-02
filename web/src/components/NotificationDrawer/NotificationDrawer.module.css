@@ -1,0 +1,8 @@
+.notification {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6)) !important;
+}
+
+.scrollable {
+  overflow-y: auto;
+  height: calc(100vh - 220px);
+}

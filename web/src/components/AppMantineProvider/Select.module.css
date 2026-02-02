@@ -1,0 +1,44 @@
+.input {
+  composes: animate from "../../global/animation.module.css";
+
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-white)) !important;
+  font-weight: 600;
+  font-size: var(--mantine-font-size-sm);
+  border-radius: var(--mantine-radius-sm);
+
+  composes: outline from "../../global/forms.module.css";
+}
+
+.section {
+  &[data-position="right"] {
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+
+    svg {
+      color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    }
+  }
+}
+
+.groupLabel {
+  font-size: var(--mantine-font-size-sm) !important;
+  font-weight: 700;
+  color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark)) !important;
+  padding: 0.5rem 1rem;
+
+  &::after {
+    background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark)) !important;
+  }
+}
+
+.option {
+  composes: option from "../../global/forms.module.css";
+}
+
+.pill {
+  color: var(--mantine-color-white);
+  background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark)) !important;
+
+  &:hover {
+    background-color: light-dark(var(--solid-purple-color-hover-light), var(--solid-purple-color-hover-dark)) !important;
+  }
+}
