@@ -97,6 +97,7 @@ It returns `{"status":"ok"}` for a basic smoke check.
 - The frontend module uses a Maven build profile (`build-frontend`) to install Node/Yarn and to run `yarn install` and `yarn build` during the Maven lifecycle.
 - The backend API WAR packaging pulls the frontend build output from `frontend/dist` into the WAR.
 - The parent POM imports the WildFly BOM to align Jakarta EE / RESTEasy versions for WildFly deployments.
+- If Maven reports cached resolution failures for the WildFly BOM, re-run the build/import with `-U` to force dependency updates (for example: `mvn -U -pl backend/api -am package`).
 
 ## How the application works
 
