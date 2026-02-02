@@ -35,7 +35,6 @@
 
         <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
         <maven.test.plugins.version>3.1.2</maven.test.plugins.version>
-        <wildfly.version>27.0.1.Final</wildfly.version>
         <wildfly.maven.plugin.version>4.2.0.Final</wildfly.maven.plugin.version>
     </properties>
 
@@ -95,15 +94,6 @@
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
                 <version>20240303</version>
-            </dependency>
-
-            <!-- WildFly BOM to align Jakarta EE + RESTEasy dependencies -->
-            <dependency>
-                <groupId>org.wildfly.bom</groupId>
-                <artifactId>wildfly-jakartaee10</artifactId>
-                <version>${wildfly.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
 
             <!-- Explicit Jakarta EE API version to avoid resolution as "unknown" -->
@@ -242,13 +232,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Repository Group</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-        </repository>
-    </repositories>
 
 </project>
