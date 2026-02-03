@@ -1,10 +1,10 @@
 package com.tradernet.api;
 
-import com.tradernet.api.dto.AuthUserDto;
-import com.tradernet.api.dto.ForgotPasswordRequestDto;
-import com.tradernet.api.dto.LoginRequestDto;
-import com.tradernet.api.dto.LoginResponseDto;
-import com.tradernet.api.dto.MessageResponseDto;
+import com.tradernet.user.dto.AuthUserDto;
+import com.tradernet.user.dto.ForgotPasswordRequestDto;
+import com.tradernet.user.dto.LoginRequestDto;
+import com.tradernet.user.dto.LoginResponseDto;
+import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.UserService;
 import jakarta.ejb.EJB;

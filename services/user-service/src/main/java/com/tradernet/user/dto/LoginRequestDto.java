@@ -1,4 +1,4 @@
-package com.tradernet.api.dto;
+package com.tradernet.user.dto;
 
 /**
  * Login request payload.
