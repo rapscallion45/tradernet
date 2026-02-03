@@ -1,6 +1,6 @@
 package com.tradernet.user;
 
-import com.tradernet.model.User;
+import com.tradernet.entities.UserEntity;
 import jakarta.ejb.Singleton;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -39,12 +39,12 @@ public class UserService {
      * @param username The username to search for
      * @return Optional containing the User if found, empty otherwise
      */
-    public Optional<User> findByUsername(String username) {
+    public Optional<UserEntity> findByUsername(String username) {
         return jdbcTemplate.query(
-            "SELECT username, password_hash FROM users WHERE username = ?",
+            "SELECT username, password_hash FROM tblUsers WHERE username = ?",
             rs -> {
                 if (rs.next()) {
-                    User user = new User();
+                    UserEntity user = new UserEntity();
                     user.setUsername(rs.getString("username"));
                     user.setPasswordHash(rs.getString("password_hash"));
                     return Optional.of(user);
@@ -63,13 +63,32 @@ public class UserService {
      * @param password The plain-text password of the new user
      */
     public void createUser(String username, String password) {
-        // Hash the password using BCrypt with a generated salt
+        registerUser(username, password);
+    }
+
+    /**
+     * Registers a new user and returns the created user record.
+     *
+     * @param username The username of the new user
+     * @param password The plain-text password of the new user
+     * @return The created user entity
+     */
+    public UserEntity registerUser(String username, String password) {
+        if (findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("User already exists: " + username);
+        }
+
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         jdbcTemplate.update(
-            "INSERT INTO users(username, password_hash) VALUES (?, ?)",
+            "INSERT INTO tblUsers(username, password_hash) VALUES (?, ?)",
             username,
             hashedPassword
         );
+
+        UserEntity user = new UserEntity();
+        user.setUsername(username);
+        user.setPasswordHash(hashedPassword);
+        return user;
     }
 
     /**
@@ -83,5 +102,34 @@ public class UserService {
         return findByUsername(username)
             .map(user -> BCrypt.checkpw(password, user.getPasswordHash()))
             .orElse(false);
+    }
+
+    /**
+     * Authenticates a user based on username and password credentials.
+     *
+     * @param username The user's username
+     * @param password The plain-text password
+     * @return true if authentication succeeds, false otherwise
+     */
+    public boolean authenticate(String username, String password) {
+        return validatePassword(username, password);
+    }
+
+    /**
+     * Resets a user's password (forgotten password flow).
+     *
+     * @param username    The username to reset
+     * @param newPassword The new plain-text password
+     */
+    public void resetPassword(String username, String newPassword) {
+        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        int updated = jdbcTemplate.update(
+            "UPDATE tblUsers SET password_hash = ? WHERE username = ?",
+            hashedPassword,
+            username
+        );
+        if (updated == 0) {
+            throw new IllegalArgumentException("User not found: " + username);
+        }
     }
 }

@@ -1,16 +1,30 @@
-package com.tradernet.model;
+package com.tradernet.entities;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
  * Represents a completed trade in the trading system.
  * Stores symbol, quantity, price, and execution timestamp.
  */
-public class Trade {
-    private final String symbol;
-    private final double quantity;
-    private final double price;
-    private final LocalDateTime timestamp;
+@Entity
+@Table(name = "trades")
+public class TradeEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String symbol;
+    private double quantity;
+    private double price;
+    private LocalDateTime timestamp;
+
+    public TradeEntity() {
+    }
 
     /**
      * Creates a new Trade.
@@ -19,11 +33,15 @@ public class Trade {
      * @param quantity number of shares
      * @param price    execution price
      */
-    public Trade(String symbol, double quantity, double price) {
+    public TradeEntity(String symbol, double quantity, double price) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
         this.timestamp = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public String getSymbol() {

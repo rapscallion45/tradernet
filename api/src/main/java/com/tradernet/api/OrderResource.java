@@ -2,7 +2,7 @@ package com.tradernet.api;
 
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 import com.tradernet.order.OrderService;
 import jakarta.ejb.EJB;
 import jakarta.validation.Valid;
@@ -50,7 +50,7 @@ public class OrderResource {
                 .build();
         }
 
-        Order.Side side = request.getSide();
+        OrderEntity.Side side = request.getSide();
         if (side == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity("side is required")
@@ -69,7 +69,7 @@ public class OrderResource {
                 .build();
         }
 
-        Order order = new Order(symbol.trim(), request.getQuantity().intValue(), request.getPrice(), side);
+        OrderEntity order = new OrderEntity(symbol.trim(), request.getQuantity().intValue(), request.getPrice(), side);
         orderService.createOrder(order);
 
         return Response.status(Response.Status.CREATED)

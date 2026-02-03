@@ -1,6 +1,6 @@
 package com.tradernet.dao;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -24,11 +24,11 @@ public class OrderDaoJDBC implements OrderDao {
      * RowMapper to convert SQL ResultSet rows into Order objects.
      * Maps the "side" string to the Side enum.
      */
-    private final RowMapper<Order> rowMapper = (rs, rowNum) -> {
+    private final RowMapper<OrderEntity> rowMapper = (rs, rowNum) -> {
         String sideString = rs.getString("side");
-        Order.Side side = Order.Side.valueOf(sideString.toUpperCase()); // assumes DB stores "BUY" or "SELL"
+        OrderEntity.Side side = OrderEntity.Side.valueOf(sideString.toUpperCase()); // assumes DB stores "BUY" or "SELL"
 
-        return new Order(
+        return new OrderEntity(
             rs.getString("symbol"),
             rs.getInt("quantity"),
             rs.getDouble("price"),
@@ -51,7 +51,7 @@ public class OrderDaoJDBC implements OrderDao {
      * @param order the order to save
      */
     @Override
-    public void save(Order order) {
+    public void save(OrderEntity order) {
         jdbcTemplate.update(
             "INSERT INTO orders (symbol, quantity, price, side) VALUES (?, ?, ?, ?)",
             order.getSymbol(),
@@ -67,7 +67,7 @@ public class OrderDaoJDBC implements OrderDao {
      * @return list of all orders
      */
     @Override
-    public List<Order> findAll() {
+    public List<OrderEntity> findAll() {
         return jdbcTemplate.query("SELECT * FROM orders", rowMapper);
     }
 
@@ -78,7 +78,7 @@ public class OrderDaoJDBC implements OrderDao {
      * @return list of orders for the symbol
      */
     @Override
-    public List<Order> findBySymbol(String symbol) {
+    public List<OrderEntity> findBySymbol(String symbol) {
         return jdbcTemplate.query(
             "SELECT * FROM orders WHERE symbol = ?",
             rowMapper,

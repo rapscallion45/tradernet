@@ -1,6 +1,6 @@
 package com.tradernet.order.dto;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,7 +17,7 @@ public class OrderRequestDto implements Serializable {
     private String symbol;
 
     @NotNull
-    private Order.Side side;
+    private OrderEntity.Side side;
 
     @Positive
     private Double quantity;
@@ -28,7 +28,7 @@ public class OrderRequestDto implements Serializable {
     public OrderRequestDto() {
     }
 
-    public OrderRequestDto(String symbol, Order.Side side, Double quantity, Double price) {
+    public OrderRequestDto(String symbol, OrderEntity.Side side, Double quantity, Double price) {
         this.symbol = symbol;
         this.side = side;
         this.quantity = quantity;
@@ -43,11 +43,11 @@ public class OrderRequestDto implements Serializable {
         this.symbol = symbol;
     }
 
-    public Order.Side getSide() {
+    public OrderEntity.Side getSide() {
         return side;
     }
 
-    public void setSide(Order.Side side) {
+    public void setSide(OrderEntity.Side side) {
         this.side = side;
     }
 

@@ -1,15 +1,15 @@
 package com.tradernet.order;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 import jakarta.ejb.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
 @Singleton
 public class OrderService {
-    private final List<Order> orders = new ArrayList<>();
+    private final List<OrderEntity> orders = new ArrayList<>();
 
-    public void createOrder(Order order) { orders.add(order); }
+    public void createOrder(OrderEntity order) { orders.add(order); }
 
-    public List<Order> getOrders() { return orders; }
+    public List<OrderEntity> getOrders() { return orders; }
 }

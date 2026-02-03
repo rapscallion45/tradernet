@@ -1,0 +1,55 @@
+package com.tradernet.entities;
+
+import com.tradernet.databaseservice.passwords.PasswordHash;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.util.Date;
+
+@Entity
+@Table(name = "tblPasswords")
+public class PasswordEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "userId")
+    private UserEntity user;
+
+    private Date lastChanged;
+
+    private PasswordHash password;
+
+    public PasswordEntity() {
+    }
+
+    public PasswordEntity(UserEntity user, PasswordHash password) {
+        this.user = user;
+        this.password = password;
+        this.lastChanged = new Date();
+    }
+
+    public PasswordEntity(PasswordEntity existingPassword, PasswordHash updatedPassword) {
+        this.user = existingPassword.user;
+        this.password = updatedPassword;
+        this.lastChanged = new Date();
+    }
+
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+
+    public PasswordHash getPassword() {
+        return password;
+    }
+
+    public void setUser(UserEntity user) {
+        this.user = user;
+    }
+}

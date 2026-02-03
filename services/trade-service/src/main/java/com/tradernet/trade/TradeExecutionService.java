@@ -1,7 +1,7 @@
 package com.tradernet.trade;
 
-import com.tradernet.model.Order;
-import com.tradernet.model.Trade;
+import com.tradernet.entities.OrderEntity;
+import com.tradernet.entities.TradeEntity;
 
 /**
  * Executes orders and returns a Trade.
@@ -15,8 +15,8 @@ public class TradeExecutionService {
      * @param order order to execute
      * @return Trade object representing the completed trade
      */
-    public Trade execute(Order order) {
+    public TradeEntity execute(OrderEntity order) {
         // Stub execution; in real life this hits an exchange
-        return new Trade(order.getSymbol(), order.getQuantity(), order.getPrice());
+        return new TradeEntity(order.getSymbol(), order.getQuantity(), order.getPrice());
     }
 }
