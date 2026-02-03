@@ -74,8 +74,12 @@ public class AuthResource {
         SESSIONS.put(token, authUser);
 
         LoginResponseDto response = new LoginResponseDto(authUser);
-        NewCookie sessionCookie = new NewCookie(SESSION_COOKIE_NAME, token, "/", null, null,
-            (int) SESSION_DURATION.getSeconds(), true);
+        NewCookie sessionCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
+            .value(token)
+            .path("/")
+            .maxAge((int) SESSION_DURATION.getSeconds())
+            .httpOnly(true)
+            .build();
 
         return Response.ok(response)
             .cookie(sessionCookie)
@@ -88,7 +92,12 @@ public class AuthResource {
         if (sessionId != null) {
             SESSIONS.remove(sessionId);
         }
-        NewCookie clearCookie = new NewCookie(SESSION_COOKIE_NAME, "", "/", null, null, 0, true);
+        NewCookie clearCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
+            .value("")
+            .path("/")
+            .maxAge(0)
+            .httpOnly(true)
+            .build();
         return Response.ok(new MessageResponseDto("Logged out"))
             .cookie(clearCookie)
             .build();
