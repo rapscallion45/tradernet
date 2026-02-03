@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.tradernet.entities.util.RelationshipUpdateUtil.updateRelationship;
-import static jakarta.persistence.CascadeType.PERSIST;
 
 /**
  * Represents PDM Users.
@@ -114,9 +113,6 @@ public class UserEntity implements IdentifiedEntity {
     @OneToMany(mappedBy = "id.user", fetch = FetchType.EAGER, cascade = {CascadeType.ALL}, orphanRemoval = true)
     private final Set<UserPropertyEntity> userProperties = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = {PERSIST, CascadeType.MERGE})
-    private final Set<AddressBookEntity> addressBook = new HashSet<>();
-
     // The users roles are accessed frequently and rarely modified
     // See caching strategy in architecture.md in src/docs for implementation detail
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
@@ -129,26 +125,6 @@ public class UserEntity implements IdentifiedEntity {
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @ManyToMany(mappedBy = "users")
     private final Set<GroupEntity> groups = new HashSet<>();
-
-    @ManyToMany
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
-    @JoinTable(name = "tblAppACL", joinColumns = @JoinColumn(name = "userID"), inverseJoinColumns = @JoinColumn(name = "appID"))
-    private final Set<ClientAppEntity> clientApps = new HashSet<>();
-
-    @ManyToMany
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
-    @JoinTable(name = "tblSearchesACL", joinColumns = @JoinColumn(name = "userID"), inverseJoinColumns = @JoinColumn(name = "searchID"))
-    private final Set<SearchConfigurationEntity> searchConfigurations = new HashSet<>();
-
-    @ManyToMany
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
-    @JoinTable(name = "tblImportV2ACL", joinColumns = @JoinColumn(name = "userId"), inverseJoinColumns = @JoinColumn(name = "importV2Id"))
-    private final Set<UploadConfigurationEntity> uploadConfigurations = new HashSet<>();
-
-    @ManyToMany
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
-    @JoinTable(name = "tblSQLAppACL", joinColumns = @JoinColumn(name = "userId"), inverseJoinColumns = @JoinColumn(name = "sqlAppId"))
-    private final Set<SQLAppEntity> sqlApps = new HashSet<>();
 
     /* Transient properties ignored by persistence provider */
 
@@ -348,25 +324,6 @@ public class UserEntity implements IdentifiedEntity {
         groups.remove(group);
     }
 
-    /**
-     * Adds an AddressBookEntity to this user, and sets up the bi-directional relationship.
-     */
-    public void addAddressBook(AddressBookEntity addressBookEntity) {
-        log.debug("Adding new AddressBookEntity to user#{}: {}", getPk(), addressBookEntity);
-        if (!getAddressBook().contains(addressBookEntity)) {
-            addressBookEntity.setUser(this);
-            getAddressBook().add(addressBookEntity);
-        }
-    }
-
-    /**
-     * Removes an AddressBookEntity from this user.
-     */
-    public void removeAddressBook(AddressBookEntity addressBookEntity) {
-        log.debug("Removing AddressBookEntity from user#{}: {}", getPk(), addressBookEntity);
-        getAddressBook().remove(addressBookEntity);
-    }
-
     public void addProperty(UserPropertyEntity property) {
         log.debug("Adding new UserPropertyEntity to user#{}: {}", getPk(), property);
         getProperties().add(property);
@@ -375,88 +332,6 @@ public class UserEntity implements IdentifiedEntity {
     public void setProperties(Set<UserPropertyEntity> properties) {
         clearProperties();
         properties.forEach(this::addProperty);
-    }
-
-    /**
-     * @return All applications directly mapped to this user, or an empty Set if none found
-     */
-    public Set<ApplicationEntity> getApplications() {
-        final Set<ApplicationEntity> applications = new HashSet<>();
-        applications.addAll(this.clientApps);
-        applications.addAll(this.uploadConfigurations);
-        applications.addAll(this.searchConfigurations);
-        applications.addAll(this.sqlApps);
-        return Collections.unmodifiableSet(applications);
-    }
-
-    public void clearApplications() {
-        log.debug("Clearing all Applications from user#{}", getPk());
-        resetApplications(Collections.emptySet());
-    }
-
-    /**
-     * Adds an Application to this user, and sets up the bi-directional relationship
-     */
-    public void addApplication(ApplicationEntity application) {
-        log.debug("Giving user#{} access to application: {}", getPk(), application);
-        application.addUser(this);
-    }
-
-    void addApplicationReference(ClientAppEntity application) {
-        clientApps.add(application);
-    }
-
-    void addApplicationReference(SearchConfigurationEntity application) {
-        searchConfigurations.add(application);
-    }
-
-    void addApplicationReference(UploadConfigurationEntity application) {
-        uploadConfigurations.add(application);
-    }
-
-    void addApplicationReference(SQLAppEntity application) {
-        sqlApps.add(application);
-    }
-
-    /**
-     * Removes an application from this user
-     */
-    public void removeApplication(ApplicationEntity application) {
-        log.debug("Removing user#{} access to application: {}", getPk(), application);
-        application.removeUser(this);
-    }
-
-    void removeApplicationReference(ClientAppEntity application) {
-        clientApps.remove(application);
-    }
-
-    void removeApplicationReference(SearchConfigurationEntity application) {
-        searchConfigurations.remove(application);
-    }
-
-    void removeApplicationReference(UploadConfigurationEntity application) {
-        uploadConfigurations.remove(application);
-    }
-
-    void removeApplicationReference(SQLAppEntity application) {
-        sqlApps.remove(application);
-    }
-
-    public void resetApplications(Set<ApplicationEntity> apps) {
-        getApplications().forEach(this::removeApplication);
-        apps.forEach(this::addApplication);
-    }
-
-    /**
-     * @return Applications associated with this user and the groups that this user belongs to. If none will return empty Set.
-     */
-    public Set<ClientAppEntity> getAccessibleClientApplications() {
-
-        final Set<ClientAppEntity> clientAppEntities = new HashSet<>(this.clientApps);
-        for (GroupEntity group : getGroups()) {
-            clientAppEntities.addAll(group.getAccessibleClientApplications());
-        }
-        return clientAppEntities;
     }
 
     /**
@@ -709,16 +584,6 @@ public class UserEntity implements IdentifiedEntity {
         return groups;
     }
 
-    public Set<SearchConfigurationEntity> getSearchConfigurations() {
-        log.debug("User '{}' has search applications: {}", username, searchConfigurations);
-        return Collections.unmodifiableSet(searchConfigurations);
-    }
-
-    public Set<SQLAppEntity> getSqlApps() {
-        log.debug("User '{}' has SQL applications: {}", username, sqlApps);
-        return Collections.unmodifiableSet(sqlApps);
-    }
-
     /**
      * Get Group membership, including group parents
      *
@@ -730,10 +595,6 @@ public class UserEntity implements IdentifiedEntity {
             groupMembership.addAll(group.getAllParents());
         }
         return groupMembership;
-    }
-
-    public Set<AddressBookEntity> getAddressBook() {
-        return addressBook;
     }
 
     public boolean isPasswordExpired() {
