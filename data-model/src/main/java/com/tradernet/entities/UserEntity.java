@@ -30,6 +30,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -40,94 +41,72 @@ import java.util.stream.Collectors;
 import static com.tradernet.entities.util.RelationshipUpdateUtil.updateRelationship;
 
 /**
- * Represents PDM Users.
- *
- * @author dh 16-Nov-2007
- * @author jbaxter 07-Apr-2008
+ * Entity representing a system User.
  */
 @Entity
 @Cacheable
 @Table(name = "tblUsers")
 @NamedQueries({
-        @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE LOWER(u.username) = :username", hints = {
-                @QueryHint(name = "org.hibernate.cacheable", value = "true")}), // LOWER is used in conjunction with toLowerCase() on input parameter - we don't want to compare in a case-sensitive manner
-        @NamedQuery(name = "GetUsersInType", query = "SELECT u FROM UserEntity u WHERE u.type = :userstatus"),
-        @NamedQuery(name = "GetUsersNotInTypes", query = "SELECT u FROM UserEntity u WHERE u.type not in (:userstatuses) ORDER BY u.username")
+    @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE LOWER(u.username) = :username", hints = {
+        @QueryHint(name = "org.hibernate.cacheable", value = "true")}), // LOWER is used in conjunction with toLowerCase() on input parameter - we don't want to compare in a case-sensitive manner
+    @NamedQuery(name = "GetUsersInType", query = "SELECT u FROM UserEntity u WHERE u.type = :userstatus"),
+    @NamedQuery(name = "GetUsersNotInTypes", query = "SELECT u FROM UserEntity u WHERE u.type not in (:userstatuses) ORDER BY u.username")
 })
 public class UserEntity implements IdentifiedEntity {
 
     private static final Logger log = LoggerFactory.getLogger(UserEntity.class);
 
     private static final boolean IsExternalIdentityManagementEnabled = SystemProperties.getBooleanFlag(SystemProperties.EfsExternalIdentityManagement());
-
-    @Id
-    private long id;
-
-    @NotNull
-    @Size(max = 50)
-    private String username;
-
-    @Size(max = 255)
-    @Column(name = "password_hash")
-    private String passwordHash;
-
-    @NotNull
-    private int type;
-
-    private Date accountExpiry;
-
-    @Size(max = 255)
-    private String emailAddress;
-
-    private boolean passwordNoExpire;
-
-    private Date lastLogin;
-
-    @NotNull
-    private int incorrectLoginAttempts;
-
-    @NotNull
-    private boolean bypassLockout;
-
-    @NotNull
-    private boolean changePasswordNextLogin;
-
-    @Size(max = 255)
-    private String fullName;
-
-    @NotNull
-    private boolean bypassDocumentSecurity = false;
-
-    @NotNull
-    private boolean isExternalIdentity = false;
-
     // The user password is accessed frequently and rarely modified
     // See caching strategy in architecture.md in src/docs for implementation detail
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private final Set<PasswordEntity> passwords = new HashSet<>();
-
     // The user password is accessed frequently and rarely modified
     // See caching strategy in architecture.md in src/docs for implementation detail
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @OneToMany(mappedBy = "id.user", fetch = FetchType.EAGER, cascade = {CascadeType.ALL}, orphanRemoval = true)
     private final Set<UserPropertyEntity> userProperties = new HashSet<>();
-
     // The users roles are accessed frequently and rarely modified
     // See caching strategy in architecture.md in src/docs for implementation detail
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @ManyToMany
     @JoinTable(name = "tblUserRoles",
-            joinColumns = @JoinColumn(name = "userId"),
-            inverseJoinColumns = @JoinColumn(name = "roleId"))
+        joinColumns = @JoinColumn(name = "userId"),
+        inverseJoinColumns = @JoinColumn(name = "roleId"))
     private final Set<RoleEntity> roles = new HashSet<>();
-
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @ManyToMany(mappedBy = "users")
     private final Set<GroupEntity> groups = new HashSet<>();
+    @Id
+    private long id;
+    @NotNull
+    @Size(max = 50)
+    private String username;
+    @Size(max = 255)
+    @Column(name = "password_hash")
+    private String passwordHash;
+    @NotNull
+    private int type;
+    private Date accountExpiry;
+    @Size(max = 255)
+    private String emailAddress;
+    private boolean passwordNoExpire;
+    private Date lastLogin;
+    @NotNull
+    private int incorrectLoginAttempts;
+    @NotNull
+    private boolean bypassLockout;
+    @NotNull
+    private boolean changePasswordNextLogin;
+    @Size(max = 255)
+    private String fullName;
+    @NotNull
+    private boolean bypassDocumentSecurity = false;
+    @NotNull
+    private boolean isExternalIdentity = false;
 
     /* Transient properties ignored by persistence provider */
-
     @Transient
     private boolean passwordExpired = false; //todo refactor this variable into a new enum which represents state of password - normal/inWarningPeriod/expired etc
 
@@ -205,8 +184,8 @@ public class UserEntity implements IdentifiedEntity {
      */
     public boolean hasPassword(PlainTextCredentials password) {
         return getPasswords().stream()
-                .map(PasswordEntity::getPassword)
-                .anyMatch(passwordHash -> passwordHash.matches(password));
+            .map(PasswordEntity::getPassword)
+            .anyMatch(passwordHash -> passwordHash.matches(password));
     }
 
     public void applyPasswordRetention(int maxHistory) {
@@ -276,11 +255,6 @@ public class UserEntity implements IdentifiedEntity {
         passwords.remove(password);
     }
 
-    public void setGroups(Set<GroupEntity> groups) {
-        clearGroups();
-        groups.forEach(this::addGroup);
-    }
-
     /**
      * Removes this user from all GroupEntities, removing the bi-directional reference from the GroupEntity as it goes.
      */
@@ -327,11 +301,6 @@ public class UserEntity implements IdentifiedEntity {
     public void addProperty(UserPropertyEntity property) {
         log.debug("Adding new UserPropertyEntity to user#{}: {}", getPk(), property);
         getProperties().add(property);
-    }
-
-    public void setProperties(Set<UserPropertyEntity> properties) {
-        clearProperties();
-        properties.forEach(this::addProperty);
     }
 
     /**
@@ -409,12 +378,12 @@ public class UserEntity implements IdentifiedEntity {
         return Collections.unmodifiableSet(roles);
     }
 
-    public void clearRoles() {
-        setRoles(Collections.emptySet());
-    }
-
     public void setRoles(Set<RoleEntity> newRoles) {
         updateRelationship(this.roles, newRoles, this::addRole, this::removeRole);
+    }
+
+    public void clearRoles() {
+        setRoles(Collections.emptySet());
     }
 
     /**
@@ -459,8 +428,6 @@ public class UserEntity implements IdentifiedEntity {
         return roles.stream().anyMatch(r -> permissionName.equals(r.getName()));
     }
 
-    /* Simple accessors */
-
     public boolean isBypassDocumentSecurity() {
         return bypassDocumentSecurity;
     }
@@ -468,6 +435,8 @@ public class UserEntity implements IdentifiedEntity {
     public void setBypassDocumentSecurity(boolean bypassDocumentSecurity) {
         this.bypassDocumentSecurity = bypassDocumentSecurity;
     }
+
+    /* Simple accessors */
 
     public boolean isBypassServerLockout() {
         return this.bypassServerLockout;
@@ -557,6 +526,11 @@ public class UserEntity implements IdentifiedEntity {
         return userProperties;
     }
 
+    public void setProperties(Set<UserPropertyEntity> properties) {
+        clearProperties();
+        properties.forEach(this::addProperty);
+    }
+
     public UserPropertyEntity getProperty(String name) {
         Set<UserPropertyEntity> userProperties = getProperties();
         for (UserPropertyEntity userProperty : userProperties) {
@@ -582,6 +556,11 @@ public class UserEntity implements IdentifiedEntity {
 
     public Set<GroupEntity> getGroups() {
         return groups;
+    }
+
+    public void setGroups(Set<GroupEntity> groups) {
+        clearGroups();
+        groups.forEach(this::addGroup);
     }
 
     /**
@@ -614,12 +593,12 @@ public class UserEntity implements IdentifiedEntity {
         this.passwordExpiresInDays = passwordExpiresInDays;
     }
 
-    public void setLockedOut(boolean isLockedOut) {
-        this.isLockedOut = isLockedOut;
-    }
-
     public boolean isLockedOut() {
         return isLockedOut;
+    }
+
+    public void setLockedOut(boolean isLockedOut) {
+        this.isLockedOut = isLockedOut;
     }
 
     public int getIncorrectLoginAttempts() {
@@ -724,21 +703,21 @@ public class UserEntity implements IdentifiedEntity {
     @Override
     public String toString() {
         return "UserEntity{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", type=" + type +
-                ", accountExpiry=" + accountExpiry +
-                ", emailAddress='" + emailAddress + '\'' +
-                ", passwordNoExpire=" + passwordNoExpire +
-                ", lastLogin=" + lastLogin +
-                ", incorrectLoginAttempts=" + incorrectLoginAttempts +
-                ", bypassLockout=" + bypassLockout +
-                ", changePasswordNextLogin=" + changePasswordNextLogin +
-                ", passwordExpired=" + passwordExpired +
-                ", passwordExpiresInDays=" + passwordExpiresInDays +
-                ", isLockedOut=" + isLockedOut +
-                ", isExternalIdentity=" + isExternalIdentity +
-                '}';
+            "id=" + id +
+            ", username='" + username + '\'' +
+            ", type=" + type +
+            ", accountExpiry=" + accountExpiry +
+            ", emailAddress='" + emailAddress + '\'' +
+            ", passwordNoExpire=" + passwordNoExpire +
+            ", lastLogin=" + lastLogin +
+            ", incorrectLoginAttempts=" + incorrectLoginAttempts +
+            ", bypassLockout=" + bypassLockout +
+            ", changePasswordNextLogin=" + changePasswordNextLogin +
+            ", passwordExpired=" + passwordExpired +
+            ", passwordExpiresInDays=" + passwordExpiresInDays +
+            ", isLockedOut=" + isLockedOut +
+            ", isExternalIdentity=" + isExternalIdentity +
+            '}';
     }
 
 }

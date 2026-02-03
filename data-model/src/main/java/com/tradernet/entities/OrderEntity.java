@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
  * An order can be BUY or SELL, and includes symbol, quantity, and price.
  */
 @Entity
-@Table(name = "orders")
+@Table(name = "tblOrders")
 public class OrderEntity {
 
     @Id
