@@ -94,14 +94,14 @@ It returns `{"status":"ok"}` for a basic smoke check.
 
 ## Notes
 
-- The web module uses a Maven build profile (`build-frontend`) to install Node/Yarn and to run `yarn install` and `yarn build` during the Maven lifecycle.
-- The backend API WAR packaging pulls the web build output from `web/src/main/react/dist` into the WAR.
+- The web module uses a Maven build profile (`build-react`) to install Node/Yarn and to run `yarn install` and `yarn build` during the Maven lifecycle.
+- The backend API WAR packaging pulls the web build output from `web/target/sources/dist` into the WAR.
 - The parent POM imports the WildFly BOM to align Jakarta EE / RESTEasy versions for WildFly deployments.
 - If Maven reports cached resolution failures for the WildFly BOM, re-run the build/import with `-U` to force dependency updates (for example: `mvn -U -pl api -am package`).
 
 ## How the application works
 
-- The web UI is a Vite + React app that builds static assets into `web/src/main/react/dist`.
+- The web UI is a Vite + React app that builds static assets into `web/target/sources/dist`.
 - The backend API module is a Jakarta EE WAR that exposes JAX-RS endpoints (including `GET /api/health`) and can be deployed on WildFly.
 - During a full Maven build (with the web profile enabled), the web assets are packaged into the backend WAR so a single deployment serves both API and UI.
 
