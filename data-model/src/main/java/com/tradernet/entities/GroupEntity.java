@@ -27,6 +27,14 @@ public class GroupEntity {
 
     private final Set<GroupEntity> parents = new HashSet<>();
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     void addUserReference(UserEntity user) {
         users.add(user);
     }

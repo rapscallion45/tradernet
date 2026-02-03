@@ -52,7 +52,23 @@ public class PasswordEntity {
         return password;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
     public void setUser(UserEntity user) {
         this.user = user;
+    }
+
+    public void setLastChanged(Date lastChanged) {
+        this.lastChanged = lastChanged;
+    }
+
+    public void setPassword(PasswordHash password) {
+        this.password = password;
     }
 }
