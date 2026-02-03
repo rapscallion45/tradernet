@@ -1,37 +1,28 @@
 package com.tradernet.user;
 
-import com.tradernet.entities.UserEntity;
+import com.tradernet.jpa.entities.UserEntity;
 import jakarta.ejb.Singleton;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import javax.sql.DataSource;
-import java.util.Optional;
-
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.security.crypto.bcrypt.BCrypt;
+
+import java.util.Optional;
 
 /**
  * Service for managing application users.
  * <p>
  * Provides methods for creating users, retrieving users by username,
- * and validating passwords. Uses Spring JDBC with a provided DataSource
+ * and validating passwords. Uses JPA with Hibernate
  * and BCrypt for password hashing.
  */
 @Singleton
 public class UserService {
 
     /**
-     * JdbcTemplate instance for database operations.
+     * EntityManager instance for database operations.
      */
-    private final JdbcTemplate jdbcTemplate;
-
-    /**
-     * Constructs a UserService with the given DataSource.
-     *
-     * @param ds The DataSource to use for database access
-     */
-    public UserService(DataSource ds) {
-        this.jdbcTemplate = new JdbcTemplate(ds);
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Finds a user by their username.
@@ -40,19 +31,10 @@ public class UserService {
      * @return Optional containing the User if found, empty otherwise
      */
     public Optional<UserEntity> findByUsername(String username) {
-        return jdbcTemplate.query(
-            "SELECT username, password_hash FROM tblUsers WHERE username = ?",
-            rs -> {
-                if (rs.next()) {
-                    UserEntity user = new UserEntity();
-                    user.setUsername(rs.getString("username"));
-                    user.setPasswordHash(rs.getString("password_hash"));
-                    return Optional.of(user);
-                }
-                return Optional.empty();
-            },
-            username
-        );
+        return entityManager.createNamedQuery("GetUserByUsername", UserEntity.class)
+            .setParameter("username", username.toLowerCase())
+            .getResultStream()
+            .findFirst();
     }
 
     /**
@@ -79,15 +61,9 @@ public class UserService {
         }
 
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-        jdbcTemplate.update(
-            "INSERT INTO tblUsers(username, password_hash) VALUES (?, ?)",
-            username,
-            hashedPassword
-        );
-
-        UserEntity user = new UserEntity();
-        user.setUsername(username);
+        UserEntity user = new UserEntity(username);
         user.setPasswordHash(hashedPassword);
+        entityManager.persist(user);
         return user;
     }
 
@@ -122,14 +98,10 @@ public class UserService {
      * @param newPassword The new plain-text password
      */
     public void resetPassword(String username, String newPassword) {
+        UserEntity user = findByUsername(username)
+            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        int updated = jdbcTemplate.update(
-            "UPDATE tblUsers SET password_hash = ? WHERE username = ?",
-            hashedPassword,
-            username
-        );
-        if (updated == 0) {
-            throw new IllegalArgumentException("User not found: " + username);
-        }
+        user.setPasswordHash(hashedPassword);
+        entityManager.merge(user);
     }
 }

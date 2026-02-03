@@ -1,6 +1,6 @@
 package com.tradernet.jpa.dao.interceptors;
 
-import com.tradernet.entities.UserEntity;
+import com.tradernet.jpa.entities.UserEntity;
 
 /**
  * Interceptor hook for populating user password metadata after persistence events.

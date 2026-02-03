@@ -1,6 +1,6 @@
 package com.tradernet.order.dto;
 
-import com.tradernet.entities.OrderEntity;
+import com.tradernet.jpa.entities.OrderEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
