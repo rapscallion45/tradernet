@@ -1,7 +1,9 @@
 import { FC } from "react"
+import { useNavigate } from "react-router-dom"
 import { useLogin } from "hooks/useAuth"
 import { useGlobalStore } from "hooks/useGlobalStore"
 import { LoginData } from "api/types"
+import Routes from "global/Routes"
 import LoginForm from "./forms/LoginForm"
 
 /**
@@ -10,11 +12,13 @@ import LoginForm from "./forms/LoginForm"
 const LoginPage: FC = () => {
   const loginMutation = useLogin()
   const { setCurrentUser } = useGlobalStore()
+  const navigate = useNavigate()
 
   const onSubmit = async (data: LoginData) => {
     try {
-      await loginMutation.mutateAsync(data)
-      setCurrentUser({ username: data.username })
+      const response = await loginMutation.mutateAsync(data)
+      setCurrentUser(response.user)
+      navigate(Routes.Dashboard)
     } catch {
       alert("Login failed")
     }

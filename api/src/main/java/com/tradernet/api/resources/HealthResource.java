@@ -1,4 +1,4 @@
-package com.tradernet.api;
+package com.tradernet.api.resources;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

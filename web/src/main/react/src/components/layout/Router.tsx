@@ -4,6 +4,7 @@ import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
 import LoginPage from "pages/Login/LoginPage"
 import Layout from "components/layout/Layout"
+import AuthGateway from "components/AuthGateway"
 
 /**
  * Helper component for handling router errors
@@ -40,7 +41,11 @@ export const router = createBrowserRouter([
   {
     path: Routes.Dashboard,
     ErrorBoundary: RouteErrorBoundary,
-    element: <Layout />,
+    element: (
+      <AuthGateway>
+        <Layout />
+      </AuthGateway>
+    ),
     children: [
       {
         path: Routes.Dashboard,
