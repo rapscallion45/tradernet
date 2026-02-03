@@ -1,7 +1,7 @@
 package com.tradernet.facade;
 
-import com.tradernet.dao.OrderDao;
-import com.tradernet.entities.OrderEntity;
+import com.tradernet.jpa.dao.OrderDao;
+import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.order.OrderBookService;
 import com.tradernet.signal.SignalService;
 

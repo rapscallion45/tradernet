@@ -1,7 +1,6 @@
 package com.tradernet.jpa.dao;
 
-import com.tradernet.dao.SignalDao;
-import com.tradernet.entities.SignalEntity;
+import com.tradernet.jpa.entities.SignalEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

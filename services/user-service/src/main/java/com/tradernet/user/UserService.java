@@ -1,6 +1,6 @@
 package com.tradernet.user;
 
-import com.tradernet.entities.UserEntity;
+import com.tradernet.jpa.entities.UserEntity;
 import jakarta.ejb.Singleton;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

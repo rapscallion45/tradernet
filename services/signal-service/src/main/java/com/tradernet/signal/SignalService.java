@@ -1,7 +1,7 @@
 package com.tradernet.signal;
 
-import com.tradernet.core.TradingSignal;
-import com.tradernet.entities.OrderEntity;
+import com.tradernet.jpa.core.TradingSignal;
+import com.tradernet.jpa.entities.OrderEntity;
 
 import java.util.ArrayList;
 import java.util.List;

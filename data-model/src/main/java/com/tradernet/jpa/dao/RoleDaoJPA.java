@@ -1,7 +1,6 @@
 package com.tradernet.jpa.dao;
 
-import com.tradernet.dao.RoleDao;
-import com.tradernet.entities.RoleEntity;
+import com.tradernet.jpa.entities.RoleEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

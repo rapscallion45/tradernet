@@ -1,7 +1,6 @@
 package com.tradernet.jpa.dao;
 
-import com.tradernet.dao.TradeDao;
-import com.tradernet.entities.TradeEntity;
+import com.tradernet.jpa.entities.TradeEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

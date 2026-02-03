@@ -1,7 +1,7 @@
 package com.tradernet.trade;
 
-import com.tradernet.entities.OrderEntity;
-import com.tradernet.entities.TradeEntity;
+import com.tradernet.jpa.entities.OrderEntity;
+import com.tradernet.jpa.entities.TradeEntity;
 
 /**
  * Executes orders and returns a Trade.

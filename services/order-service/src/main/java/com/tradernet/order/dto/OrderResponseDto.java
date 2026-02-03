@@ -1,6 +1,6 @@
 package com.tradernet.order.dto;
 
-import com.tradernet.entities.OrderEntity;
+import com.tradernet.jpa.entities.OrderEntity;
 
 import java.io.Serializable;
 import java.util.Objects;

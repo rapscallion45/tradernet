@@ -1,6 +1,6 @@
 package com.tradernet.order;
 
-import com.tradernet.entities.OrderEntity;
+import com.tradernet.jpa.entities.OrderEntity;
 import jakarta.ejb.Singleton;
 import java.util.ArrayList;
 import java.util.List;

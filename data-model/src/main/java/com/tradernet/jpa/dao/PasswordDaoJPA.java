@@ -1,7 +1,6 @@
 package com.tradernet.jpa.dao;
 
-import com.tradernet.dao.PasswordDao;
-import com.tradernet.entities.PasswordEntity;
+import com.tradernet.jpa.entities.PasswordEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
