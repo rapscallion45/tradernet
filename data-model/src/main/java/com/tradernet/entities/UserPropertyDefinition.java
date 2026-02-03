@@ -1,5 +1,8 @@
 package com.tradernet.entities;
 
+/**
+ * Definition for a user property name.
+ */
 public class UserPropertyDefinition {
     private String name;
 

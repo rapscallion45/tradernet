@@ -2,6 +2,9 @@ package com.tradernet.databaseservice.passwords;
 
 import java.util.Objects;
 
+/**
+ * Simple wrapper for PBKDF2 password hashes.
+ */
 public class PBKDF2PasswordHash implements PasswordHash {
     private final String hash;
 

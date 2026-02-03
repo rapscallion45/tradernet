@@ -1,5 +1,8 @@
 package com.tradernet.enums;
 
+/**
+ * Enumerates supported user statuses and their legacy integer identifiers.
+ */
 public enum UserStatus {
     STANDARD(0),
     SYSTEM(1),

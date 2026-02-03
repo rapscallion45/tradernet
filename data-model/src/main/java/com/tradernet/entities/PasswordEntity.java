@@ -10,6 +10,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.Date;
 
+/**
+ * Entity representing a stored password hash for a user.
+ */
 @Entity
 @Table(name = "tblPasswords")
 public class PasswordEntity {

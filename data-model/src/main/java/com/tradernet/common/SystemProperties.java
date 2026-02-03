@@ -1,5 +1,8 @@
 package com.tradernet.common;
 
+/**
+ * Utility class for accessing system configuration flags.
+ */
 public final class SystemProperties {
 
     private SystemProperties() {

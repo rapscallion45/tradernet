@@ -4,6 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+/**
+ * Utility for synchronizing collection-based relationships.
+ */
 public final class RelationshipUpdateUtil {
 
     private RelationshipUpdateUtil() {

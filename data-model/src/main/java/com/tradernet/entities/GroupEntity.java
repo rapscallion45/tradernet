@@ -10,6 +10,9 @@ import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Entity representing a logical group of users with parent relationships.
+ */
 @Entity
 @Table(name = "tblGroups")
 public class GroupEntity {

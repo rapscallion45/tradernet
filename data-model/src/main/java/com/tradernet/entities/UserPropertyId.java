@@ -6,6 +6,9 @@ import jakarta.persistence.ManyToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Composite identifier for user properties.
+ */
 @Embeddable
 public class UserPropertyId implements Serializable {
 

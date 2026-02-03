@@ -4,6 +4,9 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+/**
+ * Entity that stores a user-specific property value.
+ */
 @Entity
 @Table(name = "tblUserProperties")
 public class UserPropertyEntity {

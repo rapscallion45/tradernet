@@ -9,6 +9,9 @@ import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Entity representing a permission role that can be assigned to users.
+ */
 @Entity
 @Table(name = "tblRoles")
 public class RoleEntity {
