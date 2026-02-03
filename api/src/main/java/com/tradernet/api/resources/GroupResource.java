@@ -1,4 +1,4 @@
-package com.tradernet.api;
+package com.tradernet.api.resources;
 
 import com.tradernet.jpa.dao.GroupDao;
 import com.tradernet.jpa.entities.GroupEntity;

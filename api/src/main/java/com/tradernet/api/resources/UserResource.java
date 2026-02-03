@@ -1,4 +1,4 @@
-package com.tradernet.api;
+package com.tradernet.api.resources;
 
 import com.tradernet.jpa.dao.UserDao;
 import com.tradernet.jpa.entities.UserEntity;
