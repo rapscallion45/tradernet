@@ -32,6 +32,7 @@ export type LogoutResponse = {
 
 /** User */
 export interface User {
+  id?: number
   username: string
 }
 
