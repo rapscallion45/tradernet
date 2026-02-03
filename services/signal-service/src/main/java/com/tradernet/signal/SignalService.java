@@ -1,7 +1,7 @@
 package com.tradernet.signal;
 
 import com.tradernet.core.TradingSignal;
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,13 +43,13 @@ public class SignalService {
      * @param order the order to validate
      * @return true if valid, false otherwise
      */
-    public boolean isValidOrder(Order order) {
+    public boolean isValidOrder(OrderEntity order) {
         // Example simple validation
         if (order.getQuantity() <= 0) return false;
 
         // Compare with enum values instead of strings
-        Order.Side side = order.getSide();
-        if (side != Order.Side.BUY && side != Order.Side.SELL) return false;
+        OrderEntity.Side side = order.getSide();
+        if (side != OrderEntity.Side.BUY && side != OrderEntity.Side.SELL) return false;
 
         return order.getPrice() > 0;
     }

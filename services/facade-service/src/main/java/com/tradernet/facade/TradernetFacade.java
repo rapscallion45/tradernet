@@ -1,7 +1,7 @@
 package com.tradernet.facade;
 
 import com.tradernet.dao.OrderDao;
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 import com.tradernet.order.OrderBookService;
 import com.tradernet.signal.SignalService;
 
@@ -40,7 +40,7 @@ public class TradernetFacade {
      * @param order the order to execute
      * @return true if executed successfully, false otherwise
      */
-    public boolean executeOrder(Order order) {
+    public boolean executeOrder(OrderEntity order) {
         // Validate the trading signal
         if (!signalService.isValidOrder(order)) {
             return false;
@@ -61,7 +61,7 @@ public class TradernetFacade {
      *
      * @return list of all orders
      */
-    public List<Order> getAllOrders() {
+    public List<OrderEntity> getAllOrders() {
         return orderDao.findAll();
     }
 
@@ -71,7 +71,7 @@ public class TradernetFacade {
      * @param symbol the trading symbol
      * @return list of orders
      */
-    public List<Order> getOrdersBySymbol(String symbol) {
+    public List<OrderEntity> getOrdersBySymbol(String symbol) {
         return orderDao.findBySymbol(symbol);
     }
 

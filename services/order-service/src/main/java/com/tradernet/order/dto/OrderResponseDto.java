@@ -1,6 +1,6 @@
 package com.tradernet.order.dto;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class OrderResponseDto implements Serializable {
         this.price = price;
     }
 
-    public static OrderResponseDto fromOrder(Order order) {
+    public static OrderResponseDto fromOrder(OrderEntity order) {
         return new OrderResponseDto(
             order.getSymbol(),
             order.getSide().name(),

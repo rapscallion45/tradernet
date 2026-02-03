@@ -1,15 +1,36 @@
-package com.tradernet.model;
+package com.tradernet.entities;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Represents a single order in the trading system.
  * An order can be BUY or SELL, and includes symbol, quantity, and price.
  */
-public class Order {
+@Entity
+@Table(name = "tblOrders")
+public class OrderEntity {
 
-    private final String symbol;
-    private final Side side;
-    private final double quantity;
-    private final double price;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String symbol;
+
+    @Enumerated(EnumType.STRING)
+    private Side side;
+
+    private double quantity;
+
+    private double price;
+
+    public OrderEntity() {
+    }
 
     /**
      * Constructs a new Order.
@@ -19,11 +40,15 @@ public class Order {
      * @param quantity number of shares
      * @param price    price per share
      */
-    public Order(String symbol, int quantity, double price, Side side) {
+    public OrderEntity(String symbol, int quantity, double price, Side side) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
         this.side = side;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public String getSymbol() {

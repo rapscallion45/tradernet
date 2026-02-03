@@ -1,6 +1,6 @@
 package com.tradernet.order;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,14 +11,14 @@ import java.util.List;
 public class OrderBookService {
 
     // Stores all orders in memory
-    private final List<Order> orders = new ArrayList<>();
+    private final List<OrderEntity> orders = new ArrayList<>();
 
     /**
      * Adds a new order to the order book.
      *
      * @param order the order to add
      */
-    public boolean addOrder(Order order) {
+    public boolean addOrder(OrderEntity order) {
         if (!isValidOrder(order)) {
             throw new IllegalArgumentException("Invalid order: " + order);
         }
@@ -31,7 +31,7 @@ public class OrderBookService {
      * @param order the order to validate
      * @return true if valid, false otherwise
      */
-    public boolean isValidOrder(Order order) {
+    public boolean isValidOrder(OrderEntity order) {
         return order.getQuantity() > 0 && order.getSymbol() != null && !order.getSymbol().isEmpty();
     }
 
@@ -40,7 +40,7 @@ public class OrderBookService {
      *
      * @return list of orders
      */
-    public List<Order> getOrders() {
+    public List<OrderEntity> getOrders() {
         return new ArrayList<>(orders);
     }
 

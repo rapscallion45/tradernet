@@ -1,6 +1,6 @@
 package com.tradernet.dao;
 
-import com.tradernet.model.Order;
+import com.tradernet.entities.OrderEntity;
 
 import java.util.List;
 
@@ -15,14 +15,14 @@ public interface OrderDao {
      *
      * @param order order to save
      */
-    void save(Order order);
+    void save(OrderEntity order);
 
     /**
      * Retrieves all orders from the database.
      *
      * @return list of all orders
      */
-    List<Order> findAll();
+    List<OrderEntity> findAll();
 
     /**
      * Retrieves orders for a specific symbol.
@@ -30,7 +30,7 @@ public interface OrderDao {
      * @param symbol stock symbol
      * @return list of orders for the symbol
      */
-    List<Order> findBySymbol(String symbol);
+    List<OrderEntity> findBySymbol(String symbol);
 
     /**
      * Deletes all orders (useful for testing or resetting state).
