@@ -4,9 +4,6 @@ import viteTsconfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig({
   plugins: [react(), viteTsconfigPaths()],
-  resolve: {
-    alias: [{ find: /^components\/(.*)/, replacement: "/src/components/$1" }],
-  },
   server: {
     port: 3000,
     proxy: {

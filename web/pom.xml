@@ -12,15 +12,15 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <name>Web</name>
+    <name>Web React</name>
 
     <artifactId>web</artifactId>
     <packaging>war</packaging>
 
     <properties>
-        <webapp.local.sources>${project.basedir}</webapp.local.sources>
+        <webapp.local.sources>${project.basedir}/src/main/react</webapp.local.sources>
         <webapp.build.sources>${project.build.directory}/sources</webapp.build.sources>
-        <webapp.build.output>${project.basedir}/dist</webapp.build.output>
+        <webapp.build.output>${webapp.build.sources}/dist</webapp.build.output>
     </properties>
 
     <build>
@@ -31,7 +31,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${webapp.local.sources}</directory>
+                            <directory>src/main/react</directory>
                             <includes>cacerts</includes>
                         </fileset>
                     </filesets>
@@ -43,10 +43,10 @@
 
     <profiles>
         <profile>
-            <id>build-frontend</id>
+            <id>build-react</id>
             <activation>
                 <property>
-                    <name>!dontBuildFrontend</name>
+                    <name>!dontBuildReact</name>
                 </property>
             </activation>
             <build>
@@ -55,7 +55,7 @@
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>copy-frontend-source</id>
+                                <id>copy-react-source</id>
                                 <phase>generate-sources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
@@ -65,11 +65,10 @@
                                     <overwrite>true</overwrite>
                                     <resources>
                                         <resource>
-                                            <directory>${webapp.local.sources}</directory>
+                                            <directory>src/main/react</directory>
                                             <filtering>false</filtering>
                                             <excludes>
                                                 <exclude>node_modules/**</exclude>
-                                                <exclude>target/**</exclude>
                                             </excludes>
                                         </resource>
                                     </resources>
@@ -81,7 +80,7 @@
                         <groupId>com.github.eirslett</groupId>
                         <artifactId>frontend-maven-plugin</artifactId>
                         <configuration>
-                            <workingDirectory>${webapp.local.sources}</workingDirectory>
+                            <workingDirectory>${webapp.build.sources}</workingDirectory>
                             <installDirectory>${project.build.directory}</installDirectory>
                             <environmentVariables>
                                 <BUILD_PATH>${webapp.build.output}</BUILD_PATH>
@@ -116,7 +115,7 @@
                                     <goal>yarn</goal>
                                 </goals>
                                 <configuration>
-                                    <arguments>build</arguments>
+                                    <arguments>run build</arguments>
                                 </configuration>
                             </execution>
                         </executions>

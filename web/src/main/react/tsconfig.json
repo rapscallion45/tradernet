@@ -10,7 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": "src"
+    "baseUrl": "src",
+    "paths": {
+      "components/*": ["components/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src/**/*", "vite.config.ts", "eslint.config.mjs", ".storybook/**/*", "test-runner-jest.config.ts"]
 }
