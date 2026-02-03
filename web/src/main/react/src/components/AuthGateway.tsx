@@ -1,9 +1,10 @@
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react"
 import { Navigate, useLocation } from "react-router-dom"
 import Routes from "global/Routes"
-import { AUTH_USER_KEY } from "global/constants"
 import { useGlobalStore } from "hooks/useGlobalStore"
 import PageLoadingSpinner from "components/PageLoadingSpinner"
+import apiClient from "api/apiClient"
+import { AuthSessionResponse } from "api/types"
 
 const AuthGateway: FC<PropsWithChildren> = ({ children }) => {
   const location = useLocation()
@@ -11,13 +12,35 @@ const AuthGateway: FC<PropsWithChildren> = ({ children }) => {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!currentUser.username) {
-      const storedUser = localStorage.getItem(AUTH_USER_KEY)
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser))
+    let isMounted = true
+
+    const loadSession = async () => {
+      if (currentUser.username) {
+        setReady(true)
+        return
+      }
+
+      try {
+        const response = await apiClient.get<AuthSessionResponse>("/auth/session")
+        if (isMounted) {
+          setCurrentUser(response.data)
+        }
+      } catch {
+        if (isMounted) {
+          setCurrentUser({ username: "" })
+        }
+      } finally {
+        if (isMounted) {
+          setReady(true)
+        }
       }
     }
-    setReady(true)
+
+    loadSession()
+
+    return () => {
+      isMounted = false
+    }
   }, [currentUser.username, setCurrentUser])
 
   const isAuthenticated = useMemo(() => Boolean(currentUser.username), [currentUser.username])

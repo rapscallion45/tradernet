@@ -14,11 +14,16 @@ export type LoginData = {
 
 /** Login Response payload */
 export type LoginResponse = {
-  token: string
   user: {
     id: number
     username: string
   }
+}
+
+/** Auth session response */
+export type AuthSessionResponse = {
+  id: number
+  username: string
 }
 
 /** Logout response */

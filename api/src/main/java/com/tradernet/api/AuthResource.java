@@ -9,13 +9,19 @@ import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.UserService;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 
 /**
@@ -25,6 +31,10 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
+
+    private static final String SESSION_COOKIE_NAME = "tradernet_session";
+    private static final Duration SESSION_DURATION = Duration.ofHours(8);
+    private static final Map<String, AuthUserDto> SESSIONS = new ConcurrentHashMap<>();
 
     @EJB
     private UserService userService;
@@ -60,16 +70,47 @@ public class AuthResource {
         }
 
         String token = UUID.randomUUID().toString();
-        LoginResponseDto response = new LoginResponseDto(token, AuthUserDto.fromUser(user.get()));
+        AuthUserDto authUser = AuthUserDto.fromUser(user.get());
+        SESSIONS.put(token, authUser);
 
-        return Response.ok(response).build();
+        LoginResponseDto response = new LoginResponseDto(authUser);
+        NewCookie sessionCookie = new NewCookie(SESSION_COOKIE_NAME, token, "/", null, null,
+            (int) SESSION_DURATION.getSeconds(), null, true, true);
+
+        return Response.ok(response)
+            .cookie(sessionCookie)
+            .build();
     }
 
     @POST
     @Path("/logout")
-    public Response logout() {
+    public Response logout(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
+        if (sessionId != null) {
+            SESSIONS.remove(sessionId);
+        }
+        NewCookie clearCookie = new NewCookie(SESSION_COOKIE_NAME, "", "/", null, null, 0, null, true, true);
         return Response.ok(new MessageResponseDto("Logged out"))
+            .cookie(clearCookie)
             .build();
+    }
+
+    @GET
+    @Path("/session")
+    public Response getSession(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(new MessageResponseDto("Not authenticated"))
+                .build();
+        }
+
+        AuthUserDto user = SESSIONS.get(sessionId);
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(new MessageResponseDto("Session expired"))
+                .build();
+        }
+
+        return Response.ok(user).build();
     }
 
     @POST
