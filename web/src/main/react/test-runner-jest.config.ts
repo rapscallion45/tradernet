@@ -14,7 +14,7 @@ module.exports = {
    */
   snapshotSerializers: [
     /** Sets up the custom serializer to preprocess the HTML before it's passed onto the test-runner */
-    './storybook/snapshot-serializer.ts',
+    './src/storybook/snapshot-serializer.ts',
     // @ts-ignore
     ...testRunnerJestConfig.snapshotSerializers,
   ],
