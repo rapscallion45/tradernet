@@ -19,7 +19,7 @@ public class AuthUserDto {
     }
 
     public static AuthUserDto fromUser(UserEntity user) {
-        return new AuthUserDto(user.getId(), user.getUsername());
+        return new AuthUserDto(user.getPk(), user.getUsername());
     }
 
     public long getId() {
