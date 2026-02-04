@@ -46,7 +46,6 @@ const LoginPage: FC = () => {
     <Center my={"xl"}>
       <Card padding={"lg"} w={420}>
         <Stack>
-          <Title order={3}>Welcome to Tradernet</Title>
           {!shouldShowResetForm ? (
             <>
               <LoginForm onSubmit={onSubmit} />

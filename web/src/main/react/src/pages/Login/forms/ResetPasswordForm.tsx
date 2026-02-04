@@ -56,7 +56,7 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, onReset }) =>
         <Image src={TradernetLogo} alt={"Tradernet logo"} h={64} w={"auto"} />
       </Center>
       <Title order={3} ta={"center"}>
-        Tradernet
+        Welcome to Tradernet
       </Title>
       <Title order={4} ta={"center"}>
         Password Expired

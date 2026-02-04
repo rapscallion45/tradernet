@@ -30,7 +30,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
         <Image src={TradernetLogo} alt={"Tradernet logo"} h={64} w={"auto"} />
       </Center>
       <Title order={3} ta={"center"}>
-        Tradernet
+        Welcome to Tradernet
       </Title>
       <Text size={"sm"} ta={"center"}>
         Enter your username and password to continue.
@@ -51,7 +51,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
         autoComplete="current-password"
         w={"100%"}
       />
-      <Button onClick={() => void handleSubmit(onSubmit)()} type={"submit"}>
+      <Button onClick={() => void handleSubmit(onSubmit)()} type={"submit"} fullWidth>
         Log in
       </Button>
     </Stack>
