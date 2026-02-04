@@ -42,8 +42,8 @@ import { IconArrowLeft, IconArrowRight, IconCalendar, IconCaretDown, IconCheck, 
 // leave it on one line, prettier!
 // prettier-ignore
 export const colors = {
-    primary: ["#feeaff", "#f4d2fd", "#e5a4f7", "#d672f1", "#c948ed", "#c12eea", "#be1fea", "#a713d0", "#950bbb", "#8200a4"],
-    secondary: ["#f4ebff", "#e4d1fb", "#c89ef9", "#a967f8", "#913bf7", "#8121f7", "#7916f8", "#680cdd", "#5b07c5", "#4e00ad"],
+    primary: ["#e8f7fd", "#cfeeff", "#b6e6fb", "#9eddf7", "#86d3f2", "#79cded", "#5fb9e4", "#46a6db", "#2f93d2", "#0f7fc7"],
+    secondary: ["#e6edf6", "#c4d2e8", "#9bb1d6", "#708cc3", "#4e6fb2", "#2f61b8", "#2c4d9f", "#1f3e82", "#162e66", "#0e2c5f"],
     navy: ["#ebeffe", "#d3daf8", "#a3b2f4", "#7087f1", "#4763ef", "#314cee", "#2741ef", "#1d33d5", "#152ebf", "#0627a7"],
     blue: ["#ebf8ff", "#d6edfa", "#a7daf8", "#76c6f6", "#55b5f5", "#44abf5", "#3ba5f6", "#2f90db", "#2281c4", "#006fad"],
     teal: ["#e2fffd", "#d2f8f6", "#aaeee9", "#7ee5dd", "#5bddd3", "#43d8cd", "#32d6c9", "#1ebdb1", "#02a99d", "#009389"],
@@ -54,7 +54,7 @@ export const colors = {
     pink: ["#ffe9f7", "#ffd3e6", "#f7a4c8", "#f173a9", "#eb498f", "#e92f7f", "#e82077", "#cf1165", "#ba075a", "#a3004d"],
 }
 const appTheme: MantineThemeOverride = {
-  primaryColor: "secondary",
+  primaryColor: "primary",
   primaryShade: 8,
   // @ts-expect-error it's easier to leave colors untyped, Mantine knows what it's doing.
   colors: colors,
