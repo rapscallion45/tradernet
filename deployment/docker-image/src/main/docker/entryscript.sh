@@ -8,6 +8,12 @@ DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-tradernet}"
 DB_PASSWORD="${DB_PASSWORD:-tradernet}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
+
+if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
+  echo "Warning: unable to create admin user '${ADMIN_USERNAME}'." >&2
+fi
 
 configure_datasource() {
   local driver_name="$1"
