@@ -2,7 +2,7 @@ FROM quay.io/wildfly/wildfly:27.0.1.Final
 
 COPY tradernet.war /opt/jboss/wildfly/standalone/deployments/tradernet.war
 COPY entryscript.sh /bin/entryscript.sh
-COPY modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
+COPY wildfly-modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar
 
 RUN chmod +x /bin/entryscript.sh
