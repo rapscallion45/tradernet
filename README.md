@@ -25,13 +25,13 @@ mvn clean package
 
 ## Run with Docker
 
-The Docker image builds the full Maven project (including the web assets) and deploys the WAR on WildFly.
+The Docker image is built via Maven from the `deployment/docker-image` module, which assembles the WAR and Docker build context.
 
 ### Build and run with Docker
 
 ```bash
-docker build -t tradernet .
-docker run --rm -p 8080:8080 tradernet
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local package
+docker run --rm -p 8080:8080 tradernet/tradernet:local
 ```
 
 Then open `http://localhost:8080` or check the health endpoint at `http://localhost:8080/api/health`.
@@ -39,12 +39,28 @@ Then open `http://localhost:8080` or check the health endpoint at `http://localh
 ### Run with Docker Compose
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
 These commands work with Docker Desktop (which includes Docker Engine and Compose).
 
 The backend WAR includes the web `dist/` output (wired via the `maven-war-plugin`).
+
+### Database configuration (Docker)
+
+The container configures a WildFly datasource on startup. By default it uses PostgreSQL.
+Set environment variables to override connection details:
+
+```
+DB_TYPE=POSTGRES
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=tradernet
+DB_USER=tradernet
+DB_PASSWORD=tradernet
+```
+
+The provided Docker Compose file includes a PostgreSQL service with matching defaults.
 
 ### Build without running the web Maven profile
 
