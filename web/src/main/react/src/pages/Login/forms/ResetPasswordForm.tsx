@@ -3,16 +3,25 @@ import { useForm } from "react-hook-form"
 import { Button, Group, PasswordInput, Stack, Text, Title } from "@mantine/core"
 import apiClient from "api/apiClient"
 
+/**
+ * Reset-password form field data.
+ */
 type ResetPasswordFormData = {
   password: string
   confirmPassword: string
 }
 
+/**
+ * Reset-password form props.
+ */
 type ResetPasswordFormProps = {
   username: string
   onReset: () => void
 }
 
+/**
+ * Inline reset-password form used when the login status indicates an expired password.
+ */
 const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, onReset }) => {
   const {
     register,

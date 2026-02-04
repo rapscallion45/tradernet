@@ -3,10 +3,16 @@ import { useForm } from "react-hook-form"
 import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core"
 import { LoginData } from "api/types"
 
+/**
+ * Login form component.
+ */
 type LoginFormProps = {
   onSubmit: (data: LoginData) => void
 }
 
+/**
+ * Renders the login form and handles validation via react-hook-form.
+ */
 const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
   const {
     register,

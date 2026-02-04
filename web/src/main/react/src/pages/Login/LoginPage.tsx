@@ -1,6 +1,6 @@
 import { FC, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Card, Center, Stack, Title } from "@mantine/core"
+import { Card, Center, Stack, Text, Title } from "@mantine/core"
 import apiClient from "api/apiClient"
 import { useLogin } from "hooks/useAuth"
 import { useGlobalStore } from "hooks/useGlobalStore"
