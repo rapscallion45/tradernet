@@ -1,6 +1,6 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
-import { Title } from "@mantine/core"
+import { Image, Title } from "@mantine/core"
 import { IconHome } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
@@ -10,6 +10,7 @@ import Header from "components/layout/Header/Header"
 import ColorSchemeToggle from "components/layout/ColorSchemeToggle/ColorSchemeToggle"
 import Sidebar from "components/layout/Sidebar/Sidebar"
 import { SidebarItem } from "global/types"
+import TradernetLogo from "assets/tradernet-logo.svg"
 
 /** Define sidebar navigation menu items */
 export const sidebarItems: SidebarItem[] = [
@@ -34,7 +35,7 @@ const Layout: FC = () => {
           LinkComponent={ReactRouterLink}
           linkPropName={"to"}
           logoLinkPath={"/"}
-          rightSection={[<ColorSchemeToggle />, <AccountDrawer />]}
+          rightSection={[<Image src={TradernetLogo} alt={"Tradernet logo"} h={24} w={"auto"} />, <ColorSchemeToggle />, <AccountDrawer />]}
         />
       }
       sidebar={<Sidebar<ReactRouterLinkProps> items={sidebarItems} activePath={location.pathname} LinkComponent={ReactRouterLink} linkPropName={"to"} />}>

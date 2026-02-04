@@ -1,7 +1,8 @@
 import { FC } from "react"
 import { useForm } from "react-hook-form"
-import { Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core"
+import { Button, Center, Image, PasswordInput, Stack, Text, TextInput } from "@mantine/core"
 import { LoginData } from "api/types"
+import TradernetLogo from "assets/tradernet-logo.svg"
 
 /**
  * Login form component.
@@ -25,6 +26,9 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
 
   return (
     <Stack>
+      <Center>
+        <Image src={TradernetLogo} alt={"Tradernet logo"} h={64} w={"auto"} />
+      </Center>
       <Text size={"sm"}>Enter your username and password to continue.</Text>
       <TextInput
         label={"Username"}
