@@ -18,6 +18,10 @@ const LoginPage: FC = () => {
     try {
       const response = await loginMutation.mutateAsync(data)
       setCurrentUser(response.user)
+      if (data.password === "ChangeMe") {
+        navigate(Routes.ResetPassword)
+        return
+      }
       navigate(Routes.Dashboard)
     } catch {
       alert("Login failed")

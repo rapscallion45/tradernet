@@ -3,6 +3,7 @@ import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
 import LoginPage from "pages/Login/LoginPage"
+import ResetPasswordPage from "pages/ResetPassword/ResetPasswordPage"
 import Layout from "components/layout/Layout"
 import AuthGateway from "components/AuthGateway"
 
@@ -56,5 +57,9 @@ export const router = createBrowserRouter([
   {
     path: Routes.Login,
     element: <LoginPage />,
+  },
+  {
+    path: Routes.ResetPassword,
+    element: <ResetPasswordPage />,
   },
 ])
