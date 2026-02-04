@@ -1,7 +1,8 @@
 import { FC, useState } from "react"
 import { useForm } from "react-hook-form"
-import { Button, Group, PasswordInput, Stack, Text, Title } from "@mantine/core"
+import { Button, Center, Group, Image, PasswordInput, Stack, Text, Title } from "@mantine/core"
 import apiClient from "api/apiClient"
+import TradernetLogo from "assets/tradernet-logo.svg"
 
 /**
  * Reset-password form field data.
@@ -50,15 +51,26 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, onReset }) =>
   })
 
   return (
-    <Stack>
-      <Title order={4}>Password Expired</Title>
-      <Text size={"sm"}>Please enter a new password to access the system.</Text>
+    <Stack align={"center"}>
+      <Center>
+        <Image src={TradernetLogo} alt={"Tradernet logo"} h={64} w={"auto"} />
+      </Center>
+      <Title order={3} ta={"center"}>
+        Tradernet
+      </Title>
+      <Title order={4} ta={"center"}>
+        Password Expired
+      </Title>
+      <Text size={"sm"} ta={"center"}>
+        Please enter a new password to access the system.
+      </Text>
       <PasswordInput
         label={"New password"}
         data-testid={"new-password"}
         {...register("password", { required: "Required" })}
         error={errors.password?.message}
         autoComplete="new-password"
+        w={"100%"}
       />
       <PasswordInput
         label={"Confirm password"}
@@ -69,6 +81,7 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, onReset }) =>
         })}
         error={errors.confirmPassword?.message}
         autoComplete="new-password"
+        w={"100%"}
       />
       <Group justify={"flex-end"}>
         <Button onClick={() => void onSubmitPassword()} size={"md"} variant={"filled"}>
