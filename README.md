@@ -62,6 +62,10 @@ DB_PASSWORD=tradernet
 
 The provided Docker Compose file includes a PostgreSQL service with matching defaults.
 
+### Admin user password
+
+On startup the container creates a WildFly admin user. You must set `ADMIN_PASSWORD` to a non-default value or the container will refuse to start (set `ALLOW_DEFAULT_ADMIN_PASSWORD=true` only for local development). 
+
 ### Build without running the web Maven profile
 
 ```bash
