@@ -73,7 +73,8 @@ public class AuthResource {
         AuthUserDto authUser = AuthUserDto.fromUser(user.get());
         SESSIONS.put(token, authUser);
 
-        LoginResponseDto response = new LoginResponseDto(authUser);
+        boolean mustResetPassword = "ChangeMe".equals(password);
+        LoginResponseDto response = new LoginResponseDto(authUser, mustResetPassword);
         NewCookie sessionCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value(token)
             .path("/")

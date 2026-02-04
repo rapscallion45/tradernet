@@ -18,7 +18,7 @@ const LoginPage: FC = () => {
     try {
       const response = await loginMutation.mutateAsync(data)
       setCurrentUser(response.user)
-      if (data.password === "ChangeMe") {
+      if (response.mustResetPassword) {
         navigate(Routes.ResetPassword)
         return
       }

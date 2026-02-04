@@ -18,6 +18,7 @@ export type LoginResponse = {
     id: number
     username: string
   }
+  mustResetPassword: boolean
 }
 
 /** Auth session response */
