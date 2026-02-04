@@ -1,5 +1,7 @@
 import { FC } from "react"
-import { Container, Flex, Loader, Text, Title } from "@mantine/core"
+import { Card, Group, Loader, Stack, Text, Title } from "@mantine/core"
+import CenterOnPage from "components/CenterOnPage"
+import logo from "assets/tradernet-logo.svg"
 
 /**
  * Page Loading Spinner props
@@ -13,19 +15,20 @@ type PageLoadingSpinnerProps = {
  * Page Loading spinner component
  */
 const PageLoadingSpinner: FC<PageLoadingSpinnerProps> = ({ message }) => (
-  <Container>
-    <Flex direction={"column"} h={"100vh"} justify={"center"} align={"center"} gap={"md"}>
-      <Flex align={"center"} gap={"sm"}>
-        <img src={"/logo.png"} alt={"Tradernet logo"} width={100} />
-        <Title>Tradernet</Title>
-      </Flex>
-      <Loader />
-      <Text fw={600} mih={30}>
-        {message}
-      </Text>
-    </Flex>
-    mpipe
-  </Container>
+  <CenterOnPage>
+    <Card p="lg">
+      <Stack align={"center"}>
+        <Group justify={"center"}>
+          <img src={logo} alt={"Tradernet logo"} width={50} />
+          <Title fw={400}>Tradernet</Title>
+        </Group>
+        <Loader color={"secondary"} />
+        <Text fw={600} ta={"center"}>
+          {message ?? "Initialising..."}
+        </Text>
+      </Stack>
+    </Card>
+  </CenterOnPage>
 )
 
 export default PageLoadingSpinner

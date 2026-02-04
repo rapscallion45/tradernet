@@ -1,4 +1,4 @@
-import { getJestConfig } from '@storybook/test-runner';
+import { getJestConfig } from "@storybook/test-runner"
 
 /** The default Jest configuration comes from @storybook/test-runner */
 const testRunnerJestConfig = getJestConfig()
@@ -14,7 +14,7 @@ module.exports = {
    */
   snapshotSerializers: [
     /** Sets up the custom serializer to preprocess the HTML before it's passed onto the test-runner */
-    './src/storybook/snapshot-serializer.ts',
+    "./src/storybook/snapshot-serializer.ts",
     // @ts-ignore
     ...testRunnerJestConfig.snapshotSerializers,
   ],

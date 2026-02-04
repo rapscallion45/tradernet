@@ -1,24 +1,43 @@
 import { FC } from "react"
-import { Box, Button, Container, Flex, Text, Title } from "@mantine/core"
+import { Badge, Card, Group, Stack, Text, Title } from "@mantine/core"
+import logo from "assets/tradernet-logo.svg"
+import CenterOnPage from "components/CenterOnPage"
+import Button from "components/Button/Button"
+
+/**
+ * Main Error Boundary props
+ * @prop title - title of the error
+ * @prop message - error message string
+ */
+type MainErrorBoundaryProps = {
+  title?: string
+  message?: string
+}
 
 /**
  * Highest error boundary in the application as a last fallback
  */
-const MainErrorBoundary: FC = () => (
-  <Container>
-    <Flex direction={"column"} h={"100vh"} justify={"center"} align={"center"}>
-      <Flex align={"center"} gap={"sm"}>
-        <img src={"/logo.png"} alt={"Tradernet logo"} width={100} />
-        <Title>Tradernet</Title>
-      </Flex>
-      <Text fw={600} mt={"md"}>
-        An unexpected error occurred.
-      </Text>
-      <Box mt={"md"}>
+const MainErrorBoundary: FC<MainErrorBoundaryProps> = ({ title, message }) => (
+  <CenterOnPage>
+    <Card p="lg">
+      <Stack>
+        <Group justify={"center"}>
+          <img src={logo} alt={"Tradernet logo"} width={50} />
+          <Title fw={400}>Tradernet</Title>
+        </Group>
+        <Group justify={"center"}>
+          <Title order={4} ta={"center"}>
+            {title ?? "Error"}
+          </Title>
+          <Badge color="red">ERROR</Badge>
+        </Group>
+        <Text fw={600} ta={"center"}>
+          {message ?? "An unexpected error occurred."}
+        </Text>
         <Button onClick={() => window.location.reload()}>Retry</Button>
-      </Box>
-    </Flex>
-  </Container>
+      </Stack>
+    </Card>
+  </CenterOnPage>
 )
 
 export default MainErrorBoundary

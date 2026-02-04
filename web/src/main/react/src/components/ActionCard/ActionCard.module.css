@@ -1,22 +1,22 @@
 .card {
-    composes: animate from "../../global/animation.module.css";
-    cursor: pointer;
+  composes: animate from "../../global/animation.module.css";
+  cursor: pointer;
 
-    /* Hide the secondary action by default */
+  /* Hide the secondary action by default */
 
+  .secondarySection {
+    display: none;
+  }
+
+  &:hover {
     .secondarySection {
-        display: none;
+      display: flex;
     }
+  }
 
-    &:hover {
-        .secondarySection {
-            display: flex;
-        }
-    }
-
-    &[data-modified] {
-        box-shadow: 0 0 0.3rem 0 light-dark(var(--mantine-color-secondary-2), var(--mantine-color-secondary-4));
-    }
+  &[data-modified] {
+    box-shadow: 0 0 0.3rem 0 light-dark(var(--mantine-color-secondary-2), var(--mantine-color-secondary-4));
+  }
 }
 
 /*
@@ -24,37 +24,37 @@
   https://blog.logrocket.com/ways-truncate-text-css/#webkit-line-clamp-multi-line-text-truncation
 */
 .title {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .secondaryText {
-    width: 90%;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+  width: 90%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .disabled {
-    cursor: not-allowed;
-    background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark));
-    color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+  cursor: not-allowed;
+  background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark));
+  color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
 }
 
 .featured {
-    background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
-    color: var(--mantine-color-white);
+  background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  color: var(--mantine-color-white);
 
-    &:hover {
-        background-color: light-dark(var(--solid-purple-color-hover-light), var(--solid-purple-color-hover-dark));
-    }
+  &:hover {
+    background-color: light-dark(var(--solid-purple-color-hover-light), var(--solid-purple-color-hover-dark));
+  }
 }
 
 .regular {
-    &:hover {
-        background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
-    }
+  &:hover {
+    background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+  }
 }

@@ -1,20 +1,20 @@
 .title {
-    font-size: 3.2rem;
-    color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
-    line-height: 1;
+  font-size: 3.2rem;
+  color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  line-height: 1;
 }
 
 .root {
-    composes: animate from "../../global/animation.module.css";
-    cursor: pointer;
+  composes: animate from "../../global/animation.module.css";
+  cursor: pointer;
 
-    &[data-clickable="true"] {
-        &:hover {
-            background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
-        }
+  &[data-clickable="true"] {
+    &:hover {
+      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
     }
+  }
 
-    &[data-clickable="false"] {
-        cursor: unset;
-    }
+  &[data-clickable="false"] {
+    cursor: unset;
+  }
 }

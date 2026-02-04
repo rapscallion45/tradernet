@@ -1,22 +1,22 @@
 .root {
-    composes: animate from "../../global/animation.module.css";
-    composes: filled from "../../global/buttons.module.css";
-    composes: outline from "../../global/buttons.module.css";
-    composes: subtle from "../../global/buttons.module.css";
+  composes: animate from "../../global/animation.module.css";
+  composes: filled from "../../global/buttons.module.css";
+  composes: outline from "../../global/buttons.module.css";
+  composes: subtle from "../../global/buttons.module.css";
 }
 
 /* Slightly increase spacing around icons */
 .section {
-    &[data-position="right"] {
-        margin-inline-start: var(--mantine-spacing-sm);
-    }
+  &[data-position="right"] {
+    margin-inline-start: var(--mantine-spacing-sm);
+  }
 
-    &[data-position="left"] {
-        margin-inline-end: var(--mantine-spacing-sm);
-    }
+  &[data-position="left"] {
+    margin-inline-end: var(--mantine-spacing-sm);
+  }
 }
 
 /* Text is always the same size */
 .label {
-    font-size: var(--mantine-font-size-sm);
+  font-size: var(--mantine-font-size-sm);
 }

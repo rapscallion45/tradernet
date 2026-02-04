@@ -1,5 +1,5 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from "eslint-plugin-storybook";
+import storybook from "eslint-plugin-storybook"
 
 import { fixupConfigRules } from "@eslint/compat"
 import react from "eslint-plugin-react"
@@ -21,32 +21,37 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 })
 
-export default [{
-  ignores: ["**/dist", "**/.eslintrc.cjs"],
-}, ...fixupConfigRules(compat.extends("eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:react-hooks/recommended", "prettier")), {
-  plugins: {
-    react,
-    "react-refresh": reactRefresh,
-    html,
-    prettier,
+export default [
+  {
+    ignores: ["**/dist", "**/.eslintrc.cjs"],
   },
-
-  languageOptions: {
-    globals: {
-      ...globals.browser,
+  ...fixupConfigRules(compat.extends("eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:react-hooks/recommended", "prettier")),
+  {
+    plugins: {
+      react,
+      "react-refresh": reactRefresh,
+      html,
+      prettier,
     },
 
-    parser: tsParser,
-  },
-
-  rules: {
-    "react-refresh/only-export-components": [
-      "off",
-      {
-        allowConstantExport: true,
+    languageOptions: {
+      globals: {
+        ...globals.browser,
       },
-    ],
-    "react/jsx-curly-brace-presence": ["error", { props: "always" }],
-    "prettier/prettier": "warn",
+
+      parser: tsParser,
+    },
+
+    rules: {
+      "react-refresh/only-export-components": [
+        "off",
+        {
+          allowConstantExport: true,
+        },
+      ],
+      "react/jsx-curly-brace-presence": ["error", { props: "always" }],
+      "prettier/prettier": "warn",
+    },
   },
-}, ...storybook.configs["flat/recommended"]];
+  ...storybook.configs["flat/recommended"],
+]

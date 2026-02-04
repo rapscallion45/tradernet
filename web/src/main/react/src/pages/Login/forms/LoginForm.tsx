@@ -1,11 +1,13 @@
 import { FC } from "react"
-import { useForm } from "react-hook-form"
-import { Button, Center, Image, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core"
+import { useFormContext } from "react-hook-form"
+import { Center, Image, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core"
 import { LoginData } from "api/types"
 import TradernetLogo from "assets/tradernet-logo.svg"
+import Button from "components/Button/Button"
 
 /**
- * Login form component.
+ * Login form component props
+ * @prop onSubmit - form submission handler
  */
 type LoginFormProps = {
   onSubmit: (data: LoginData) => void
@@ -19,15 +21,12 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginData>({
-    mode: "onSubmit",
-    reValidateMode: "onChange",
-  })
+  } = useFormContext<LoginData>()
 
   return (
     <Stack align={"center"}>
       <Center>
-        <Image src={TradernetLogo} alt={"Tradernet logo"} h={64} w={"auto"} />
+        <Image src={TradernetLogo} alt={"Tradernet logo"} h={100} w={"auto"} />
       </Center>
       <Title order={3} ta={"center"}>
         Welcome to Tradernet
