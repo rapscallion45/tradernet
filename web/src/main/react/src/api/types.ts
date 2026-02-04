@@ -14,10 +14,16 @@ export type LoginData = {
 
 /** Login Response payload */
 export type LoginResponse = {
-  user: {
-    id: number
-    username: string
-  }
+  status: LoginStatus
+}
+
+export enum LoginStatus {
+  Success = "SUCCESS",
+  IncorrectCredentials = "INCORRECT_CREDENTIALS",
+  UserNotFound = "USER_NOT_FOUND",
+  InvalidRequest = "INVALID_REQUEST",
+  AccountPasswordExpired = "ACCOUNT_PASSWORD_EXPIRED",
+  Unknown = "UNKNOWN",
 }
 
 /** Auth session response */

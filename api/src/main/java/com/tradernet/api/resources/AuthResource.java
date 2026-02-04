@@ -4,6 +4,7 @@ import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.ForgotPasswordRequestDto;
 import com.tradernet.user.dto.LoginRequestDto;
 import com.tradernet.user.dto.LoginResponseDto;
+import com.tradernet.user.dto.LoginStatus;
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.UserService;
@@ -43,43 +44,39 @@ public class AuthResource {
     @Path("/login")
     public Response login(LoginRequestDto request) {
         if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new MessageResponseDto("Login payload is required"))
-                .build();
+            return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
         }
 
         String username = request.getUsername();
         String password = request.getPassword();
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new MessageResponseDto("username and password are required"))
-                .build();
+            return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
         }
 
         if (!userService.authenticate(username, password)) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new MessageResponseDto("Invalid credentials"))
-                .build();
+            return Response.ok(new LoginResponseDto(LoginStatus.INCORRECT_CREDENTIALS)).build();
         }
 
         Optional<UserEntity> user = userService.findByUsername(username);
         if (user.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
-                .entity(new MessageResponseDto("User not found"))
-                .build();
+            return Response.ok(new LoginResponseDto(LoginStatus.USER_NOT_FOUND)).build();
         }
 
         String token = UUID.randomUUID().toString();
         AuthUserDto authUser = AuthUserDto.fromUser(user.get());
         SESSIONS.put(token, authUser);
 
-        LoginResponseDto response = new LoginResponseDto(authUser);
         NewCookie sessionCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value(token)
             .path("/")
             .maxAge((int) SESSION_DURATION.getSeconds())
             .httpOnly(true)
             .build();
+
+        LoginStatus status = "ChangeMe".equals(password)
+            ? LoginStatus.ACCOUNT_PASSWORD_EXPIRED
+            : LoginStatus.SUCCESS;
+        LoginResponseDto response = new LoginResponseDto(status);
 
         return Response.ok(response)
             .cookie(sessionCookie)
