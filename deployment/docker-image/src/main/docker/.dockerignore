@@ -1,0 +1,6 @@
+*.md
+.git
+.gitignore
+node_modules
+**/node_modules
+**/target

@@ -5,20 +5,21 @@ package com.tradernet.user.dto;
  */
 public class LoginResponseDto {
 
-    private AuthUserDto user;
+    private LoginStatus status;
 
     public LoginResponseDto() {
     }
 
-    public LoginResponseDto(AuthUserDto user) {
-        this.user = user;
+    public LoginResponseDto(LoginStatus status) {
+        this.status = status;
     }
 
-    public AuthUserDto getUser() {
-        return user;
+    public LoginStatus getStatus() {
+        return status;
     }
 
-    public void setUser(AuthUserDto user) {
-        this.user = user;
+    public void setStatus(LoginStatus status) {
+        this.status = status;
     }
+
 }

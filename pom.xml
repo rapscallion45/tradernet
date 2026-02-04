@@ -28,6 +28,8 @@
         <module>services/signal-service</module>
         <module>services/facade-service</module>
         <module>api</module>
+        <module>deployment/wildfly-modules</module>
+        <module>deployment/docker-image</module>
     </modules>
 
     <properties>
