@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -73,8 +74,6 @@ public class AuthResource {
         AuthUserDto authUser = AuthUserDto.fromUser(user.get());
         SESSIONS.put(token, authUser);
 
-        boolean mustResetPassword = "ChangeMe".equals(password);
-        LoginResponseDto response = new LoginResponseDto(authUser, mustResetPassword);
         NewCookie sessionCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value(token)
             .path("/")
@@ -82,6 +81,15 @@ public class AuthResource {
             .httpOnly(true)
             .build();
 
+        boolean mustResetPassword = "ChangeMe".equals(password);
+        if (mustResetPassword) {
+            return Response.status(Response.Status.SEE_OTHER)
+                .location(URI.create("/tradernet/reset-password"))
+                .cookie(sessionCookie)
+                .build();
+        }
+
+        LoginResponseDto response = new LoginResponseDto(authUser);
         return Response.ok(response)
             .cookie(sessionCookie)
             .build();

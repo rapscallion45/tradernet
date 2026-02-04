@@ -17,11 +17,12 @@ const LoginPage: FC = () => {
   const onSubmit = async (data: LoginData) => {
     try {
       const response = await loginMutation.mutateAsync(data)
-      setCurrentUser(response.user)
-      if (response.mustResetPassword) {
-        navigate(Routes.ResetPassword)
+      const responseUrl = response.request?.responseURL
+      if (responseUrl?.includes(Routes.ResetPassword)) {
+        window.location.assign(responseUrl)
         return
       }
+      setCurrentUser(response.data.user)
       navigate(Routes.Dashboard)
     } catch {
       alert("Login failed")
