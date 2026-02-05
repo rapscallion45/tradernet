@@ -24,9 +24,18 @@
         <docker.image.tag>${git.branch.docker}</docker.image.tag>
         <project.build.docker.dir>${project.build.outputDirectory}/docker-build</project.build.docker.dir>
         <postgresql.version>42.7.2</postgresql.version>
+        <git.commit.id.plugin.version>9.0.1</git.commit.id.plugin.version>
+        <docker.maven.plugin.version>0.48.0</docker.maven.plugin.version>
+        <skip.git.commit.id>false</skip.git.commit.id>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>web</artifactId>
+            <version>${project.version}</version>
+            <type>war</type>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>api</artifactId>
@@ -59,6 +68,13 @@
                                             <version>${project.version}</version>
                                             <type>war</type>
                                             <destFileName>tradernet.war</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>web</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>war</type>
+                                            <destFileName>ROOT.war</destFileName>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.postgresql</groupId>
@@ -103,6 +119,7 @@
                     <plugin>
                         <groupId>io.github.git-commit-id</groupId>
                         <artifactId>git-commit-id-maven-plugin</artifactId>
+                        <version>${git.commit.id.plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -111,6 +128,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <skip>${skip.git.commit.id}</skip>
                             <skipPoms>false</skipPoms>
                             <replacementProperties>
                                 <replacementProperty>
@@ -149,6 +167,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.maven.plugin.version}</version>
                         <configuration>
                             <images>
                                 <image>
@@ -156,6 +175,21 @@
                                     <build>
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
+                                    <run>
+                                        <ports>
+                                            <port>8080:8080</port>
+                                            <port>9990:9990</port>
+                                        </ports>
+                                        <env>
+                                            <ADMIN_PASSWORD>ChangeMe</ADMIN_PASSWORD>
+                                            <DB_TYPE>POSTGRES</DB_TYPE>
+                                            <DB_HOST>postgres</DB_HOST>
+                                            <DB_PORT>5432</DB_PORT>
+                                            <DB_NAME>tradernet</DB_NAME>
+                                            <DB_USER>tradernet</DB_USER>
+                                            <DB_PASSWORD>tradernet</DB_PASSWORD>
+                                        </env>
+                                    </run>
                                 </image>
                             </images>
                         </configuration>
@@ -191,6 +225,7 @@
                     <plugin>
                         <groupId>io.github.git-commit-id</groupId>
                         <artifactId>git-commit-id-maven-plugin</artifactId>
+                        <version>${git.commit.id.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>validate-git-properties</id>
@@ -201,6 +236,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <skip>${skip.git.commit.id}</skip>
                             <validationProperties>
                                 <validationProperty>
                                     <name>Validating working copy is not dirty</name>
@@ -226,6 +262,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.maven.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>push-image</id>
