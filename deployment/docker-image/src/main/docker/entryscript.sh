@@ -21,9 +21,27 @@ configure_datasource() {
   local driver_class="$3"
   local driver_module="$4"
 
-  "$JBOSS_HOME/bin/jboss-cli.sh" --embed-server --std-out=echo --commands=
+  "$JBOSS_HOME/bin/jboss-cli.sh" --connect --std-out=echo --commands=
 "/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),
 /subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
+}
+
+start_server() {
+  "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
+  local server_pid=$!
+
+  for _ in {1..30}; do
+    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" >/dev/null 2>&1; then
+      echo "WildFly management endpoint is ready."
+      echo "${server_pid}"
+      return
+    fi
+    sleep 1
+  done
+
+  echo "Error: WildFly management endpoint did not become ready in time." >&2
+  kill "${server_pid}" >/dev/null 2>&1 || true
+  exit 1
 }
 
 case "${DB_TYPE}" in
@@ -36,4 +54,5 @@ case "${DB_TYPE}" in
     ;;
 esac
 
-exec "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0
+SERVER_PID="$(start_server)"
+wait "${SERVER_PID}"
