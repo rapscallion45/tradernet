@@ -1,0 +1,31 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build Test Docker Image" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myGeneralSettings" />
+      <option name="myRunnerSettings" />
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="workingDirPath" value="$PROJECT_DIR$" />
+          <option name="goals">
+            <list>
+              <option value="-pl" />
+              <option value="deployment/docker-image" />
+              <option value="-am" />
+              <option value="-Pbuild-image" />
+              <option value="-Ddocker.image.tag=local-test" />
+              <option value="package" />
+            </list>
+          </option>
+          <option name="profiles">
+            <set />
+          </option>
+          <option name="projects">
+            <set />
+          </option>
+          <option name="resolveToWorkspace" value="false" />
+        </MavenRunnerParameters>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>

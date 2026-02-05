@@ -34,6 +34,32 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local packa
 docker run --rm -p 8080:8080 tradernet/tradernet:local
 ```
 
+### Build and run the test container (Docker Desktop run configuration)
+
+Use this configuration to build the image and run it locally with explicit env vars (including the required admin password).
+
+**Build command**
+
+```bash
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package
+```
+
+**Run configuration**
+
+```bash
+docker run --rm \
+  --name tradernet-test \
+  -p 8080:8080 \
+  -e ADMIN_PASSWORD=local-admin-password \
+  -e DB_TYPE=POSTGRES \
+  -e DB_HOST=postgres \
+  -e DB_PORT=5432 \
+  -e DB_NAME=tradernet \
+  -e DB_USER=tradernet \
+  -e DB_PASSWORD=tradernet \
+  tradernet/tradernet:local-test
+```
+
 Then open `http://localhost:8080` or check the health endpoint at `http://localhost:8080/api/health`.
 
 ### Run with Docker Compose
