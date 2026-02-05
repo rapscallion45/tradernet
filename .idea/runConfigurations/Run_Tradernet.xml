@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Test Docker Image" type="MavenRunConfiguration" factoryName="Maven">
+  <configuration default="false" name="Run Tradernet" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
       <option name="myRunnerSettings" />
@@ -14,6 +14,7 @@
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
               <option value="package" />
+              <option value="io.fabric8:docker-maven-plugin:start" />
             </list>
           </option>
           <option name="profiles">

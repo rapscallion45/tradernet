@@ -5,7 +5,7 @@ import { ApiRequestWithBaseUrl, ApiResponse, ClientAuthConfiguration, GlobalErro
 const constructAxiosInstance = (baseURL: string) => {
   /** axios client config */
   const axiosBaseConfig = {
-    baseURL: `/tradernet`,
+    baseURL: `/api`,
     paramsSerializer: {
       encode: (param: string | number | boolean) => encodeURIComponent(param),
     },
