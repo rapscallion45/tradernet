@@ -188,6 +188,66 @@
         </profile>
 
         <profile>
+            <id>run-test-container</id>
+            <properties>
+                <docker.image.tag>local-test</docker.image.tag>
+                <test.container.name>tradernet-test</test.container.name>
+                <test.container.port>8080</test.container.port>
+                <test.container.admin.password>local-admin-password</test.container.admin.password>
+                <test.container.db.type>POSTGRES</test.container.db.type>
+                <test.container.db.host>postgres</test.container.db.host>
+                <test.container.db.port>5432</test.container.db.port>
+                <test.container.db.name>tradernet</test.container.db.name>
+                <test.container.db.user>tradernet</test.container.db.user>
+                <test.container.db.password>tradernet</test.container.db.password>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>run-test-container</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>run</argument>
+                                        <argument>--rm</argument>
+                                        <argument>--name</argument>
+                                        <argument>${test.container.name}</argument>
+                                        <argument>-p</argument>
+                                        <argument>${test.container.port}:8080</argument>
+                                        <argument>-e</argument>
+                                        <argument>ADMIN_PASSWORD=${test.container.admin.password}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_TYPE=${test.container.db.type}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_HOST=${test.container.db.host}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_PORT=${test.container.db.port}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_NAME=${test.container.db.name}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_USER=${test.container.db.user}</argument>
+                                        <argument>-e</argument>
+                                        <argument>DB_PASSWORD=${test.container.db.password}</argument>
+                                        <argument>${docker.image.name}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>tag-release-image</id>
             <properties>
                 <docker.image.tag>${git.closest.tag.name}</docker.image.tag>
