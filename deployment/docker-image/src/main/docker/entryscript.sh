@@ -21,9 +21,7 @@ configure_datasource() {
   local driver_class="$3"
   local driver_module="$4"
 
-  "$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands=
-"/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),
-/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
+  "$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
 }
 
 start_server() {
