@@ -164,6 +164,21 @@
                                     <build>
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
+                                    <run>
+                                        <name>tradernet-test</name>
+                                        <ports>
+                                            <port>8080:8080</port>
+                                        </ports>
+                                        <env>
+                                            <ADMIN_PASSWORD>ChangeMe</ADMIN_PASSWORD>
+                                            <DB_TYPE>POSTGRES</DB_TYPE>
+                                            <DB_HOST>postgres</DB_HOST>
+                                            <DB_PORT>5432</DB_PORT>
+                                            <DB_NAME>tradernet</DB_NAME>
+                                            <DB_USER>tradernet</DB_USER>
+                                            <DB_PASSWORD>tradernet</DB_PASSWORD>
+                                        </env>
+                                    </run>
                                 </image>
                             </images>
                         </configuration>
