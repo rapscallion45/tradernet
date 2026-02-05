@@ -14,7 +14,7 @@
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
               <option value="package" />
-              <option value="docker:start" />
+              <option value="io.fabric8:docker-maven-plugin:start" />
             </list>
           </option>
           <option name="profiles">

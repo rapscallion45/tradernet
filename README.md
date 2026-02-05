@@ -47,7 +47,7 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 **Maven build + run command**
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package docker:start
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package io.fabric8:docker-maven-plugin:start
 ```
 
 In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Tradernet** (build + run).

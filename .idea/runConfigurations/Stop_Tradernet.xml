@@ -13,7 +13,7 @@
               <option value="-am" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
-              <option value="docker:stop" />
+              <option value="io.fabric8:docker-maven-plugin:stop" />
             </list>
           </option>
           <option name="profiles">
