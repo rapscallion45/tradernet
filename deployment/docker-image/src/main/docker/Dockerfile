@@ -1,4 +1,4 @@
-FROM quay.io/wildfly/wildfly:27.0.1.Final
+FROM quay.io/wildfly/wildfly:27.0.1.Final-jdk11
 
 COPY tradernet.war /opt/jboss/wildfly/standalone/deployments/tradernet.war
 COPY entryscript.sh /bin/entryscript.sh
