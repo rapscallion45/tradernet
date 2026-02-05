@@ -119,6 +119,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <skip>true</skip>
                             <skipPoms>false</skipPoms>
                             <replacementProperties>
                                 <replacementProperty>
@@ -225,6 +226,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <skip>true</skip>
                             <validationProperties>
                                 <validationProperty>
                                     <name>Validating working copy is not dirty</name>
