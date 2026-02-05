@@ -24,6 +24,7 @@
         <docker.image.tag>${git.branch.docker}</docker.image.tag>
         <project.build.docker.dir>${project.build.outputDirectory}/docker-build</project.build.docker.dir>
         <postgresql.version>42.7.2</postgresql.version>
+        <git.commit.id.plugin.version>9.0.1</git.commit.id.plugin.version>
     </properties>
 
     <dependencies>
@@ -109,6 +110,7 @@
                     <plugin>
                         <groupId>io.github.git-commit-id</groupId>
                         <artifactId>git-commit-id-maven-plugin</artifactId>
+                        <version>${git.commit.id.plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -197,6 +199,7 @@
                     <plugin>
                         <groupId>io.github.git-commit-id</groupId>
                         <artifactId>git-commit-id-maven-plugin</artifactId>
+                        <version>${git.commit.id.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>validate-git-properties</id>
