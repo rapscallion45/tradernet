@@ -2,6 +2,7 @@ FROM quay.io/wildfly/wildfly:27.0.1.Final-jdk11
 
 COPY ROOT.war /opt/jboss/wildfly/standalone/deployments/ROOT.war
 COPY tradernet.war /opt/jboss/wildfly/standalone/deployments/tradernet.war
+COPY data-model.jar /opt/jboss/wildfly/standalone/deployments/data-model.jar
 COPY order-service.jar /opt/jboss/wildfly/standalone/deployments/order-service.jar
 COPY trade-service.jar /opt/jboss/wildfly/standalone/deployments/trade-service.jar
 COPY user-service.jar /opt/jboss/wildfly/standalone/deployments/user-service.jar
@@ -9,6 +10,7 @@ COPY signal-service.jar /opt/jboss/wildfly/standalone/deployments/signal-service
 COPY facade-service.jar /opt/jboss/wildfly/standalone/deployments/facade-service.jar
 RUN touch /opt/jboss/wildfly/standalone/deployments/ROOT.war.dodeploy \
     && touch /opt/jboss/wildfly/standalone/deployments/tradernet.war.dodeploy \
+    && touch /opt/jboss/wildfly/standalone/deployments/data-model.jar.dodeploy \
     && touch /opt/jboss/wildfly/standalone/deployments/order-service.jar.dodeploy \
     && touch /opt/jboss/wildfly/standalone/deployments/trade-service.jar.dodeploy \
     && touch /opt/jboss/wildfly/standalone/deployments/user-service.jar.dodeploy \
