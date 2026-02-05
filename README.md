@@ -51,6 +51,7 @@ mvn -pl deployment/docker-image -am -Pbuild-image,run-test-container verify
 ```
 
 You can override the admin password or database settings with `-Dtest.container.admin.password=...` or other `test.container.*` properties.
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Tradernet** (build + run).
 
 **Run configuration**
 
