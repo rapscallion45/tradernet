@@ -25,6 +25,7 @@
         <project.build.docker.dir>${project.build.outputDirectory}/docker-build</project.build.docker.dir>
         <postgresql.version>42.7.2</postgresql.version>
         <git.commit.id.plugin.version>9.0.1</git.commit.id.plugin.version>
+        <docker.maven.plugin.version>0.48.0</docker.maven.plugin.version>
     </properties>
 
     <dependencies>
@@ -158,6 +159,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.maven.plugin.version}</version>
                         <configuration>
                             <images>
                                 <image>
@@ -252,6 +254,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
+                        <version>${docker.maven.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>push-image</id>
