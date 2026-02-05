@@ -10,12 +10,6 @@ DB_USER="${DB_USER:-tradernet}"
 DB_PASSWORD="${DB_PASSWORD:-tradernet}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
-ALLOW_DEFAULT_ADMIN_PASSWORD="${ALLOW_DEFAULT_ADMIN_PASSWORD:-false}"
-
-if [[ "${ADMIN_PASSWORD}" == "ChangeMe" && "${ALLOW_DEFAULT_ADMIN_PASSWORD}" != "true" ]]; then
-  echo "Error: ADMIN_PASSWORD is still the default. Set ADMIN_PASSWORD to a new value (or set ALLOW_DEFAULT_ADMIN_PASSWORD=true to bypass in dev)." >&2
-  exit 1
-fi
 
 if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
   echo "Warning: unable to create admin user '${ADMIN_USERNAME}'." >&2
