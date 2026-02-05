@@ -1,6 +1,8 @@
 FROM quay.io/wildfly/wildfly:27.0.1.Final-jdk11
 
 COPY tradernet.war /opt/jboss/wildfly/standalone/deployments/ROOT.war
+RUN touch /opt/jboss/wildfly/standalone/deployments/ROOT.war.dodeploy \
+    && rm -rf /opt/jboss/wildfly/welcome-content
 COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar
@@ -20,6 +22,6 @@ ENV DB_TYPE=POSTGRES \
     DB_USER=tradernet \
     DB_PASSWORD=tradernet
 
-EXPOSE 8080
+EXPOSE 8080 9990
 
 ENTRYPOINT ["/bin/entryscript.sh"]

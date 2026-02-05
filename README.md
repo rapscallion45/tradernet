@@ -51,7 +51,7 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 ```
 
 In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Tradernet** (build + run).
-The Maven run uses the docker-maven-plugin run configuration to publish port 8080 and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
+The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**
 
