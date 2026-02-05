@@ -11,8 +11,10 @@
               <option value="-pl" />
               <option value="deployment/docker-image" />
               <option value="-am" />
-              <option value="-Pbuild-image,run-test-container" />
-              <option value="verify" />
+              <option value="-Pbuild-image" />
+              <option value="-Ddocker.image.tag=local-test" />
+              <option value="package" />
+              <option value="docker:start" />
             </list>
           </option>
           <option name="profiles">
