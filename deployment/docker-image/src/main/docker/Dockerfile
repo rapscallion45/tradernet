@@ -5,7 +5,9 @@ COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar
 
+USER root
 RUN chmod +x /bin/entryscript.sh
+USER jboss
 
 LABEL org.opencontainers.image.title="Tradernet"
 LABEL org.opencontainers.image.version="${project.version}"
