@@ -9,11 +9,13 @@ target/
 # ========================
 # IntelliJ
 # ========================
-.idea/
+.idea/*
 *.iml
 *.iws
 *.ipr
 out/
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml
 
 # ========================
 # Eclipse
