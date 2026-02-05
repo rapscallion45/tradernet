@@ -166,7 +166,7 @@
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
                                     <run>
-                                        <name>tradernet-test</name>
+                                        <containerName>tradernet-test</containerName>
                                         <ports>
                                             <port>8080:8080</port>
                                         </ports>
