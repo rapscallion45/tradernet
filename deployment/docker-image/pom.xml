@@ -42,6 +42,36 @@
             <version>${project.version}</version>
             <type>war</type>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>order-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>trade-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>user-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>signal-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>facade-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -75,6 +105,41 @@
                                             <version>${project.version}</version>
                                             <type>war</type>
                                             <destFileName>ROOT.war</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>order-service</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>ejb</type>
+                                            <destFileName>order-service.jar</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>trade-service</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>ejb</type>
+                                            <destFileName>trade-service.jar</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>user-service</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>ejb</type>
+                                            <destFileName>user-service.jar</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>signal-service</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>ejb</type>
+                                            <destFileName>signal-service.jar</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>facade-service</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>ejb</type>
+                                            <destFileName>facade-service.jar</destFileName>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.postgresql</groupId>
