@@ -44,15 +44,17 @@ start_server() {
   exit 1
 }
 
+SERVER_PID="$(start_server)"
+
 case "${DB_TYPE}" in
   POSTGRES)
     configure_datasource "postgresql" "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" "org.postgresql.Driver" "org.postgresql"
     ;;
   *)
     echo "Unsupported DB_TYPE '${DB_TYPE}'. Supported values: POSTGRES." >&2
+    kill "${SERVER_PID}" >/dev/null 2>&1 || true
     exit 1
     ;;
 esac
 
-SERVER_PID="$(start_server)"
 wait "${SERVER_PID}"
