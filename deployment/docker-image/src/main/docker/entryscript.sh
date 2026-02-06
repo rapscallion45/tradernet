@@ -21,12 +21,23 @@ configure_datasource() {
   local driver_class="$3"
   local driver_module="$4"
 
-  "$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
+  local cli_output
+  if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)" 2>&1)"; then
+    echo "Error: failed to configure TradernetDS datasource." >&2
+    echo "${cli_output}" >&2
+    return 1
+  fi
+
+  echo "${cli_output}"
 }
 
 ensure_datasource() {
-  if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
+  local cli_output
+  if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" 2>&1)"; then
     echo "Error: TradernetDS datasource is not available after configuration." >&2
+    echo "${cli_output}" >&2
+    echo "Datasource subsystem snapshot:" >&2
+    "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources:read-resource(recursive=true)" >&2 || true
     kill "${SERVER_PID}" >/dev/null 2>&1 || true
     exit 1
   fi
