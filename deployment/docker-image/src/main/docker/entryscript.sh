@@ -15,6 +15,7 @@ log() {
   printf '[entryscript] %s\n' "$*" >&2
 }
 
+set -x
 trap 'log "Exiting with status $?."' EXIT
 trap 'log "Error on line ${LINENO}."' ERR
 
