@@ -4,7 +4,8 @@ COPY tradernet.ear /opt/jboss/wildfly/standalone/deployments/tradernet.ear
 RUN rm -rf /opt/jboss/wildfly/welcome-content
 COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules.zip /opt/jboss/wildfly/wildfly-modules.zip
-RUN unzip -q /opt/jboss/wildfly/wildfly-modules.zip -d /opt/jboss/wildfly/modules \
+RUN cd /opt/jboss/wildfly/modules \
+    && jar -xf /opt/jboss/wildfly/wildfly-modules.zip \
     && rm -f /opt/jboss/wildfly/wildfly-modules.zip
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar
 
