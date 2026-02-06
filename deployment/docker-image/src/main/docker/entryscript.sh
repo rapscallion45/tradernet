@@ -82,6 +82,8 @@ start_server() {
 
 SERVER_PID="$(start_server)"
 
+log "Configuring datasources."
+
 case "${DB_TYPE}" in
   POSTGRES)
     log "Configuring TradernetDS datasource for PostgreSQL."
@@ -95,6 +97,8 @@ case "${DB_TYPE}" in
     ;;
 esac
 
+log "Deploying Tradernet EAR."
 deploy_artifacts
 
+log "Entry script complete; waiting on WildFly process."
 wait "${SERVER_PID}"
