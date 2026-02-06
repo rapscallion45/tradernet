@@ -14,7 +14,7 @@ import java.util.Optional;
 @Stateless
 public class RoleDaoJPA implements RoleDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override

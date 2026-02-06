@@ -21,7 +21,7 @@ public class UserService {
     /**
      * EntityManager instance for database operations.
      */
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     /**

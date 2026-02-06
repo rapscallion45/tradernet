@@ -13,7 +13,7 @@ import java.util.List;
 @Stateless
 public class PasswordDaoJPA implements PasswordDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override

@@ -13,7 +13,7 @@ import java.util.List;
 @Stateless
 public class TradeDaoJPA implements TradeDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override
