@@ -68,23 +68,22 @@ deploy_artifacts() {
 start_server() {
   log "Starting WildFly server."
   "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
-  local server_pid=$!
+  SERVER_PID=$!
 
-  for _ in {1..30}; do
-    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" >/dev/null 2>&1; then
-      log "WildFly management endpoint is ready."
-      echo "${server_pid}"
-      return
+  for _ in {1..60}; do
+    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" 2>/dev/null | grep -q running; then
+      log "WildFly is running."
+      return 0
     fi
     sleep 1
   done
 
-  log "Error: WildFly management endpoint did not become ready in time."
-  kill "${server_pid}" >/dev/null 2>&1 || true
+  log "Error: WildFly did not reach RUNNING in time."
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
   exit 1
 }
 
-SERVER_PID="$(start_server)"
+start_server
 log "WildFly server PID is ${SERVER_PID}."
 
 log "Configuring datasources."
