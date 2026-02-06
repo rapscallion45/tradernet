@@ -24,7 +24,6 @@
         <docker.image.tag>${git.branch.docker}</docker.image.tag>
         <project.build.docker.dir>${project.build.outputDirectory}/docker-build</project.build.docker.dir>
         <postgresql.version>42.7.2</postgresql.version>
-        <spring-security-crypto.version>5.8.16</spring-security-crypto.version>
         <git.commit.id.plugin.version>9.0.1</git.commit.id.plugin.version>
         <docker.maven.plugin.version>0.48.0</docker.maven.plugin.version>
         <skip.git.commit.id>false</skip.git.commit.id>
@@ -33,55 +32,9 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>web</artifactId>
+            <artifactId>tradernet-ear</artifactId>
             <version>${project.version}</version>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>api</artifactId>
-            <version>${project.version}</version>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>data-model</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>order-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>trade-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>user-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>signal-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>facade-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
+            <type>ear</type>
         </dependency>
     </dependencies>
 
@@ -105,66 +58,10 @@
                                     <artifactItems>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>api</artifactId>
+                                            <artifactId>tradernet-ear</artifactId>
                                             <version>${project.version}</version>
-                                            <type>war</type>
-                                            <destFileName>tradernet.war</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>web</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>war</type>
-                                            <destFileName>ROOT.war</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>data-model</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>jar</type>
-                                            <destFileName>data-model.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.springframework.security</groupId>
-                                            <artifactId>spring-security-crypto</artifactId>
-                                            <version>${spring-security-crypto.version}</version>
-                                            <type>jar</type>
-                                            <destFileName>spring-security-crypto.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>order-service</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>ejb</type>
-                                            <destFileName>order-service.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>trade-service</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>ejb</type>
-                                            <destFileName>trade-service.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>user-service</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>ejb</type>
-                                            <destFileName>user-service.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>signal-service</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>ejb</type>
-                                            <destFileName>signal-service.jar</destFileName>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>facade-service</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>ejb</type>
-                                            <destFileName>facade-service.jar</destFileName>
+                                            <type>ear</type>
+                                            <destFileName>tradernet.ear</destFileName>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.postgresql</groupId>

@@ -28,7 +28,7 @@ deploy_artifacts() {
   local deployments_dir="${JBOSS_HOME}/standalone/deployments"
   local deployment
 
-  for deployment in ROOT.war tradernet.war order-service.jar trade-service.jar user-service.jar signal-service.jar facade-service.jar; do
+  for deployment in tradernet.ear; do
     if [[ -f "${deployments_dir}/${deployment}.failed" ]]; then
       rm -f "${deployments_dir}/${deployment}.failed"
     fi
