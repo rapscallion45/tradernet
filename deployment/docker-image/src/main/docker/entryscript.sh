@@ -11,6 +11,12 @@ DB_PASSWORD="${DB_PASSWORD:-tradernet}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
 
+log() {
+  printf '[entryscript] %s\n' "$*" >&2
+}
+
+log "Starting Tradernet entry script."
+
 if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
   echo "Warning: unable to create admin user '${ADMIN_USERNAME}'." >&2
 fi
@@ -56,19 +62,20 @@ deploy_artifacts() {
 }
 
 start_server() {
+  log "Starting WildFly server."
   "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
   local server_pid=$!
 
   for _ in {1..30}; do
     if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" >/dev/null 2>&1; then
-      echo "WildFly management endpoint is ready."
+      log "WildFly management endpoint is ready."
       echo "${server_pid}"
       return
     fi
     sleep 1
   done
 
-  echo "Error: WildFly management endpoint did not become ready in time." >&2
+  log "Error: WildFly management endpoint did not become ready in time."
   kill "${server_pid}" >/dev/null 2>&1 || true
   exit 1
 }
@@ -77,6 +84,7 @@ SERVER_PID="$(start_server)"
 
 case "${DB_TYPE}" in
   POSTGRES)
+    log "Configuring TradernetDS datasource for PostgreSQL."
     configure_datasource "postgresql" "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" "org.postgresql.Driver" "org.postgresql"
     ensure_datasource
     ;;
