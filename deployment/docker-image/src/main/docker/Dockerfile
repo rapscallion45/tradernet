@@ -20,6 +20,10 @@ RUN touch /opt/jboss/wildfly/standalone/deployments/ROOT.war.dodeploy \
 COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar
+COPY wildfly-modules/com/tradernet/data-model/main/module.xml /opt/jboss/wildfly/modules/com/tradernet/data-model/main/module.xml
+COPY data-model.jar /opt/jboss/wildfly/modules/com/tradernet/data-model/main/data-model.jar
+COPY wildfly-modules/org/springframework/security/crypto/main/module.xml /opt/jboss/wildfly/modules/org/springframework/security/crypto/main/module.xml
+COPY spring-security-crypto.jar /opt/jboss/wildfly/modules/org/springframework/security/crypto/main/spring-security-crypto.jar
 
 USER root
 RUN sed -i 's/\r$//' /bin/entryscript.sh \
