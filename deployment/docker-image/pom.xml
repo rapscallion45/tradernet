@@ -36,6 +36,12 @@
             <version>${project.version}</version>
             <type>ear</type>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>wildfly-modules</artifactId>
+            <version>${project.version}</version>
+            <type>zip</type>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -62,6 +68,13 @@
                                             <version>${project.version}</version>
                                             <type>ear</type>
                                             <destFileName>tradernet.ear</destFileName>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>wildfly-modules</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>zip</type>
+                                            <destFileName>wildfly-modules.zip</destFileName>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.postgresql</groupId>
@@ -92,10 +105,6 @@
                                         <resource>
                                             <directory>src/main/docker</directory>
                                             <filtering>true</filtering>
-                                        </resource>
-                                        <resource>
-                                            <directory>../wildfly-modules/src/main/resources</directory>
-                                            <filtering>false</filtering>
                                         </resource>
                                     </resources>
                                 </configuration>
@@ -162,21 +171,6 @@
                                     <build>
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
-                                    <run>
-                                        <ports>
-                                            <port>8080:8080</port>
-                                            <port>9990:9990</port>
-                                        </ports>
-                                        <env>
-                                            <ADMIN_PASSWORD>ChangeMe</ADMIN_PASSWORD>
-                                            <DB_TYPE>POSTGRES</DB_TYPE>
-                                            <DB_HOST>postgres</DB_HOST>
-                                            <DB_PORT>5432</DB_PORT>
-                                            <DB_NAME>tradernet</DB_NAME>
-                                            <DB_USER>tradernet</DB_USER>
-                                            <DB_PASSWORD>tradernet</DB_PASSWORD>
-                                        </env>
-                                    </run>
                                 </image>
                             </images>
                         </configuration>
