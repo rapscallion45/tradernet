@@ -24,6 +24,19 @@ configure_datasource() {
   "$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
 }
 
+wait_for_datasource() {
+  for _ in {1..30}; do
+    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+
+  echo "Error: TradernetDS datasource was not created in time." >&2
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  exit 1
+}
+
 deploy_artifacts() {
   local deployments_dir="${JBOSS_HOME}/standalone/deployments"
   local deployment
@@ -59,6 +72,7 @@ SERVER_PID="$(start_server)"
 case "${DB_TYPE}" in
   POSTGRES)
     configure_datasource "postgresql" "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" "org.postgresql.Driver" "org.postgresql"
+    wait_for_datasource
     ;;
   *)
     echo "Unsupported DB_TYPE '${DB_TYPE}'. Supported values: POSTGRES." >&2
