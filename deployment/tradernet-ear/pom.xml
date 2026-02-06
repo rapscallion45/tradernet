@@ -17,6 +17,13 @@
     <artifactId>tradernet-ear</artifactId>
     <packaging>ear</packaging>
 
+    <properties>
+        <wildfly.host>localhost</wildfly.host>
+        <wildfly.management-port>9990</wildfly.management-port>
+        <wildfly.management-user>admin</wildfly.management-user>
+        <wildfly.management-password>admin</wildfly.management-password>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -26,9 +33,21 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>web</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>api</artifactId>
             <version>${project.version}</version>
             <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -80,7 +99,8 @@
                 <artifactId>maven-ear-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
-                    <defaultLibBundleDir>lib</defaultLibBundleDir>
+                    <defaultLibBundleDir>APP-INF/lib</defaultLibBundleDir>
+                    <skinnyWars>true</skinnyWars>
                     <modules>
                         <webModule>
                             <groupId>${project.groupId}</groupId>
@@ -117,4 +137,36 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>build-and-deploy-ear</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <configuration>
+                            <hostname>${wildfly.host}</hostname>
+                            <port>${wildfly.management-port}</port>
+                            <username>${wildfly.management-user}</username>
+                            <password>${wildfly.management-password}</password>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>deploy-ear</id>
+                                <phase>package</phase>
+                                <configuration>
+                                    <force>true</force>
+                                </configuration>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
