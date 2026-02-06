@@ -15,6 +15,9 @@ log() {
   printf '[entryscript] %s\n' "$*" >&2
 }
 
+trap 'log "Exiting with status $?."' EXIT
+trap 'log "Error on line ${LINENO}."' ERR
+
 log "Starting Tradernet entry script."
 
 if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
@@ -81,6 +84,7 @@ start_server() {
 }
 
 SERVER_PID="$(start_server)"
+log "WildFly server PID is ${SERVER_PID}."
 
 log "Configuring datasources."
 
