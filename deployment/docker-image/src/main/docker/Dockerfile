@@ -8,15 +8,7 @@ COPY trade-service.jar /opt/jboss/wildfly/standalone/deployments/trade-service.j
 COPY user-service.jar /opt/jboss/wildfly/standalone/deployments/user-service.jar
 COPY signal-service.jar /opt/jboss/wildfly/standalone/deployments/signal-service.jar
 COPY facade-service.jar /opt/jboss/wildfly/standalone/deployments/facade-service.jar
-RUN touch /opt/jboss/wildfly/standalone/deployments/ROOT.war.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/tradernet.war.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/data-model.jar.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/order-service.jar.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/trade-service.jar.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/user-service.jar.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/signal-service.jar.dodeploy \
-    && touch /opt/jboss/wildfly/standalone/deployments/facade-service.jar.dodeploy \
-    && rm -rf /opt/jboss/wildfly/welcome-content
+RUN rm -rf /opt/jboss/wildfly/welcome-content
 COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules/org/postgresql/main/module.xml /opt/jboss/wildfly/modules/org/postgresql/main/module.xml
 COPY postgresql.jar /opt/jboss/wildfly/modules/org/postgresql/main/postgresql.jar

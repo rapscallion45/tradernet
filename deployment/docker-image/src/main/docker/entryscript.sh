@@ -24,6 +24,18 @@ configure_datasource() {
   "$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)"
 }
 
+deploy_artifacts() {
+  local deployments_dir="${JBOSS_HOME}/standalone/deployments"
+  local deployment
+
+  for deployment in ROOT.war tradernet.war order-service.jar trade-service.jar user-service.jar signal-service.jar facade-service.jar; do
+    if [[ -f "${deployments_dir}/${deployment}.failed" ]]; then
+      rm -f "${deployments_dir}/${deployment}.failed"
+    fi
+    touch "${deployments_dir}/${deployment}.dodeploy"
+  done
+}
+
 start_server() {
   "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
   local server_pid=$!
@@ -54,5 +66,7 @@ case "${DB_TYPE}" in
     exit 1
     ;;
 esac
+
+deploy_artifacts
 
 wait "${SERVER_PID}"
