@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
@@ -25,6 +26,12 @@ public class GroupEntity {
     @JoinTable(name = "tblGroupUsers")
     private final Set<UserEntity> users = new HashSet<>();
 
+    @ManyToMany
+    @JoinTable(
+        name = "tblGroupParents",
+        joinColumns = @JoinColumn(name = "groupId"),
+        inverseJoinColumns = @JoinColumn(name = "parentGroupId")
+    )
     private final Set<GroupEntity> parents = new HashSet<>();
 
     public Long getId() {
