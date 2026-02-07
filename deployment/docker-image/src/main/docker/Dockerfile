@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.title="Tradernet"
 LABEL org.opencontainers.image.version="${project.version}"
 
 ENV DB_TYPE=POSTGRES \
-    DB_HOST=localhost \
+    DB_HOST=postgres \
     DB_PORT=5432 \
     DB_NAME=tradernet \
     DB_USER=tradernet \
