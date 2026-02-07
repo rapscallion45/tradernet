@@ -1,6 +1,6 @@
 services:
   tradernet:
-    image: tradernet/tradernet:local
+    image: tradernet/tradernet:local-test
     ports:
       - "8080:8080"
     environment:
