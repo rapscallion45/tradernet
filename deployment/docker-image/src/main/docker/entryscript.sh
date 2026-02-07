@@ -8,8 +8,6 @@ DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-tradernet}"
 DB_PASSWORD="${DB_PASSWORD:-tradernet}"
-DB_WAIT_SECONDS="${DB_WAIT_SECONDS:-60}"
-DB_CONNECT_TIMEOUT="${DB_CONNECT_TIMEOUT:-2}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
 
@@ -27,6 +25,53 @@ if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMI
   echo "Warning: unable to create admin user '${ADMIN_USERNAME}'." >&2
 fi
 
+wait_for_db() {
+  log "Waiting for database at ${DB_HOST}:${DB_PORT}."
+
+  # DNS sanity check (helps diagnose compose/network issues)
+  if command -v getent >/dev/null 2>&1; then
+    if ! getent hosts "${DB_HOST}" >/dev/null 2>&1; then
+      log "DNS resolution failed for DB_HOST='${DB_HOST}'."
+    else
+      log "DNS resolution OK for DB_HOST='${DB_HOST}'."
+    fi
+  else
+    log "getent not available; skipping DNS check."
+  fi
+
+  for i in {1..120}; do
+    # Use exec + fd so we can reliably see failures and not hide them in a subshell.
+    if exec 3<>"/dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null; then
+      exec 3<&- 3>&-
+      log "Database port is reachable (attempt ${i})."
+      return 0
+    fi
+    log "Database not reachable yet (attempt ${i})."
+    sleep 1
+  done
+
+  log "Error: database did not become reachable in time."
+  return 1
+}
+
+start_server() {
+  log "Starting WildFly server."
+  "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
+  SERVER_PID=$!
+
+  for _ in {1..60}; do
+    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" 2>/dev/null | grep -q running; then
+      log "WildFly is running."
+      return 0
+    fi
+    sleep 1
+  done
+
+  log "Error: WildFly did not reach RUNNING in time."
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  exit 1
+}
+
 configure_datasource() {
   local driver_name="$1"
   local connection_url="$2"
@@ -34,6 +79,8 @@ configure_datasource() {
   local driver_module="$4"
 
   local cli_output
+
+  # Add driver if missing
   if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource" >/dev/null 2>&1; then
     if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class})" 2>&1)"; then
       echo "Error: failed to add JDBC driver '${driver_name}'." >&2
@@ -43,6 +90,7 @@ configure_datasource() {
     echo "${cli_output}"
   fi
 
+  # Add datasource if missing
   if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
     if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)" 2>&1)"; then
       echo "Error: failed to add TradernetDS datasource." >&2
@@ -51,36 +99,14 @@ configure_datasource() {
     fi
     echo "${cli_output}"
   fi
-}
 
-wait_for_db() {
-  local deadline=$((SECONDS + DB_WAIT_SECONDS))
-
-  log "Waiting for database at ${DB_HOST}:${DB_PORT} (timeout ${DB_WAIT_SECONDS}s)."
-  while ((SECONDS < deadline)); do
-    if command -v getent >/dev/null 2>&1; then
-      if ! getent hosts "${DB_HOST}" >/dev/null 2>&1; then
-        sleep 1
-        continue
-      fi
-    fi
-
-    if command -v timeout >/dev/null 2>&1; then
-      if timeout "${DB_CONNECT_TIMEOUT}" bash -c "echo >\"/dev/tcp/${DB_HOST}/${DB_PORT}\"" >/dev/null 2>&1; then
-        log "Database port is reachable."
-        return 0
-      fi
-    else
-      if (echo >"/dev/tcp/${DB_HOST}/${DB_PORT}") >/dev/null 2>&1; then
-        log "Database port is reachable."
-        return 0
-      fi
-    fi
-    sleep 1
-  done
-
-  log "Error: database did not become reachable in time (timeout ${DB_WAIT_SECONDS}s)."
-  return 1
+  # Test connection explicitly (fail fast)
+  if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:test-connection-in-pool" 2>&1)"; then
+    echo "Error: TradernetDS test-connection-in-pool failed." >&2
+    echo "${cli_output}" >&2
+    return 1
+  fi
+  echo "${cli_output}"
 }
 
 ensure_datasource() {
@@ -105,30 +131,14 @@ deploy_artifacts() {
     return 1
   fi
 
+  # Deploy via CLI for determinism (no scanner timing games)
   if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="deploy ${deployment_path} --force"; then
     log "Error: failed to deploy ${deployment_path}."
     return 1
   fi
 }
 
-start_server() {
-  log "Starting WildFly server."
-  "$JBOSS_HOME/bin/standalone.sh" -b 0.0.0.0 -bmanagement 0.0.0.0 &
-  SERVER_PID=$!
-
-  for _ in {1..60}; do
-    if "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command=":read-attribute(name=server-state)" 2>/dev/null | grep -q running; then
-      log "WildFly is running."
-      return 0
-    fi
-    sleep 1
-  done
-
-  log "Error: WildFly did not reach RUNNING in time."
-  kill "${SERVER_PID}" >/dev/null 2>&1 || true
-  exit 1
-}
-
+# --- Main flow ---
 start_server
 log "WildFly server PID is ${SERVER_PID}."
 
