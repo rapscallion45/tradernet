@@ -32,13 +32,23 @@ configure_datasource() {
   local driver_module="$4"
 
   local cli_output
-  if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --commands="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource,if (outcome != success) of /subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class}),/subsystem=datasources/data-source=TradernetDS:read-resource,if (outcome != success) of /subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)" 2>&1)"; then
-    echo "Error: failed to configure TradernetDS datasource." >&2
-    echo "${cli_output}" >&2
-    return 1
+  if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/jdbc-driver=${driver_name}:read-resource" >/dev/null 2>&1; then
+    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/jdbc-driver=${driver_name}:add(driver-name=${driver_name},driver-module-name=${driver_module},driver-class-name=${driver_class})" 2>&1)"; then
+      echo "Error: failed to add JDBC driver '${driver_name}'." >&2
+      echo "${cli_output}" >&2
+      return 1
+    fi
+    echo "${cli_output}"
   fi
 
-  echo "${cli_output}"
+  if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
+    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)" 2>&1)"; then
+      echo "Error: failed to add TradernetDS datasource." >&2
+      echo "${cli_output}" >&2
+      return 1
+    fi
+    echo "${cli_output}"
+  fi
 }
 
 ensure_datasource() {
