@@ -13,6 +13,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - tradernet_net
 
   postgres:
     image: postgres:16
@@ -28,3 +30,9 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+    networks:
+      - tradernet_net
+
+networks:
+  tradernet_net:
+    driver: bridge

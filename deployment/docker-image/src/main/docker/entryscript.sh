@@ -31,10 +31,10 @@ wait_for_db() {
   # DNS sanity check (helps diagnose compose/network issues)
   if command -v getent >/dev/null 2>&1; then
     if ! getent hosts "${DB_HOST}" >/dev/null 2>&1; then
-      log "DNS resolution failed for DB_HOST='${DB_HOST}'."
-    else
-      log "DNS resolution OK for DB_HOST='${DB_HOST}'."
+      log "DNS resolution failed for DB_HOST='${DB_HOST}'. Are both containers started via the same docker compose project/network?"
+      return 1
     fi
+    log "DNS resolution OK for DB_HOST='${DB_HOST}'."
   else
     log "getent not available; skipping DNS check."
   fi
