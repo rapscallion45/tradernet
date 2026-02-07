@@ -6,7 +6,7 @@ import { AuthResource } from "api/Auth"
 let client: RestClient | null = null
 
 export function getRestClient(): RestClient {
-  const viteApiBaseUrl = import.meta.env.VITE_SERVER_BASE_URL
+  const viteApiBaseUrl = import.meta.env.VITE_SERVER_BASE_URL || "/api"
   console.trace("VITE_SERVER_BASE_URL:", viteApiBaseUrl)
 
   if (!client) {

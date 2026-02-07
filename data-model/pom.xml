@@ -15,7 +15,7 @@
     <name>Data Model</name>
 
     <artifactId>data-model</artifactId>
-    <packaging>jar</packaging>
+    <packaging>ejb</packaging>
 
     <dependencies>
         <dependency>
@@ -32,4 +32,13 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-ejb-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

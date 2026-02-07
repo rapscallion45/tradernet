@@ -14,7 +14,7 @@ import java.util.Optional;
 @Stateless
 public class GroupDaoJPA implements GroupDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override

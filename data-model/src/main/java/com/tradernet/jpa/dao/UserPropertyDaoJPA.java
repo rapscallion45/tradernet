@@ -13,7 +13,7 @@ import java.util.List;
 @Stateless
 public class UserPropertyDaoJPA implements UserPropertyDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override

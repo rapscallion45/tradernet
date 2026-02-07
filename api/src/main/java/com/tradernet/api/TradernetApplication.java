@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  * Registers the JAX-RS application for Tradernet.
  */
-@ApplicationPath("/api")
+@ApplicationPath("/")
 public class TradernetApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {

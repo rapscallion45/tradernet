@@ -13,7 +13,7 @@ import java.util.List;
 @Stateless
 public class OrderDaoJPA implements OrderDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override
