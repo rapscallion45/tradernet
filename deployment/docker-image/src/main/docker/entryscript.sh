@@ -3,7 +3,7 @@ set -euo pipefail
 
 JBOSS_HOME="${JBOSS_HOME:-/opt/jboss/wildfly}"
 DB_TYPE="${DB_TYPE:-POSTGRES}"
-DB_HOST="${DB_HOST:-localhost}"
+DB_HOST="${DB_HOST:-postgres}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-tradernet}"
@@ -51,6 +51,20 @@ configure_datasource() {
   fi
 }
 
+wait_for_db() {
+  log "Waiting for database at ${DB_HOST}:${DB_PORT}."
+  for _ in {1..60}; do
+    if (echo >"/dev/tcp/${DB_HOST}/${DB_PORT}") >/dev/null 2>&1; then
+      log "Database port is reachable."
+      return 0
+    fi
+    sleep 1
+  done
+
+  log "Error: database did not become reachable in time."
+  return 1
+}
+
 ensure_datasource() {
   local cli_output
   if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" 2>&1)"; then
@@ -65,14 +79,18 @@ ensure_datasource() {
 
 deploy_artifacts() {
   local deployments_dir="${JBOSS_HOME}/standalone/deployments"
-  local deployment
+  local pending_dir="${deployments_dir}.pending"
+  local deployment_path="${pending_dir}/tradernet.ear"
 
-  for deployment in tradernet.ear; do
-    if [[ -f "${deployments_dir}/${deployment}.failed" ]]; then
-      rm -f "${deployments_dir}/${deployment}.failed"
-    fi
-    touch "${deployments_dir}/${deployment}.dodeploy"
-  done
+  if [[ ! -f "${deployment_path}" ]]; then
+    log "Error: expected deployment artifact at ${deployment_path}."
+    return 1
+  fi
+
+  if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="deploy ${deployment_path} --force"; then
+    log "Error: failed to deploy ${deployment_path}."
+    return 1
+  fi
 }
 
 start_server() {
@@ -98,6 +116,11 @@ log "WildFly server PID is ${SERVER_PID}."
 
 log "Configuring datasources."
 
+if ! wait_for_db; then
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  exit 1
+fi
+
 case "${DB_TYPE}" in
   POSTGRES)
     log "Configuring TradernetDS datasource for PostgreSQL."
@@ -112,7 +135,10 @@ case "${DB_TYPE}" in
 esac
 
 log "Deploying Tradernet EAR."
-deploy_artifacts
+if ! deploy_artifacts; then
+  kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  exit 1
+fi
 
 log "Entry script complete; waiting on WildFly process."
 wait "${SERVER_PID}"

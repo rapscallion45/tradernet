@@ -1,7 +1,8 @@
 FROM quay.io/wildfly/wildfly:27.0.1.Final-jdk11
 
-COPY tradernet.ear /opt/jboss/wildfly/standalone/deployments/tradernet.ear
-RUN rm -rf /opt/jboss/wildfly/welcome-content
+RUN mkdir -p /opt/jboss/wildfly/standalone/deployments.pending \
+    && mkdir -p /opt/jboss/wildfly/welcome-content
+COPY tradernet.ear /opt/jboss/wildfly/standalone/deployments.pending/tradernet.ear
 COPY entryscript.sh /bin/entryscript.sh
 COPY wildfly-modules.zip /opt/jboss/wildfly/wildfly-modules.zip
 RUN cd /opt/jboss/wildfly/modules \
