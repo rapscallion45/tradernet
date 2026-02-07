@@ -8,6 +8,8 @@ DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-tradernet}"
 DB_PASSWORD="${DB_PASSWORD:-tradernet}"
+DB_WAIT_SECONDS="${DB_WAIT_SECONDS:-60}"
+DB_CONNECT_TIMEOUT="${DB_CONNECT_TIMEOUT:-2}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
 
@@ -52,16 +54,32 @@ configure_datasource() {
 }
 
 wait_for_db() {
-  log "Waiting for database at ${DB_HOST}:${DB_PORT}."
-  for _ in {1..60}; do
-    if (echo >"/dev/tcp/${DB_HOST}/${DB_PORT}") >/dev/null 2>&1; then
-      log "Database port is reachable."
-      return 0
+  local deadline=$((SECONDS + DB_WAIT_SECONDS))
+
+  log "Waiting for database at ${DB_HOST}:${DB_PORT} (timeout ${DB_WAIT_SECONDS}s)."
+  while ((SECONDS < deadline)); do
+    if command -v getent >/dev/null 2>&1; then
+      if ! getent hosts "${DB_HOST}" >/dev/null 2>&1; then
+        sleep 1
+        continue
+      fi
+    fi
+
+    if command -v timeout >/dev/null 2>&1; then
+      if timeout "${DB_CONNECT_TIMEOUT}" bash -c "echo >\"/dev/tcp/${DB_HOST}/${DB_PORT}\"" >/dev/null 2>&1; then
+        log "Database port is reachable."
+        return 0
+      fi
+    else
+      if (echo >"/dev/tcp/${DB_HOST}/${DB_PORT}") >/dev/null 2>&1; then
+        log "Database port is reachable."
+        return 0
+      fi
     fi
     sleep 1
   done
 
-  log "Error: database did not become reachable in time."
+  log "Error: database did not become reachable in time (timeout ${DB_WAIT_SECONDS}s)."
   return 1
 }
 
