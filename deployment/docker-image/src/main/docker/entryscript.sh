@@ -2,12 +2,12 @@
 set -euo pipefail
 
 JBOSS_HOME="${JBOSS_HOME:-/opt/jboss/wildfly}"
-DB_TYPE="${DB_TYPE:-POSTGRES}"
+DB_TYPE="${DB_TYPE:-H2}"
 DB_HOST="${DB_HOST:-postgres}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
-DB_USER="${DB_USER:-tradernet}"
-DB_PASSWORD="${DB_PASSWORD:-tradernet}"
+DB_USER="${DB_USER:-sa}"
+DB_PASSWORD="${DB_PASSWORD:-}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
 
@@ -77,6 +77,8 @@ configure_datasource() {
   local connection_url="$2"
   local driver_class="$3"
   local driver_module="$4"
+  local db_user="${5:-$DB_USER}"
+  local db_password="${6:-$DB_PASSWORD}"
 
   local cli_output
 
@@ -92,7 +94,7 @@ configure_datasource() {
 
   # Add datasource if missing
   if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
-    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${DB_USER},password=${DB_PASSWORD},enabled=true)" 2>&1)"; then
+    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${db_user},password=${db_password},enabled=true)" 2>&1)"; then
       echo "Error: failed to add TradernetDS datasource." >&2
       echo "${cli_output}" >&2
       return 1
@@ -144,19 +146,23 @@ log "WildFly server PID is ${SERVER_PID}."
 
 log "Configuring datasources."
 
-if ! wait_for_db; then
-  kill "${SERVER_PID}" >/dev/null 2>&1 || true
-  exit 1
-fi
-
 case "${DB_TYPE}" in
+  H2)
+    log "Configuring TradernetDS datasource for H2."
+    configure_datasource "h2" "jdbc:h2:mem:${DB_NAME};DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE" "org.h2.Driver" "com.h2database.h2" "sa" ""
+    ensure_datasource
+    ;;
   POSTGRES)
     log "Configuring TradernetDS datasource for PostgreSQL."
+    if ! wait_for_db; then
+      kill "${SERVER_PID}" >/dev/null 2>&1 || true
+      exit 1
+    fi
     configure_datasource "postgresql" "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}" "org.postgresql.Driver" "org.postgresql"
     ensure_datasource
     ;;
   *)
-    echo "Unsupported DB_TYPE '${DB_TYPE}'. Supported values: POSTGRES." >&2
+    echo "Unsupported DB_TYPE '${DB_TYPE}'. Supported values: H2, POSTGRES." >&2
     kill "${SERVER_PID}" >/dev/null 2>&1 || true
     exit 1
     ;;

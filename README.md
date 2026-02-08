@@ -36,11 +36,12 @@ docker run --rm -p 8080:8080 \
   tradernet/tradernet:local
 ```
 
-When you run the container by itself, `DB_HOST` must be a hostname/IP that the container can resolve
-outside of Docker Compose (for example `host.docker.internal` on Docker Desktop). The Postgres server
-does **not** live inside the Tradernet image; it runs as a separate service (for example via Docker
-Compose or a managed database). Use Docker Compose if you want the `postgres` DNS name to resolve
-automatically inside the container network.
+When you run the container by itself, the default database type is H2 (in-memory) for local testing.
+If you switch to Postgres, `DB_HOST` must be a hostname/IP that the container can resolve outside of
+Docker Compose (for example `host.docker.internal` on Docker Desktop). The Postgres server does **not**
+live inside the Tradernet image; it runs as a separate service (for example via Docker Compose or a
+managed database). Use Docker Compose if you want the `postgres` DNS name to resolve automatically
+inside the container network.
 
 ### Build and run the test container (Docker Desktop run configuration)
 
@@ -58,7 +59,7 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package io.fabric8:docker-maven-plugin:start
 ```
 
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Tradernet** (build + run).
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Test Container** (build + run).
 The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**

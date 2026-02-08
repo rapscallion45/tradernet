@@ -18,12 +18,12 @@ USER jboss
 LABEL org.opencontainers.image.title="Tradernet"
 LABEL org.opencontainers.image.version="${project.version}"
 
-ENV DB_TYPE=POSTGRES \
+ENV DB_TYPE=H2 \
     DB_HOST=postgres \
     DB_PORT=5432 \
     DB_NAME=tradernet \
-    DB_USER=tradernet \
-    DB_PASSWORD=tradernet
+    DB_USER=sa \
+    DB_PASSWORD=
 
 EXPOSE 8080 9990
 
