@@ -79,6 +79,7 @@ configure_datasource() {
   local driver_module="$4"
   local db_user="${5:-$DB_USER}"
   local db_password="${6:-$DB_PASSWORD}"
+  local password_clause
 
   local cli_output
 
@@ -94,7 +95,12 @@ configure_datasource() {
 
   # Add datasource if missing
   if ! "$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:read-resource" >/dev/null 2>&1; then
-    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${db_user},password=${db_password},enabled=true)" 2>&1)"; then
+    if [[ -n "${db_password}" ]]; then
+      password_clause=",password=${db_password}"
+    else
+      password_clause=""
+    fi
+    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${db_user}${password_clause},enabled=true)" 2>&1)"; then
       echo "Error: failed to add TradernetDS datasource." >&2
       echo "${cli_output}" >&2
       return 1
