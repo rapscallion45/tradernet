@@ -74,7 +74,7 @@ Then open `http://localhost:8080` or check the health endpoint at `http://localh
 ### Run with Docker Compose
 
 ```bash
-docker compose -f deployment/docker-image/docker-compose.yml up
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
 ```
 
 These commands work with Docker Desktop (which includes Docker Engine and Compose).
