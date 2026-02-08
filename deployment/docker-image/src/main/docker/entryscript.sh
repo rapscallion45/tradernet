@@ -100,7 +100,7 @@ configure_datasource() {
     else
       password_clause=""
     fi
-    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=${connection_url},user-name=${db_user}${password_clause},enabled=true)" 2>&1)"; then
+    if ! cli_output="$("$JBOSS_HOME/bin/jboss-cli.sh" --connect --command="/subsystem=datasources/data-source=TradernetDS:add(jndi-name=java:/jdbc/TradernetDS,driver-name=${driver_name},connection-url=\"${connection_url}\",user-name=${db_user}${password_clause},enabled=true)" 2>&1)"; then
       echo "Error: failed to add TradernetDS datasource." >&2
       echo "${cli_output}" >&2
       return 1
