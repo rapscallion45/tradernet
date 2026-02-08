@@ -59,7 +59,7 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package io.fabric8:docker-maven-plugin:start
 ```
 
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only) and **Run Test Container** (build + run).
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Run Test Container** (build + run), and **Run Tradernet** (production build + run).
 The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**

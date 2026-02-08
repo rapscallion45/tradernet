@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Stop Tradernet" type="MavenRunConfiguration" factoryName="Maven">
+  <configuration default="false" name="Run Tradernet" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
       <option name="myRunnerSettings" />
@@ -13,7 +13,8 @@
               <option value="-am" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local" />
-              <option value="io.fabric8:docker-maven-plugin:stop" />
+              <option value="package" />
+              <option value="io.fabric8:docker-maven-plugin:start" />
             </list>
           </option>
           <option name="profiles">
