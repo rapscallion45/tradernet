@@ -173,7 +173,6 @@
                                     </build>
                                     <run>
                                         <containerNamePattern>Tradernet</containerNamePattern>
-                                        <stopNamePattern>Tradernet</stopNamePattern>
                                         <ports>
                                             <port>8080:8080</port>
                                             <port>9990:9990</port>
