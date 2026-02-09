@@ -2,7 +2,7 @@ package com.tradernet.api.resources;
 
 import com.tradernet.jpa.dao.GroupDao;
 import com.tradernet.jpa.entities.GroupEntity;
-import jakarta.ejb.EJB;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -19,7 +19,7 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class GroupResource {
 
-    @EJB
+    @Inject
     private GroupDao groupDao;
 
     @GET
