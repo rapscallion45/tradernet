@@ -173,6 +173,10 @@
                                     </build>
                                     <run>
                                         <containerNamePattern>Tradernet</containerNamePattern>
+                                        <ports>
+                                            <port>8080:8080</port>
+                                            <port>9990:9990</port>
+                                        </ports>
                                     </run>
                                 </image>
                             </images>
