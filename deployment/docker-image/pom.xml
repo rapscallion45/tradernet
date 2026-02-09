@@ -172,7 +172,7 @@
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
                                     <run>
-                                        <name>Tradernet</name>
+                                        <containerNamePattern>Tradernet</containerNamePattern>
                                     </run>
                                 </image>
                             </images>
