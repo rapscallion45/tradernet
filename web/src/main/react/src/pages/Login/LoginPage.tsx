@@ -1,18 +1,27 @@
 import { FC, ReactNode, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { FormProvider, useForm } from "react-hook-form"
-import { Box, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
+import { Box, Card, Group, Stack, Text, Title } from "@mantine/core"
 import { IconAlertTriangle, IconCircleLetterI } from "@tabler/icons-react"
 import { useLogin } from "hooks/useAuth"
 import { LoginData, LoginStatus } from "api/types"
 import LoginForm from "./forms/LoginForm"
 import ResetPasswordForm from "./forms/ResetPasswordForm"
 import { QueryClientKeys } from "global/constants"
+import CenterOnPage from "components/CenterOnPage"
 
 /**
- * Application login page
+ * Login page props
+ * @prop onLogin - callback handler on successful login
  */
-const LoginPage: FC = () => {
+type LoginPageProps = {
+  onLogin: () => void
+}
+
+/**
+ * Application Login page
+ */
+const LoginPage: FC<LoginPageProps> = ({ onLogin }) => {
   const loginMutation = useLogin()
   const loginForm = useForm<LoginData>({
     mode: "onSubmit",
@@ -38,11 +47,13 @@ const LoginPage: FC = () => {
     if (response.data.status === LoginStatus.Success) {
       console.log("Login successful, invalidating cache...")
       await queryClient.invalidateQueries({ queryKey: [QueryClientKeys.Session] })
+
+      onLogin()
     }
   }
 
   return (
-    <Center my={"xl"}>
+    <CenterOnPage>
       <Card padding={"lg"} w={420}>
         <Stack>
           {loginStatus !== LoginStatus.AccountPasswordExpired ? (
@@ -62,7 +73,7 @@ const LoginPage: FC = () => {
           )}
         </Stack>
       </Card>
-    </Center>
+    </CenterOnPage>
   )
 }
 

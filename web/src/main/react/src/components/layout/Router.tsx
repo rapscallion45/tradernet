@@ -2,7 +2,6 @@ import { createBrowserRouter, isRouteErrorResponse, useRouteError } from "react-
 import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
-import LoginPage from "pages/Login/LoginPage"
 import Layout from "components/layout/Layout"
 
 /**
@@ -47,9 +46,5 @@ export const router = createBrowserRouter([
         element: <Dashboard />,
       },
     ],
-  },
-  {
-    path: Routes.Login,
-    element: <LoginPage />,
   },
 ])

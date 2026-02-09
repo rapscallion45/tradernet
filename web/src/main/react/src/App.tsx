@@ -2,13 +2,14 @@ import React, { FC, ReactNode, Suspense } from "react"
 import { isAxiosError } from "axios"
 import { ErrorBoundary } from "react-error-boundary"
 import { QueryErrorResetBoundary } from "@tanstack/react-query"
-import { Navigate, RouterProvider } from "react-router-dom"
+import { RouterProvider } from "react-router-dom"
+import LoginPage from "pages/Login/LoginPage"
 import useSession from "hooks/useSession"
 import { router } from "components/layout/Router"
 import MainErrorBoundary from "components/MainErrorBoundary"
 import MainSuspenseBoundary from "components/MainSuspenseBoundary"
+import { SuspenseSpinner } from "components/SuspenseSpinner"
 import Providers from "global/Providers"
-import Routes from "global/Routes"
 
 /**
  * Application entry point
@@ -42,12 +43,16 @@ export const SessionBoundary: FC<{ children: ReactNode }> = ({ children }) => (
     {({ reset }) => (
       <ErrorBoundary
         onReset={reset}
-        FallbackComponent={({ error }: { error: Error; resetErrorBoundary: () => void }) => {
+        FallbackComponent={({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => {
           return isAxiosError(error) ? (
             error.response?.status === 401 ? (
-              <Navigate to={Routes.Login} replace state={{ from: location }} />
+              <SuspenseSpinner>
+                <LoginPage onLogin={resetErrorBoundary} />
+              </SuspenseSpinner>
             ) : error.response?.status === 403 ? (
-              <Navigate to={Routes.Login} replace state={{ from: location }} />
+              <SuspenseSpinner>
+                <LoginPage onLogin={resetErrorBoundary} />
+              </SuspenseSpinner>
             ) : (
               <MainErrorBoundary title={error.response?.statusText ?? "Error"} message={error.message} />
             )
