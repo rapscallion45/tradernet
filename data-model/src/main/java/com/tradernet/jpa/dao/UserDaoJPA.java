@@ -14,7 +14,7 @@ import java.util.Optional;
 @Stateless
 public class UserDaoJPA implements UserDao {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
     @Override

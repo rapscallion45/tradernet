@@ -1,5 +1,6 @@
 package com.tradernet.jpa.entities;
 
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -16,6 +17,7 @@ public class UserPropertyId implements Serializable {
     @JoinColumn(name = "userId")
     private UserEntity user;
 
+    @Embedded
     private UserPropertyDefinition propDef;
 
     public UserEntity getUser() {

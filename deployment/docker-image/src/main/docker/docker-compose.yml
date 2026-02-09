@@ -1,0 +1,38 @@
+services:
+  tradernet:
+    image: tradernet/tradernet:local-test
+    ports:
+      - "8080:8080"
+    environment:
+      DB_TYPE: POSTGRES
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: tradernet
+      DB_USER: tradernet
+      DB_PASSWORD: tradernet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tradernet_net
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: tradernet
+      POSTGRES_USER: tradernet
+      POSTGRES_PASSWORD: tradernet
+    # Remove host port mapping unless you need to connect from your laptop
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradernet -d tradernet"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks:
+      - tradernet_net
+
+networks:
+  tradernet_net:
+    driver: bridge
