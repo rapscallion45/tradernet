@@ -5,7 +5,7 @@ import { ApiRequestWithBaseUrl, ApiResponse, ClientAuthConfiguration, GlobalErro
 const constructAxiosInstance = (baseURL: string) => {
   /** axios client config */
   const axiosBaseConfig = {
-    baseURL: `/api`,
+    baseURL,
     paramsSerializer: {
       encode: (param: string | number | boolean) => encodeURIComponent(param),
     },
@@ -26,7 +26,7 @@ class ApiInterfaceAxios implements ApiInterface {
   private authToken: string | null = null
 
   constructor(serverUrl: string, authConfiguration: ClientAuthConfiguration, onError?: GlobalErrorCallback) {
-    const axiosInstance = constructAxiosInstance(serverUrl)
+    const axiosInstance = constructAxiosInstance(serverUrl || "/api")
     console.log("Axios instance constructed with base URL:", axiosInstance.defaults.baseURL)
     this.axiosInstance = axiosInstance
     this.onError = onError
