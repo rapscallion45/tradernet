@@ -171,6 +171,9 @@
                                     <build>
                                         <contextDir>${project.build.docker.dir}</contextDir>
                                     </build>
+                                    <run>
+                                        <name>Tradernet</name>
+                                    </run>
                                 </image>
                             </images>
                         </configuration>
