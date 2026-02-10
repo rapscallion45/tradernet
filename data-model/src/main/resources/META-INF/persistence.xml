@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence xmlns="https://jakarta.ee/xml/ns/persistence" version="3.0">
     <persistence-unit name="tradernet" transaction-type="JTA">
-        <jta-data-source>${tradernet.datasource.jndi:java:/jdbc/TradernetDS}</jta-data-source>
+        <jta-data-source>java:/jdbc/TradernetDS</jta-data-source>
         <properties>
             <property name="jakarta.persistence.schema-generation.database.action" value="${tradernet.schema-generation.database.action:none}"/>
             <property name="jakarta.persistence.schema-generation.create-source" value="metadata"/>
