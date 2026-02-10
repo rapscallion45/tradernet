@@ -5,7 +5,6 @@
         <properties>
             <property name="jakarta.persistence.schema-generation.database.action" value="${tradernet.schema-generation.database.action:none}"/>
             <property name="jakarta.persistence.schema-generation.create-source" value="metadata"/>
-            <property name="jakarta.persistence.sql-load-script-source" value="META-INF/db/dev-seed.sql"/>
         </properties>
     </persistence-unit>
 </persistence>

@@ -18,9 +18,6 @@ import java.util.Optional;
 @Singleton
 public class UserService {
 
-    private static final boolean ALLOW_DEV_PLAIN_PASSWORDS = Boolean.parseBoolean(
-        System.getProperty("tradernet.dev.allow-plain-password", "false")
-    );
 
     /**
      * EntityManager instance for database operations.
@@ -80,16 +77,7 @@ public class UserService {
      */
     public boolean validatePassword(String username, String password) {
         return findByUsername(username)
-            .map(user -> {
-                String passwordHash = user.getPasswordHash();
-                if (passwordHash == null || passwordHash.isBlank()) {
-                    return false;
-                }
-                if (ALLOW_DEV_PLAIN_PASSWORDS && !passwordHash.startsWith("$2")) {
-                    return passwordHash.equals(password);
-                }
-                return BCrypt.checkpw(password, passwordHash);
-            })
+            .map(user -> BCrypt.checkpw(password, user.getPasswordHash()))
             .orElse(false);
     }
 

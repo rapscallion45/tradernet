@@ -86,3 +86,16 @@ CREATE TABLE IF NOT EXISTS tblUserProperties (
     PRIMARY KEY (userId, propertyName),
     FOREIGN KEY (userId) REFERENCES tblUsers(id)
 );
+
+
+INSERT INTO tblRoles (name)
+SELECT 'SUPER USER'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'SUPER USER');
+
+INSERT INTO tblRoles (name)
+SELECT 'ADMIN'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'ADMIN');
+
+INSERT INTO tblRoles (name)
+SELECT 'STANDARD'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'STANDARD');
