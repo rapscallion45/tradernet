@@ -2,7 +2,7 @@ package com.tradernet.api.resources;
 
 import com.tradernet.jpa.dao.UserPropertyDao;
 import com.tradernet.jpa.entities.UserPropertyEntity;
-import jakarta.ejb.EJB;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -18,7 +18,7 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class UserPropertyResource {
 
-    @EJB
+    @Inject
     private UserPropertyDao userPropertyDao;
 
     @GET

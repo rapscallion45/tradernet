@@ -10,6 +10,7 @@ DB_USER="${DB_USER:-sa}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
+SCHEMA_AUTO_CREATE_DEV="${SCHEMA_AUTO_CREATE_DEV:-true}"
 
 log() {
   printf '[entryscript] %s\n' "$*" >&2
@@ -52,6 +53,17 @@ wait_for_db() {
 
   log "Error: database did not become reachable in time."
   return 1
+}
+
+configure_runtime_properties() {
+  local schema_action="none"
+
+  if [[ "${DB_TYPE}" == "H2" && "${SCHEMA_AUTO_CREATE_DEV}" == "true" ]]; then
+    schema_action="drop-and-create"
+  fi
+
+  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action} -Dtradernet.bootstrap.superuser.username=${ADMIN_USERNAME} -Dtradernet.bootstrap.superuser.password=${ADMIN_PASSWORD}"
+  log "Configured runtime properties: schema-generation=${schema_action}, datasource=java:/jdbc/TradernetDS"
 }
 
 start_server() {
@@ -147,6 +159,7 @@ deploy_artifacts() {
 }
 
 # --- Main flow ---
+configure_runtime_properties
 start_server
 log "WildFly server PID is ${SERVER_PID}."
 

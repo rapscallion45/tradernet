@@ -4,7 +4,7 @@ import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.order.OrderService;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
-import jakarta.ejb.EJB;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
-    @EJB
+    @Inject
     private OrderService orderService;
 
     @GET
