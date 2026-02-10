@@ -70,7 +70,7 @@ public class SystemBootstrapService {
 
     private UserEntity createSuperUser(String username, String password) {
         UserEntity user = new UserEntity(username);
-        user.setId(nextUserId());
+        user.setPk(nextUserId());
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.addRole(ensureRole(SUPER_USER_ROLE));
         userDao.save(user);
