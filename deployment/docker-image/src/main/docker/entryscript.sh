@@ -168,7 +168,7 @@ log "Configuring datasources."
 case "${DB_TYPE}" in
   H2)
     log "Configuring TradernetDS datasource for H2."
-    configure_datasource "h2" "jdbc:h2:mem:${DB_NAME};DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE" "org.h2.Driver" "com.h2database.h2" "sa" ""
+    configure_datasource "h2" "jdbc:h2:mem:${DB_NAME};DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=VALUE" "org.h2.Driver" "com.h2database.h2" "sa" ""
     ensure_datasource
     ;;
   POSTGRES)
