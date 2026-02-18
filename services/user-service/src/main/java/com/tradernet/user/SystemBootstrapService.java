@@ -10,6 +10,22 @@ import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import javax.sql.DataSource;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -41,8 +57,13 @@ public class SystemBootstrapService {
     @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
+    @Resource(lookup = "java:/jdbc/TradernetDS")
+    private DataSource dataSource;
+
     @PostConstruct
     void bootstrap() {
+        initializeSchemaForH2();
+
         RoleEntity superUserRole = ensureRole(SUPER_USER_ROLE);
         ensureRole(ADMIN_ROLE);
         ensureRole(STANDARD_ROLE);
@@ -82,5 +103,65 @@ public class SystemBootstrapService {
         Long currentMax = entityManager.createQuery("SELECT COALESCE(MAX(u.id), 0) FROM UserEntity u", Long.class)
             .getSingleResult();
         return currentMax + 1;
+    }
+
+    private void initializeSchemaForH2() {
+        try (Connection connection = dataSource.getConnection()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            if (!"H2".equalsIgnoreCase(metaData.getDatabaseProductName())) {
+                return;
+            }
+
+            runSqlScript(connection, "/META-INF/db/schema.sql");
+            runSqlScript(connection, "/META-INF/db/dev-seed.sql");
+            LOG.info("Initialized schema and seed data for H2 datasource.");
+        } catch (SQLException | IOException e) {
+            throw new IllegalStateException("Failed to initialize H2 schema.", e);
+        }
+    }
+
+    private void runSqlScript(Connection connection, String scriptPath) throws IOException, SQLException {
+        try (InputStream stream = getClass().getResourceAsStream(scriptPath)) {
+            if (stream == null) {
+                throw new IllegalStateException("Missing SQL script on classpath: " + scriptPath);
+            }
+
+            String script;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                script = reader.lines().collect(Collectors.joining("\n"));
+            }
+
+            for (String statementSql : splitStatements(script)) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(statementSql);
+                }
+            }
+        }
+    }
+
+    private List<String> splitStatements(String script) {
+        List<String> statements = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+
+        for (String line : script.split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+                continue;
+            }
+
+            current.append(line).append('\n');
+            if (trimmed.endsWith(";")) {
+                String sql = current.toString().trim();
+                statements.add(sql.substring(0, sql.length() - 1));
+                current.setLength(0);
+            }
+        }
+
+        String trailing = current.toString().trim();
+        if (!trailing.isEmpty()) {
+            statements.add(trailing);
+        }
+
+        return statements;
     }
 }
