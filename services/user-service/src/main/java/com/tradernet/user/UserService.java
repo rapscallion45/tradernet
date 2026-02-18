@@ -18,6 +18,7 @@ import java.util.Optional;
 @Singleton
 public class UserService {
 
+
     /**
      * EntityManager instance for database operations.
      */

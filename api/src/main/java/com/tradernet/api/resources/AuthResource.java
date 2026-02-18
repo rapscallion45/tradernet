@@ -8,7 +8,7 @@ import com.tradernet.user.dto.LoginStatus;
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.UserService;
-import jakarta.ejb.EJB;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
@@ -37,7 +37,7 @@ public class AuthResource {
     private static final Duration SESSION_DURATION = Duration.ofHours(8);
     private static final Map<String, AuthUserDto> SESSIONS = new ConcurrentHashMap<>();
 
-    @EJB
+    @Inject
     private UserService userService;
 
     @POST
@@ -45,6 +45,12 @@ public class AuthResource {
     public Response login(LoginRequestDto request) {
         if (request == null) {
             return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
+        }
+
+        if (userService == null) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new MessageResponseDto("User service unavailable"))
+                .build();
         }
 
         String username = request.getUsername();
