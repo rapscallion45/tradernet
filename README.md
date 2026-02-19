@@ -59,13 +59,19 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
 ```
 
+**Build command (Rebuild Test Container (No Backend))**
+
+```bash
+mvn -pl web clean package
+```
+
 **Maven build + run command (Run Test Container)**
 
 ```bash
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package io.fabric8:docker-maven-plugin:start
 ```
 
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Run Test Container** (build + run), and **Run Tradernet** (run only, reuses an already-built `local-test` image).
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Rebuild Test Container (No Backend)** (frontend-only `web` module build), **Run Test Container** (build + run), and **Run Tradernet** (run only, reuses an already-built `local-test` image).
 The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**
