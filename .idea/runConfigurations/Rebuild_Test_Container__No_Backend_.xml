@@ -9,7 +9,9 @@
           <option name="goals">
             <list>
               <option value="-pl" />
-              <option value="web" />
+              <option value="web,deployment/docker-image" />
+              <option value="-Pbuild-image" />
+              <option value="-Ddocker.image.tag=local-test" />
               <option value="clean" />
               <option value="package" />
             </list>
