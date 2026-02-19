@@ -53,11 +53,13 @@ Use this configuration to build the image and run it locally with explicit env v
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
 ```
 
-**Build command (Rebuild Test Container (No React))**
+**Build command (Rebuild Test Container (No React), reuses existing frontend artifacts)**
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact package
 ```
+
+This variant intentionally skips `clean` so Maven can reuse existing frontend files from `web/target/sources/dist`.
 
 **Build command (Rebuild Test Container (No Backend))**
 
