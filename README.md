@@ -56,10 +56,10 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 **Build command (Rebuild Test Container (No React), reuses existing frontend artifacts)**
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact package
+mvn -pl data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
 ```
 
-This variant intentionally skips `clean` so Maven can reuse existing frontend files from `web/target/sources/dist`.
+This variant cleans and rebuilds backend/container modules only (excluding `web`) so existing frontend files in `web/target/sources/dist` are preserved and reused.
 
 **Build command (Rebuild Test Container (No Backend))**
 

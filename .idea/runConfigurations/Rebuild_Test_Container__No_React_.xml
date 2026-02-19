@@ -9,11 +9,11 @@
           <option name="goals">
             <list>
               <option value="-pl" />
-              <option value="deployment/docker-image" />
-              <option value="-am" />
+              <option value="data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
               <option value="-DdontBuildReact" />
+              <option value="clean" />
               <option value="package" />
             </list>
           </option>
