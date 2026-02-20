@@ -56,10 +56,10 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 **Build command (Rebuild Test Container (No React), reuses existing frontend artifacts)**
 
 ```bash
-mvn -pl web,data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
+mvn -pl data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
 ```
 
-This variant includes `web` for dependency resolution but keeps `-DdontBuildReact`, so the React build profile remains disabled and existing frontend files in `web/target/sources/dist` are reused.
+This variant intentionally excludes `web` so `clean` does not delete existing frontend artifacts; with `-DdontBuildReact`, existing `web/target/sources/dist` files are reused by `api` packaging.
 
 **Build command (Rebuild Test Container (No Backend))**
 
