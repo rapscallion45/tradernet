@@ -59,15 +59,15 @@ mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test 
 mvn -pl data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
 ```
 
-This variant cleans and rebuilds backend/container modules only (excluding `web`) so existing frontend files in `web/target/sources/dist` are preserved and reused.
+This variant intentionally excludes `web` so `clean` does not delete existing frontend artifacts; with `-DdontBuildReact`, existing `web/target/sources/dist` files are reused by `api` packaging.
 
 **Build command (Rebuild Test Container (No Backend))**
 
 ```bash
-mvn -pl web,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test clean package
+mvn -pl web,deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
 ```
 
-This variant cleans and rebuilds frontend/image modules only, while reusing already-built backend artifacts.
+This variant now adds `-am` so Maven also builds required dependent modules in the same reactor, preventing missing-artifact failures during EAR/image assembly.
 
 **Maven run command (Run Test Container)**
 
@@ -75,7 +75,7 @@ This variant cleans and rebuilds frontend/image modules only, while reusing alre
 mvn -pl deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test io.fabric8:docker-maven-plugin:start
 ```
 
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Rebuild Test Container (No Backend)** (cleans/rebuilds frontend + test image while reusing existing backend artifacts), **Run Test Container** (run only, reuses an already-built `local-test` image), and **Run Tradernet** (run only, reuses an already-built `local` image).
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Rebuild Test Container (No Backend)** (cleans/rebuilds frontend + test image and brings in required dependent modules via `-am` to avoid resolution errors), **Run Test Container** (run only, reuses an already-built `local-test` image), and **Run Tradernet** (run only, reuses an already-built `local` image).
 The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**

@@ -10,6 +10,7 @@
             <list>
               <option value="-pl" />
               <option value="web,deployment/docker-image" />
+              <option value="-am" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
               <option value="clean" />
