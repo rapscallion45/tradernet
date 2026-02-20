@@ -47,19 +47,35 @@ inside the container network.
 
 Use this configuration to build the image and run it locally with explicit env vars (including the required admin password).
 
-**Build command**
+**Build command (Rebuild Test Container)**
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
 ```
 
-**Maven build + run command**
+**Build command (Rebuild Test Container (No React), reuses existing frontend artifacts)**
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test package io.fabric8:docker-maven-plugin:start
+mvn -pl data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
 ```
 
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Run Test Container** (build + run), and **Run Tradernet** (production build + run).
+This variant cleans and rebuilds backend/container modules only (excluding `web`) so existing frontend files in `web/target/sources/dist` are preserved and reused.
+
+**Build command (Rebuild Test Container (No Backend))**
+
+```bash
+mvn -pl web,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test clean package
+```
+
+This variant cleans and rebuilds frontend/image modules only, while reusing already-built backend artifacts.
+
+**Maven run command (Run Test Container)**
+
+```bash
+mvn -pl deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test io.fabric8:docker-maven-plugin:start
+```
+
+In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Rebuild Test Container (No Backend)** (cleans/rebuilds frontend + test image while reusing existing backend artifacts), **Run Test Container** (run only, reuses an already-built `local-test` image), and **Run Tradernet** (run only, reuses an already-built `local` image).
 The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
 
 **Run configuration**
@@ -92,7 +108,8 @@ The backend WAR includes the web `dist/` output (wired via the `maven-war-plugin
 
 ### Database configuration (Docker)
 
-The container configures a WildFly datasource on startup. By default it uses PostgreSQL.
+The container configures a WildFly datasource on startup. By default it uses H2 (in-memory).
+Set `DB_TYPE=POSTGRES` to use PostgreSQL, then provide connection details:
 Set environment variables to override connection details:
 
 ```
@@ -108,12 +125,12 @@ The provided Docker Compose file includes a PostgreSQL service with matching def
 
 ### Admin user password
 
-On startup the container creates a WildFly admin user. You must set `ADMIN_PASSWORD` to a non-default value or the container will refuse to start (set `ALLOW_DEFAULT_ADMIN_PASSWORD=true` only for local development). 
+On startup the container creates a WildFly admin user. `ADMIN_PASSWORD` is optional; if not set, it defaults to `ChangeMe`.
 
 ### Build without running the web Maven profile
 
 ```bash
-mvn -DdontBuildFrontend clean package
+mvn -DdontBuildReact clean package
 ```
 
 This skips the web Maven profile (useful in CI when web artifacts are prebuilt).

@@ -10,10 +10,8 @@
             <list>
               <option value="-pl" />
               <option value="deployment/docker-image" />
-              <option value="-am" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
-              <option value="package" />
               <option value="io.fabric8:docker-maven-plugin:start" />
             </list>
           </option>

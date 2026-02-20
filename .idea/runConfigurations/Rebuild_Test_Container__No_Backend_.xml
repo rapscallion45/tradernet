@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Rebuild Test Container" type="MavenRunConfiguration" factoryName="Maven">
+  <configuration default="false" name="Rebuild Test Container (No Backend)" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
       <option name="myRunnerSettings" />
@@ -9,8 +9,7 @@
           <option name="goals">
             <list>
               <option value="-pl" />
-              <option value="deployment/docker-image" />
-              <option value="-am" />
+              <option value="web,deployment/docker-image" />
               <option value="-Pbuild-image" />
               <option value="-Ddocker.image.tag=local-test" />
               <option value="clean" />
