@@ -8,6 +8,7 @@ import { useToast } from "hooks/useToast"
 import { validateFieldMatches } from "utils/forms"
 import { getPasswordValidationRules } from "utils/password"
 import { PasswordSettings } from "api/types"
+import { getRestClient } from "api/RestClient"
 
 /**
  * Reset-password form field data.
@@ -22,7 +23,6 @@ type ResetPasswordFormData = {
  */
 type ResetPasswordFormProps = {
   username: string
-  existingPassword: string
   resetLoginStatus: () => void
 }
 
@@ -31,7 +31,7 @@ type ResetPasswordFormProps = {
  * At this point we are still not logged in, so we need to call an open servlet, passing through the credentials
  * to first retrieve the password settings, and then again to change the password.
  */
-const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, existingPassword, resetLoginStatus }) => {
+const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginStatus }) => {
   const resetPasswordSettings: PasswordSettings = {
     repetitionThreshold: 100,
     minLength: 6,
@@ -55,7 +55,7 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, existingPassw
     async ({ password, confirmPassword }) => {
       if (password !== confirmPassword) throw new Error("Passwords do not match! This is a fatal error and should have been caught in the form validation.")
       try {
-        //TODO await changePassword({ username, password: existingPassword, newPassword: password })
+        await getRestClient().authResource.forgotPassword({ username, newPassword: password })
         toast({
           id: "password-change",
           title: "Password changed successfully",
