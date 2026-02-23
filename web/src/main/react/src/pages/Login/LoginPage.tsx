@@ -64,7 +64,6 @@ const LoginPage: FC<LoginPageProps> = ({ onLogin }) => {
           ) : (
             <ResetPasswordForm
               username={loginForm.getValues("username")}
-              existingPassword={loginForm.getValues("password")}
               resetLoginStatus={() => {
                 setLoginStatus(null)
                 loginForm.resetField("password")

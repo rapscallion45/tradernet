@@ -109,6 +109,16 @@ export type SessionInfo = {
   username: string
 }
 
+
+export type ForgotPasswordData = {
+  username: string
+  newPassword: string
+}
+
+export type MessageResponse = {
+  message: string
+}
+
 /** Reset password validation settings */
 export type PasswordSettings = {
   alphasAndNumericsEnabled: boolean

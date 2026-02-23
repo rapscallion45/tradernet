@@ -1,6 +1,6 @@
 import { RestResource } from "api/RestResource"
 import { ApiInterface } from "api/ApiInterface"
-import { Get, LoginData, LoginResponse, LogoutResponse, Post, SessionInfo } from "api/types"
+import { ForgotPasswordData, Get, LoginData, LoginResponse, LogoutResponse, MessageResponse, Post, SessionInfo } from "api/types"
 
 /**
  * Auth resource definition
@@ -20,5 +20,9 @@ export class AuthResource extends RestResource<LoginResponse, LoginData> {
 
   getSession(): Get<SessionInfo> {
     return this.typedSubPath<SessionInfo>("session")._get()
+  }
+
+  forgotPassword(data: ForgotPasswordData): Post<MessageResponse> {
+    return this.typedSubPath<MessageResponse, ForgotPasswordData>("forgot-password")._create({ data })
   }
 }
