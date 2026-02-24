@@ -10,10 +10,10 @@ import { ActionCard } from "components/ActionCard/ActionCard"
 import { CardGrid } from "components/CardGrid/CardGrid"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import Routes from "global/Routes"
-import { OrderData } from "api/types"
-import { IconArrowRight, IconReceipt, IconTicket } from "@tabler/icons-react"
+import { IconArrowRight, IconReceipt } from "@tabler/icons-react"
 import { StatCard } from "components/StatCard/StatCard"
 import { OrderCard } from "components/OrderCard/OrderCard"
+import { TradingChartPanel } from "components/TradingChartPanel/TradingChartPanel"
 
 /**
  * Application Dashboard page
@@ -22,15 +22,6 @@ const DashboardPage: FC = () => {
   const navigate = useNavigate()
   const { data: session } = useSession()
   const { data: health } = useHealthCheck()
-
-  /**
-   * Handle manual order submission
-   * @param orderData
-   */
-  const handleOrder = (orderData: OrderData) => {
-    console.log("Submitting order:", orderData)
-    // TODO: call backend API
-  }
 
   return (
     <Stack gap={"xl"}>
@@ -54,11 +45,17 @@ const DashboardPage: FC = () => {
       />
       <Stack gap={"lg"}>
         <Stack>
+          <SectionHeading>MARKET CHART</SectionHeading>
+          <TradingChartPanel />
+        </Stack>
+
+        <Stack>
           <SectionHeading>ACTIONS</SectionHeading>
           <CardGrid>
             <OrderCard />
           </CardGrid>
         </Stack>
+
         <Stack>
           <SectionHeading>ORDER HISTORY</SectionHeading>
           <CardGrid>
