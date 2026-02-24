@@ -14,7 +14,11 @@ type Candle = {
 }
 
 type DrawTool = "none" | "trendline" | "hline"
-type Point = { x: number; y: number }
+
+type Point = {
+  x: number
+  y: number
+}
 
 type Drawing =
   | { id: string; type: "hline"; y: number }
@@ -39,37 +43,33 @@ type CandleArrays = {
   ema: number[]
 }
 
-const toSeriesData = (candles: Candle[]): CandleArrays => ({
-  x: candles.map((bar) => bar.time / 1000),
-  open: candles.map((bar) => bar.open),
-  high: candles.map((bar) => bar.high),
-  low: candles.map((bar) => bar.low),
-  close: candles.map((bar) => bar.close),
-  ema: candles.map((bar) => bar.ema),
+const chartHeight = 420
+
+const toCandleArrays = (candles: Candle[]): CandleArrays => ({
+  x: candles.map((candle) => candle.time / 1000),
+  open: candles.map((candle) => candle.open),
+  high: candles.map((candle) => candle.high),
+  low: candles.map((candle) => candle.low),
+  close: candles.map((candle) => candle.close),
+  ema: candles.map((candle) => candle.ema),
 })
 
-const asAlignedData = (series: CandleArrays): AlignedData => [series.x, series.close, series.ema]
+const toAlignedData = (series: CandleArrays): AlignedData => [series.x, series.close, series.ema]
 
 const createCandlestickPlugin = (seriesRef: MutableRefObject<CandleArrays>): Plugin => ({
   hooks: {
     draw: [
       (plot) => {
-        const { open, high, low, close, x } = seriesRef.current
+        const { x, open, high, low, close } = seriesRef.current
         if (x.length < 2) {
           return
         }
 
         const ctx = plot.ctx
-        const left = plot.bbox.left
-        const right = plot.bbox.left + plot.bbox.width
-        const candleWidth = Math.max(2, Math.floor(plot.bbox.width / x.length) - 2)
+        const candleWidth = Math.max(3, Math.floor(plot.bbox.width / x.length) - 2)
 
         for (let index = 0; index < x.length; index += 1) {
           const xPos = Math.round(plot.valToPos(x[index], "x", true))
-          if (xPos < left - candleWidth || xPos > right + candleWidth) {
-            continue
-          }
-
           const openY = Math.round(plot.valToPos(open[index], "y", true))
           const closeY = Math.round(plot.valToPos(close[index], "y", true))
           const highY = Math.round(plot.valToPos(high[index], "y", true))
@@ -83,10 +83,8 @@ const createCandlestickPlugin = (seriesRef: MutableRefObject<CandleArrays>): Plu
           ctx.lineTo(xPos, lowY)
           ctx.stroke()
 
-          const bodyTop = Math.min(openY, closeY)
-          const bodyHeight = Math.max(1, Math.abs(closeY - openY))
           ctx.fillStyle = color
-          ctx.fillRect(xPos - candleWidth / 2, bodyTop, candleWidth, bodyHeight)
+          ctx.fillRect(xPos - candleWidth / 2, Math.min(openY, closeY), candleWidth, Math.max(1, Math.abs(closeY - openY)))
         }
       },
     ],
@@ -98,7 +96,7 @@ export const TradingChartPanel: FC = () => {
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<uPlot | null>(null)
   const workerRef = useRef<Worker | null>(null)
-  const rafRef = useRef<number | null>(null)
+  const frameRef = useRef<number | null>(null)
   const candlesRef = useRef<Candle[]>([])
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [] })
 
@@ -110,32 +108,39 @@ export const TradingChartPanel: FC = () => {
   const [lastPrice, setLastPrice] = useState(100)
   const [ticksPerSecond, setTicksPerSecond] = useState(0)
 
-  const latestSummary = useMemo(() => {
-    const last = candlesRef.current.at(-1)
-    return last
-      ? `O ${last.open.toFixed(2)} H ${last.high.toFixed(2)} L ${last.low.toFixed(2)} C ${last.close.toFixed(2)} · EMA14 ${last.ema.toFixed(2)}`
+  const summary = useMemo(() => {
+    const candle = candlesRef.current.at(-1)
+    return candle
+      ? `O ${candle.open.toFixed(2)} H ${candle.high.toFixed(2)} L ${candle.low.toFixed(2)} C ${candle.close.toFixed(2)} · EMA14 ${candle.ema.toFixed(2)}`
       : "Waiting for stream…"
   }, [lastPrice])
 
   const drawOverlay = () => {
     const plot = chartRef.current
-    const overlay = overlayRef.current
-    if (!plot || !overlay) {
+    const canvas = overlayRef.current
+    if (!plot || !canvas) {
       return
     }
 
+    const dpr = window.devicePixelRatio || 1
     const width = plot.bbox.width
     const height = plot.bbox.height
     const left = plot.bbox.left
     const top = plot.bbox.top
 
-    overlay.width = width
-    overlay.height = height
-    const ctx = overlay.getContext("2d")
+    canvas.style.left = `${left}px`
+    canvas.style.top = `${top}px`
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+    canvas.width = Math.floor(width * dpr)
+    canvas.height = Math.floor(height * dpr)
+
+    const ctx = canvas.getContext("2d")
     if (!ctx) {
       return
     }
 
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
     ctx.strokeStyle = "#38bdf8"
     ctx.lineWidth = 2
@@ -147,12 +152,13 @@ export const TradingChartPanel: FC = () => {
         ctx.moveTo(0, y)
         ctx.lineTo(width, y)
         ctx.stroke()
-      } else {
-        ctx.beginPath()
-        ctx.moveTo(drawing.start.x - left, drawing.start.y - top)
-        ctx.lineTo(drawing.end.x - left, drawing.end.y - top)
-        ctx.stroke()
+        return
       }
+
+      ctx.beginPath()
+      ctx.moveTo(drawing.start.x - left, drawing.start.y - top)
+      ctx.lineTo(drawing.end.x - left, drawing.end.y - top)
+      ctx.stroke()
     })
 
     if (pendingStart) {
@@ -170,22 +176,15 @@ export const TradingChartPanel: FC = () => {
     }
 
     const options: Options = {
-      width: host.clientWidth,
-      height: 420,
-      pxAlign: true,
+      width: Math.max(host.clientWidth, 320),
+      height: chartHeight,
       scales: {
         x: { time: true },
         y: { auto: true },
       },
       axes: [
-        {
-          stroke: "rgba(255,255,255,0.25)",
-          grid: { stroke: "rgba(255,255,255,0.08)" },
-        },
-        {
-          stroke: "rgba(255,255,255,0.25)",
-          grid: { stroke: "rgba(255,255,255,0.08)" },
-        },
+        { stroke: "rgba(255,255,255,0.25)", grid: { stroke: "rgba(255,255,255,0.08)" } },
+        { stroke: "rgba(255,255,255,0.25)", grid: { stroke: "rgba(255,255,255,0.08)" } },
       ],
       series: [
         { label: "Time" },
@@ -196,9 +195,9 @@ export const TradingChartPanel: FC = () => {
         createCandlestickPlugin(seriesRef),
         {
           hooks: {
-            setSize: [drawOverlay],
-            setScale: [drawOverlay],
             draw: [drawOverlay],
+            setScale: [drawOverlay],
+            setSize: [drawOverlay],
           },
         },
       ],
@@ -207,7 +206,14 @@ export const TradingChartPanel: FC = () => {
     chartRef.current = new uPlot(options, [[], [], []], host)
 
     const resizeObserver = new ResizeObserver(() => {
-      chartRef.current?.setSize({ width: host.clientWidth, height: 420 })
+      if (!chartRef.current) {
+        return
+      }
+
+      chartRef.current.setSize({
+        width: Math.max(host.clientWidth, 320),
+        height: chartHeight,
+      })
       drawOverlay()
     })
 
@@ -215,8 +221,8 @@ export const TradingChartPanel: FC = () => {
 
     return () => {
       resizeObserver.disconnect()
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current)
       }
       chartRef.current?.destroy()
       chartRef.current = null
@@ -230,17 +236,17 @@ export const TradingChartPanel: FC = () => {
 
     worker.onmessage = (event: MessageEvent<WorkerPayload>) => {
       candlesRef.current = event.data.payload.candles
-      seriesRef.current = toSeriesData(event.data.payload.candles)
+      seriesRef.current = toCandleArrays(event.data.payload.candles)
       setLastPrice(event.data.payload.lastPrice)
       setTicksPerSecond(event.data.payload.ticksPerSecond)
 
-      if (!chartRef.current || rafRef.current) {
+      if (!chartRef.current || frameRef.current) {
         return
       }
 
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null
-        chartRef.current?.setData(asAlignedData(seriesRef.current), false)
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = null
+        chartRef.current?.setData(toAlignedData(seriesRef.current), true)
         drawOverlay()
       })
     }
@@ -250,6 +256,7 @@ export const TradingChartPanel: FC = () => {
       worker.terminate()
       workerRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -266,6 +273,7 @@ export const TradingChartPanel: FC = () => {
 
   useEffect(() => {
     drawOverlay()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, pendingStart])
 
   const handleOverlayClick = (event: MouseEvent<HTMLCanvasElement>) => {
@@ -281,8 +289,7 @@ export const TradingChartPanel: FC = () => {
     }
 
     if (tool === "hline") {
-      const price = plot.posToVal(point.y, "y")
-      setDrawings((current) => [...current, { id: crypto.randomUUID(), type: "hline", y: price }])
+      setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "hline", y: plot.posToVal(point.y, "y") }])
       return
     }
 
@@ -291,7 +298,7 @@ export const TradingChartPanel: FC = () => {
       return
     }
 
-    setDrawings((current) => [...current, { id: crypto.randomUUID(), type: "trendline", start: pendingStart, end: point }])
+    setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "trendline", start: pendingStart, end: point }])
     setPendingStart(null)
   }
 
@@ -338,7 +345,7 @@ export const TradingChartPanel: FC = () => {
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {latestSummary}
+            {summary}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
