@@ -1,0 +1,48 @@
+.search {
+  color: light-dark(black, white);
+  font-family: var(--mantine-font-family-headings);
+
+  svg {
+    color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  }
+}
+
+.action {
+  &[data-selected] {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+    color: light-dark(#222, white);
+  }
+
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-gray-8));
+    color: light-dark(#222, white);
+  }
+}
+
+.actionLabel {
+  font-family: var(--mantine-font-family-headings);
+  font-weight: 700;
+
+  mark {
+    padding: 0;
+    background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+    color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-9));
+    border-radius: 3px;
+  }
+}
+
+.actionDescription {
+  font-family: var(--mantine-font-family-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-gray-6));
+}
+
+.actionSection {
+  width: 2rem;
+  display: flex;
+  justify-content: center;
+  svg {
+    color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  }
+}

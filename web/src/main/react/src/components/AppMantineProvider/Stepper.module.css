@@ -1,0 +1,37 @@
+.separator {
+  background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5));
+  &[data-active] {
+    background: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  }
+}
+
+.stepIcon {
+  border-radius: 25%;
+  height: 20px;
+  width: 20px;
+
+  &:where(:not([data-progress]):not([data-completed])) {
+    background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+  }
+
+  &:where([data-progress]) {
+    background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+  }
+
+  &:where([data-completed]) {
+    background: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+    border-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  }
+}
+
+.stepWrapper {
+}
+
+.stepLabel {
+  font-family: var(--mantine-font-family-headings), Arial, sans-serif;
+}
+
+.stepDescription {
+  color: var(--mantine-color-dark-3);
+}

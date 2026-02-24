@@ -1,0 +1,17 @@
+.title {
+  color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  line-height: 1.2;
+  /* Clamp title to a single line */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.secondaryText {
+  /* Clamp secondary text to two lines */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

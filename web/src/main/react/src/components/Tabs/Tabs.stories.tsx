@@ -1,6 +1,6 @@
 import { Stack, Tabs } from "@mantine/core"
 import { FC, useState } from "react"
-import Button from "components/Button/Button"
+import { Button } from "../Button/Button"
 
 /**
  * Tabs are showcased here with a simple example and a more complex wizard example.
@@ -14,23 +14,23 @@ const meta = {
 export default meta
 
 const TabList: FC<{ grow?: boolean }> = ({ grow }) => (
-  <Tabs defaultValue={"basic"}>
+  <Tabs defaultValue="basic">
     <Tabs.List grow={grow}>
-      <Tabs.Tab value={"basic"}>Basic details</Tabs.Tab>
-      <Tabs.Tab value={"doc-defs"}>Document definitions</Tabs.Tab>
-      <Tabs.Tab value={"query"}>Query</Tabs.Tab>
-      <Tabs.Tab value={"settings"}>Settings</Tabs.Tab>
-      <Tabs.Tab value={"results"}>Results</Tabs.Tab>
-      <Tabs.Tab value={"editable"}>Editable keys</Tabs.Tab>
-      <Tabs.Tab value={"access"}>Access</Tabs.Tab>
+      <Tabs.Tab value="basic">Basic details</Tabs.Tab>
+      <Tabs.Tab value="doc-defs">Document definitions</Tabs.Tab>
+      <Tabs.Tab value="query">Query</Tabs.Tab>
+      <Tabs.Tab value="settings">Settings</Tabs.Tab>
+      <Tabs.Tab value="results">Results</Tabs.Tab>
+      <Tabs.Tab value="editable">Editable keys</Tabs.Tab>
+      <Tabs.Tab value="access">Access</Tabs.Tab>
     </Tabs.List>
-    <Tabs.Panel value={"basic"}>Content for Basic Details</Tabs.Panel>
-    <Tabs.Panel value={"doc-defs"}>Content for Document Definitions</Tabs.Panel>
-    <Tabs.Panel value={"query"}>Content for Query</Tabs.Panel>
-    <Tabs.Panel value={"settings"}>Content for Settings</Tabs.Panel>
-    <Tabs.Panel value={"results"}>Content for Results</Tabs.Panel>
-    <Tabs.Panel value={"editable"}>Content for Editable Keys</Tabs.Panel>
-    <Tabs.Panel value={"access"}>Content for Access</Tabs.Panel>
+    <Tabs.Panel value="basic">Content for Basic Details</Tabs.Panel>
+    <Tabs.Panel value="doc-defs">Content for Document Definitions</Tabs.Panel>
+    <Tabs.Panel value="query">Content for Query</Tabs.Panel>
+    <Tabs.Panel value="settings">Content for Settings</Tabs.Panel>
+    <Tabs.Panel value="results">Content for Results</Tabs.Panel>
+    <Tabs.Panel value="editable">Content for Editable Keys</Tabs.Panel>
+    <Tabs.Panel value="access">Content for Access</Tabs.Panel>
   </Tabs>
 )
 

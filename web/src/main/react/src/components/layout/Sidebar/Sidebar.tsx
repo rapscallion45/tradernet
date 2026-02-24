@@ -33,7 +33,7 @@ export type SidebarProps<T> = {
  * being passed the link component itself and the name of the "path" prop of the passed LinkComponent (i.e. React
  * Router's Link uses "to", whereas Next.js' "Link" component uses "href").
  *
- * The nav items are passed as an array of type "FormpipeSidebarItem", and include all information for each sidebar
+ * The nav items are passed as an array of type "SidebarItem", and include all information for each sidebar
  * link to be rendered, including any sub menu links (*currently limited to only one level of sub menu items*). The
  * active path string is also passed, allowing for the currently active link to be styled accordingly.
  *
@@ -43,7 +43,7 @@ export type SidebarProps<T> = {
  *
  * An optional bottom navigation link item is available for positioning a link at the bottom of the sidebar close to
  * the expand/collapse toggle button. It is intended for this to be used for things like "System Settings",
- * "Preferences", etc. This is of type "FormpipeSidebarItem", but this feature does not support sub menu items. Any
+ * "Preferences", etc. This is of type "SidebarItem", but this feature does not support sub menu items. Any
  * sub menu items that are provided will be ignored.
  */
 const Sidebar = <T,>({ items, activePath, LinkComponent, linkPropName, bottomLinkItem }: SidebarProps<T>) => {

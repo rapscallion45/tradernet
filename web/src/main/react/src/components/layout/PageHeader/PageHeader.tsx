@@ -3,8 +3,8 @@ import { Affix, Box, Card, Divider, Flex, Group, Popover, Stack, Text, TitleProp
 import { useWindowScroll } from "@mantine/hooks"
 import { useIsMobile } from "hooks/useIsMobile"
 import { useGlobalStore } from "hooks/useGlobalStore"
-import Title from "components/Title/Title"
-import ActionIcon from "components/ActionIcon/ActionIcon"
+import { Title } from "components/Title/Title"
+import { ActionIcon } from "components/ActionIcon/ActionIcon"
 import { wrapNodeList } from "utils/nodes"
 
 type PageHeaderProps = {

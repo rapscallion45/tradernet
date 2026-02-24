@@ -1,4 +1,11 @@
 .root {
+  min-width: 200px;
+  /* Single line of text with ellipsis */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+
   @media (max-width: $mantine-breakpoint-sm) {
     font-size: var(--mantine-h3-font-size);
   }

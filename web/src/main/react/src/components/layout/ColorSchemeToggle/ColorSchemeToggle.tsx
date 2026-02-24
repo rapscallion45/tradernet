@@ -12,7 +12,7 @@ const ColorSchemeToggle: FC = () => {
   const isLight = colorScheme === "light"
   return (
     <ActionIcon variant={"subtle"} aria-label={"Color Scheme Toggle"} size={"lg"} onClick={() => setColorScheme(isLight ? "dark" : "light")}>
-      {isLight ? <IconMoon /> : <IconSun />}
+      {isLight ? <IconMoon size={20} /> : <IconSun size={20} />}
     </ActionIcon>
   )
 }

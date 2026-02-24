@@ -22,7 +22,7 @@ export const lengthOptions: AppLength[] = [
 export const iconControl: InputType = {
   control: "select",
   table: {
-    type: { summary: "FormpipeIcon" },
+    type: { summary: "ReactNode" },
   },
 }
 
@@ -31,7 +31,7 @@ export const lengthControl: InputType = {
   control: "select",
   options: lengthOptions,
   table: {
-    type: { summary: "FormpipeLength", detail: `"__rem" | "__%" | "__px" | number` },
+    type: { summary: "AppLength", detail: `"__rem" | "__%" | "__px" | number` },
     category: "Layout",
   },
 }
@@ -41,7 +41,7 @@ export const spacingControl: InputType = {
   control: "select",
   options: ["xs", "sm", "md", "lg", "xl", "xxl"],
   table: {
-    type: { summary: "FormpipeSpacing", detail: '"xs" | "sm" | "md" | "lg" | "xl" | "xxl"' },
+    type: { summary: "AppSpacing", detail: '"xs" | "sm" | "md" | "lg" | "xl" | "xxl"' },
     category: "Layout",
   },
 }
@@ -51,7 +51,7 @@ export const sizeControl: InputType = {
   control: "inline-radio",
   options: ["xs", "sm", "md", "lg", "xl"],
   table: {
-    type: { summary: "FormpipeSize", detail: '"xs" | "sm" | "md" | "lg" | "xl"' },
+    type: { summary: "AppSize", detail: '"xs" | "sm" | "md" | "lg" | "xl"' },
     category: "Visual",
   },
 }
@@ -61,7 +61,7 @@ export const variantControl: InputType = {
   control: "inline-radio",
   options: ["filled", "outline", "subtle"],
   table: {
-    type: { summary: "FormpipeVariant", detail: '"filled" | "outline" | "subtle"' },
+    type: { summary: "AppVariant", detail: '"filled" | "outline" | "subtle"' },
     category: "Visual",
   },
 }
@@ -72,7 +72,7 @@ export const colorControl: InputType = {
   options: ["primary", "secondary", "navy", "blue", "teal", "green", "yellow", "orange", "red", "pink", "gray", "dark"],
   table: {
     type: {
-      summary: "FormpipeColor",
+      summary: "AppColor",
       detail: '"primary" | "secondary" | "navy" | "blue" | "teal" | "green" | "yellow" | "orange" | "red" | "pink" | "gray" | "dark"',
     },
     category: "Visual",

@@ -58,7 +58,7 @@ const LoginPage: FC<LoginPageProps> = ({ onLogin }) => {
         <Stack>
           {loginStatus !== LoginStatus.AccountPasswordExpired ? (
             <FormProvider {...loginForm}>
-              <LoginForm onSubmit={onSubmit} />
+              <LoginForm onSubmit={onSubmit} loggingIn={loginMutation.isPending} />
               {loginStatus && <FeedbackArea status={loginStatus} />}
             </FormProvider>
           ) : (

@@ -6,4 +6,7 @@
 export enum QueryClientKeys {
   /** User session */
   Session = "Session",
+
+  /** Server health check */
+  HealthCheck = "HealthCheck",
 }

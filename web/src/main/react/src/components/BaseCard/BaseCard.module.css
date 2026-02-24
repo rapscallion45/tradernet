@@ -1,0 +1,85 @@
+.root {
+  composes: animate from "../../global/animation.module.css";
+  /* utilise Mantine's built-in focus style class, ensuring consistency: https://mantine.dev/styles/global-styles/#static-classes */
+  composes: mantine-focus-auto from "@mantine/core/styles.css";
+
+  text-align: start;
+  border: none;
+  box-shadow: var(--mantine-shadow-xs);
+  border-radius: var(--mantine-radius-sm);
+
+  width: 100%;
+  height: auto;
+  min-width: 0; /* important when inside flex containers */
+
+  &[data-clickable="true"] {
+    cursor: pointer;
+    /* When we're hovering the card, but not the kebab menu */
+    &:hover:not(:has(.hoverIcon:hover)) {
+      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+    }
+
+    /* Take the shadow off when focused, as the focus ring combined with it is too much clutter */
+    &:focus-visible {
+      box-shadow: none;
+    }
+  }
+
+  &[data-modified] {
+    box-shadow: 0 0 0.3rem 0 light-dark(var(--mantine-color-secondary-2), var(--mantine-color-secondary-4));
+  }
+
+  &[data-active] {
+    box-shadow: 0 0 0.4rem 0 light-dark(var(--mantine-color-secondary-4), var(--mantine-color-secondary-2));
+  }
+
+  &[data-featured] {
+    background-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+    color: var(--mantine-color-white);
+
+    /* When we're hovering the card, but not the kebab menu (has to be the same as non-featured style to prevent override) */
+    &:hover:not(:has(.hoverIcon:hover)) {
+      background-color: light-dark(var(--solid-purple-color-hover-light), var(--solid-purple-color-hover-dark));
+    }
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark));
+    color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+  }
+
+  /* Show the menu icon when **the card** is hovered or focused */
+  &:hover,
+  &:focus {
+    .hoverIcon {
+      opacity: 1;
+    }
+  }
+
+  .hoverIcon {
+    /* Set some styles to override the usual ActionIcon ones */
+    cursor: pointer;
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-7));
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+    border-radius: var(--mantine-radius-xs);
+    border: none;
+    transition: all 250ms ease;
+    opacity: 0;
+    /* Always show the icon on small screens, as there's no hover there */
+    @media (max-width: $mantine-breakpoint-lg) {
+      opacity: 1;
+    }
+
+    /* Show the menu icon when **it** is hovered or focused */
+    &:hover,
+    &:focus {
+      opacity: 1;
+      background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-black));
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { FC } from "react"
 import { useForm, Controller } from "react-hook-form"
-import { TextInput, NumberInput, Button, Box } from "@mantine/core"
+import { TextInput, NumberInput, Button, Group, Stack } from "@mantine/core"
 import { OrderData } from "api/types"
 
 /**
@@ -18,26 +18,22 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit }) => {
   const { register, handleSubmit, control } = useForm<OrderData>()
 
   return (
-    <Box style={{ maxWidth: 400 }} mx={"auto"}>
+    <Stack>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <TextInput label={"Symbol"} {...register("symbol")} required />
-        <Controller
-          name="quantity"
-          control={control}
-          rules={{ required: true, min: 1 }}
-          render={({ field }) => (
-            <NumberInput
-              label="Quantity"
-              {...field} // field contains value, onChange, onBlur, ref
-              min={1}
-            />
-          )}
-        />
+        <Group grow>
+          <TextInput label={"Symbol"} {...register("symbol")} required />
+          <Controller
+            name={"quantity"}
+            control={control}
+            rules={{ required: true, min: 1 }}
+            render={({ field }) => <NumberInput required label={"Quantity"} {...field} min={1} />}
+          />
+        </Group>
         <Button type={"submit"} mt={"md"}>
           Submit Order
         </Button>
       </form>
-    </Box>
+    </Stack>
   )
 }
 

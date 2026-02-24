@@ -1,14 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { StatCard } from "./StatCard"
 import { expect, fn, userEvent, within } from "@storybook/test"
-import { iconControl } from "../../storybook/mixins"
+import { iconControl } from "../../../storybook/mixins"
 
 const meta = {
-  title: "Tradernet/StatCard",
+  title: "Tradernet/Cards/StatCard",
   component: StatCard,
-  parameters: {
-    layout: "centered",
-  },
   argTypes: {
     text: {
       control: "text",
@@ -54,7 +51,7 @@ export const TicketsOpen: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const card = canvas.getByLabelText("stat-card")
+    const card = canvas.getByRole("button", { name: /tickets open/i })
     await userEvent.click(card)
     expect(args.onClick).toHaveBeenCalled()
   },
@@ -67,6 +64,12 @@ export const TicketsAwaitingFeedback: Story = {
     secondaryText: "Tickets awaiting feedback",
     onClick: fn(),
   },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const card = canvas.getByRole("button", { name: /tickets awaiting/i })
+    await userEvent.click(card)
+    expect(args.onClick).toHaveBeenCalled()
+  },
 }
 
 export const NoAction: Story = {
@@ -74,12 +77,9 @@ export const NoAction: Story = {
     text: "69%",
     secondaryText: "Tickets answered within 1 hour",
   },
-}
-
-export const Narrow: Story = {
-  args: {
-    text: "99%",
-    secondaryText: "People that prefer wide cards",
-    narrow: true,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const card = canvas.queryByRole("button")
+    expect(card).toBeNull()
   },
 }

@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { FC, useState } from "react"
 import { Group } from "@mantine/core"
-import { sizeControl } from "../../storybook/mixins"
-import Dropdown, { DropdownProps, Option } from "components/Dropdown/Dropdown"
-import Button from "components/Button/Button"
+import { Dropdown, DropdownProps, Option } from "./Dropdown"
+import { sizeControl } from "../../../storybook/mixins"
+import { Button } from "../Button/Button"
 
 const pageData: Option[] = [
   { value: "1", label: "Page 1" },

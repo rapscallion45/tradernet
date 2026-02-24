@@ -1,0 +1,17 @@
+/* .root.root here ensures this overrides any styles in BaseCard.module.css */
+.root.root {
+  @media (min-width: $mantine-breakpoint-sm) {
+    flex: 1 0 25rem;
+    min-width: 20rem;
+    max-width: 50rem;
+  }
+
+  height: 8rem;
+  max-height: 8rem;
+}
+
+.topSection,
+.bottomSection {
+  width: 100%;
+  text-align: start;
+}

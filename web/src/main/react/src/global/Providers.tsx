@@ -3,7 +3,7 @@ import { ErrorBoundary } from "react-error-boundary"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AppMantineProvider } from "components/AppMantineProvider/AppMantineProvider"
 import "@mantine/notifications/styles.css"
-import "global/global.css"
+import "@mantine/spotlight/styles.css"
 
 /** instantiate Query client */
 const queryClient = new QueryClient({

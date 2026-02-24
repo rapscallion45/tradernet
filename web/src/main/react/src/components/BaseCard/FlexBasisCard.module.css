@@ -1,0 +1,8 @@
+.root {
+  display: flex;
+  flex-direction: row;
+  flex-basis: 10rem;
+  min-width: 8rem;
+  max-width: 16rem;
+  text-align: start;
+}

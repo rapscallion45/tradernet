@@ -1,8 +1,8 @@
 import { AriaAttributes, forwardRef, ForwardRefExoticComponent, ReactNode } from "react"
 import { ActionIcon as MantineActionIcon, Tooltip } from "@mantine/core"
-import { AppSize, AppVariant } from "global/types"
+import { AppVariant, AppSize } from "global/types"
 
-type ActionIconProps = AriaAttributes & {
+export type ActionIconProps = AriaAttributes & {
   icon: ReactNode
   onClick?: () => void
   size?: AppSize
@@ -24,7 +24,7 @@ type ActionIconProps = AriaAttributes & {
  * @param disabled Whether the icon should be disabled. Defaults to false
  * @param tooltip The tooltip to display on hover
  */
-const ActionIcon: ForwardRefExoticComponent<ActionIconProps> = forwardRef<HTMLButtonElement, ActionIconProps>(
+export const ActionIcon: ForwardRefExoticComponent<ActionIconProps> = forwardRef<HTMLButtonElement, ActionIconProps>(
   ({ icon, onClick, size = "lg", matchFormSize, variant = "outline", disabled, tooltip, ...rest }, ref) => {
     return (
       <Tooltip label={tooltip} disabled={!tooltip}>
@@ -35,5 +35,3 @@ const ActionIcon: ForwardRefExoticComponent<ActionIconProps> = forwardRef<HTMLBu
     )
   },
 )
-
-export default ActionIcon

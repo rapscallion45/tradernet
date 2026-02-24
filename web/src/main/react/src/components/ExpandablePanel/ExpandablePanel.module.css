@@ -1,0 +1,29 @@
+.titleContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.subtitle {
+  font-weight: 400;
+  color: light-dark(var(--mantine-color-dark-1), var(--mantine-color-dark-9));
+}
+
+.actionIcon,
+.actionIconText {
+  color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-dark-1));
+  &:hover {
+    color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-dark-1));
+  }
+  &[data-disabled] {
+    color: light-dark(var(--mantine-color-dark-1), var(--mantine-color-dark-9));
+  }
+}
+
+.actionItem {
+  cursor: pointer;
+}
+
+.actionItemIcon {
+  min-width: 20px;
+}

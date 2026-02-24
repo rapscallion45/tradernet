@@ -103,6 +103,15 @@ export type SideDrawerSection = {
 }
 
 /**
+ * MenuItem represents an item in a menu, with an icon, label, and onClick action.
+ */
+export type MenuItem = {
+  icon?: ReactNode
+  label: string
+  onClick: () => void
+}
+
+/**
  * SideDrawerLocation allows drawers in different regions to be managed separately.
  */
 export type SideDrawerLocation = "header" | "left" | "right"

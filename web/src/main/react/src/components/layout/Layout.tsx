@@ -1,10 +1,12 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
-import { Image, Title } from "@mantine/core"
+import { Group, Image } from "@mantine/core"
 import { IconHome } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
+import QuickNavigation from "components/QuickNavigation"
 import AccountDrawer from "components/layout/AccountDrawer/AccountDrawer"
+import { Title } from "components/Title/Title"
 import AppLayout from "components/layout/AppLayout/AppLayout"
 import Header from "components/layout/Header/Header"
 import ColorSchemeToggle from "components/layout/ColorSchemeToggle/ColorSchemeToggle"
@@ -31,15 +33,22 @@ const Layout: FC = () => {
     <AppLayout
       header={
         <Header<ReactRouterLinkProps>
-          title={<Title order={3}>Tradernet</Title>}
+          title={<Title subtitle>Tradernet</Title>}
           LinkComponent={ReactRouterLink}
           linkPropName={"to"}
           logoLinkPath={"/"}
-          rightSection={[<Image src={TradernetLogo} alt={"Tradernet logo"} h={24} w={"auto"} />, <ColorSchemeToggle />, <AccountDrawer />]}
+          leftSection={[
+            <Group>
+              <Image src={TradernetLogo} alt={"Tradernet logo"} h={40} w={"auto"} />
+              <Title subtitle>Tradernet</Title>
+            </Group>,
+          ]}
+          rightSection={[<ColorSchemeToggle />, <AccountDrawer />]}
         />
       }
       sidebar={<Sidebar<ReactRouterLinkProps> items={sidebarItems} activePath={location.pathname} LinkComponent={ReactRouterLink} linkPropName={"to"} />}>
       <Suspense fallback={<PageLoadingSkeleton />}>
+        <QuickNavigation />
         <Outlet />
       </Suspense>
     </AppLayout>

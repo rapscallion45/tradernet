@@ -1,5 +1,5 @@
 .root {
-  @media (max-width: $mantine-breakpoint-xs) {
+  @media (max-width: $mantine-breakpoint-sm) {
     --tabs-list-border-width: 0 !important;
   }
 }
@@ -9,7 +9,7 @@
   line-height: 1.5;
   text-wrap: nowrap;
 
-  @media (min-width: $mantine-breakpoint-xs) {
+  @media (min-width: $mantine-breakpoint-sm) {
     font-size: 1.2rem;
     padding: 0.4rem 1.8rem 0 1.8rem;
     border-radius: 4px 4px 0 0;
@@ -18,10 +18,6 @@
     &[data-selected="true"] {
       border-bottom-color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
     }
-
-    &:hover {
-      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
-    }
   }
 
   &:hover {
@@ -29,14 +25,20 @@
   }
 
   /* Mobile view */
-  @media (max-width: $mantine-breakpoint-xs) {
+  @media (max-width: $mantine-breakpoint-sm) {
     font-size: 0.8rem;
+    font-weight: bold;
     padding: 0.4rem 1.2rem;
     border-radius: 25px;
 
     background: var(--mantine-color-body);
     border: 1px solid light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
     color: var(--mantine-color-text);
+
+    &:hover {
+      border: 1px solid light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+      background: none;
+    }
 
     &[data-active="true"] {
       color: var(--mantine-color-white);
@@ -55,7 +57,7 @@
   flex-wrap: nowrap;
 
   /* Mobile view */
-  @media (max-width: $mantine-breakpoint-xs) {
+  @media (max-width: $mantine-breakpoint-sm) {
     gap: var(--mantine-spacing-xs);
     border-bottom: none;
     overflow-x: auto;

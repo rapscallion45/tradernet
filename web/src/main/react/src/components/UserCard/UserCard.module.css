@@ -1,0 +1,24 @@
+.root.root {
+  @media (min-width: $mantine-breakpoint-sm) {
+    flex: 1 0 25rem;
+    min-width: 16rem;
+    max-width: 50rem;
+  }
+
+  min-height: 19rem;
+  max-height: 19rem;
+
+  &:hover,
+  &:focus {
+    /* Override the standard hover colour */
+    background-color: light-dark(var(--mantine-color-gray-1), var(--hover-bg-dark)) !important;
+  }
+}
+
+.truncate {
+  width: 100%;
+  text-align: center;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}

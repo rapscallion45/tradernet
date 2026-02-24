@@ -1,42 +1,78 @@
 import { FC } from "react"
-import { useLogout } from "hooks/useAuth"
-import { useGlobalStore } from "hooks/useGlobalStore"
-import OrderForm from "./forms/OrderForm"
+import { useNavigate } from "react-router-dom"
+import { Stack, TextInput } from "@mantine/core"
+import { spotlight } from "@mantine/spotlight"
+import useSession from "hooks/useSession"
+import useHealthCheck from "hooks/useHealthCheck"
+import PageHeader from "components/layout/PageHeader/PageHeader"
+import { Title } from "components/Title/Title"
+import { ActionCard } from "components/ActionCard/ActionCard"
+import { CardGrid } from "components/CardGrid/CardGrid"
+import { SectionHeading } from "components/SectionHeading/SectionHeading"
+import Routes from "global/Routes"
+import { OrderData } from "api/types"
+import { IconArrowRight, IconReceipt, IconTicket } from "@tabler/icons-react"
+import { StatCard } from "components/StatCard/StatCard"
+import { OrderCard } from "components/OrderCard/OrderCard"
 
 /**
  * Application Dashboard page
  */
 const DashboardPage: FC = () => {
-  const logoutMutation = useLogout()
-  const { currentUser, setCurrentUser } = useGlobalStore()
-
-  /**
-   * User logout handler
-   */
-  const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync()
-      setCurrentUser({ username: "" })
-    } catch {
-      alert("Logout failed")
-    }
-  }
+  const navigate = useNavigate()
+  const { data: session } = useSession()
+  const { data: health } = useHealthCheck()
 
   /**
    * Handle manual order submission
    * @param orderData
    */
-  const handleOrder = (orderData: { symbol: string; quantity: number }) => {
+  const handleOrder = (orderData: OrderData) => {
     console.log("Submitting order:", orderData)
     // TODO: call backend API
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Welcome, {currentUser.username}</h1>
-      <OrderForm onSubmit={handleOrder} />
-      <button onClick={handleLogout}>Logout</button>
-    </div>
+    <Stack gap={"xl"}>
+      <PageHeader
+        title={<Title highlight={session.username}>{`Welcome ${session.username}, what would you like to do today?`}</Title>}
+        description={`Tradernet server is ${health.status}.`}
+        rightSection={[
+          <TextInput
+            placeholder={"Search (Ctrl + K)"}
+            onClick={spotlight.open}
+            onKeyDown={(e) => {
+              e.preventDefault()
+              spotlight.open()
+            }}
+            size={"md"}
+            variant={"filled"}
+            miw={150}
+            aria-label={"Search"}
+          />,
+        ]}
+      />
+      <Stack gap={"lg"}>
+        <Stack>
+          <SectionHeading>ACTIONS</SectionHeading>
+          <CardGrid>
+            <OrderCard />
+          </CardGrid>
+        </Stack>
+        <Stack>
+          <SectionHeading>ORDER HISTORY</SectionHeading>
+          <CardGrid>
+            <StatCard text={"5"} secondaryText={"Orders Placed"} icon={<IconReceipt />} />
+            <ActionCard
+              text={"View Orders"}
+              icon={<IconArrowRight />}
+              secondaryText={"View your order book history"}
+              onClick={() => navigate(Routes.Dashboard)}
+            />
+          </CardGrid>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }
 

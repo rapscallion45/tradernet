@@ -1,8 +1,14 @@
+.wrapper {
+  width: 100%;
+  @media (min-width: $mantine-breakpoint-sm) {
+    max-width: 34rem;
+  }
+}
+
 .input {
   composes: animate from "../../global/animation.module.css";
 
   /* Bits for time picker only */
-
   &::-webkit-datetime-edit-hour-field,
   &::-webkit-datetime-edit-minute-field,
   &::-webkit-datetime-edit-second-field,

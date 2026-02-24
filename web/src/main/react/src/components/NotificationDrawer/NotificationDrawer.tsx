@@ -1,15 +1,15 @@
 import React, { FC } from "react"
-import { Card, Center, CloseButton, Group, Indicator, Stack, Text, Title } from "@mantine/core"
+import { Card, Center, CloseButton, Group, Indicator, Stack, Text, Title, useMantineColorScheme } from "@mantine/core"
 import { AppNotification } from "global/types"
-import ActionIcon from "components/ActionIcon/ActionIcon"
-import Button from "components/Button/Button"
+import { ActionIcon } from "../ActionIcon/ActionIcon"
+import { Button } from "../Button/Button"
 import classes from "./NotificationDrawer.module.css"
-import SideDrawer from "components/layout/SideDrawer/SideDrawer"
-import { icon } from "hooks/useToast"
-import { useNotificationStorage } from "hooks/useNotificationStorage"
-import { useSideDrawer } from "hooks/useSideDrawer"
+import { SideDrawer } from "../SideDrawer/SideDrawer"
+import { iconVariant } from "hooks/useToast"
+import { useNotificationStorage } from "../../hooks/useNotificationStorage"
+import { useSideDrawer } from "../../hooks/useSideDrawer"
 
-const NotificationDrawer: FC = () => {
+export const NotificationDrawer: FC = () => {
   const { opened, toggle } = useSideDrawer("notifications", "header")
   const [storedNotifications, setStoredNotifications] = useNotificationStorage()
 
@@ -71,7 +71,7 @@ const CustomNotification: FC<AppNotification> = ({ id, variant, message, title, 
       <Stack>
         <Group justify={"space-between"}>
           <Group justify={"flex-start"} align={"flex-start"}>
-            <Text>{icon(variant)}</Text>
+            <Text>{iconVariant(variant)}</Text>
             <Group justify={"space-between"}>
               <Text size="sm" fw={700}>
                 {title}
@@ -102,5 +102,3 @@ const CustomNotification: FC<AppNotification> = ({ id, variant, message, title, 
     </Card>
   )
 }
-
-export default NotificationDrawer

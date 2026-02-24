@@ -1,15 +1,14 @@
 import { Meta, StoryObj } from "@storybook/react"
-import { ActionCard, ActionCardProps } from "components/ActionCard/ActionCard"
-import { expect, fn, userEvent, within } from "@storybook/test"
-import { Group } from "@mantine/core"
-import { iconControl } from "../../storybook/mixins"
+import { ActionCard, ActionCardProps } from "./ActionCard"
+import { fn } from "@storybook/test"
+import { Group, Stack } from "@mantine/core"
+import { iconControl } from "../../../storybook/mixins"
+import React from "react"
+import { CardGrid } from "../CardGrid/CardGrid"
 
 const meta = {
-  title: "Tradernet/ActionCard",
+  title: "Tradernet/Cards/ActionCard",
   component: ActionCard,
-  parameters: {
-    layout: "centered",
-  },
   argTypes: {
     text: {
       control: "text",
@@ -18,16 +17,9 @@ const meta = {
         category: "Primary Action",
       },
     },
-    action: {
+    onClick: {
       control: false,
       description: "The action to run when the card is clicked",
-      table: {
-        category: "Primary Action",
-      },
-    },
-    tooltip: {
-      control: "text",
-      description: "The tooltip for the primary action",
       table: {
         category: "Primary Action",
       },
@@ -46,16 +38,9 @@ const meta = {
         category: "Secondary Action",
       },
     },
-    secondaryIcon: {
-      description: "The icon to display next to the secondary text, shows on hover",
-      table: {
-        ...iconControl.table,
-        category: "Secondary Action",
-      },
-    },
-    secondaryToolTip: {
-      control: "text",
-      description: "The tooltip for the secondary action",
+    secondaryActions: {
+      control: false,
+      description: "The actions that go in the kebab menu",
       table: {
         category: "Secondary Action",
       },
@@ -92,32 +77,12 @@ export const RegularCard: Story = {
     text: "Invoice Search",
     icon: "arrow-right",
     secondaryText: "More Info",
-    secondaryIcon: "pen-to-square",
-    secondaryToolTip: "Edit this search",
-    action: fn(),
-  },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement)
-    const card = canvas.getByTestId(`ActionCard-${args.text}`)
-
-    console.log("card", card)
-
-    expect(card).toBeTruthy()
-
-    // check the title exists
-    const text = canvas.getByText(args.text)
-    expect(text).toBeVisible()
-
-    // click the text
-    await userEvent.click(text)
-    // check the action was called
-    expect(args.action).toHaveBeenCalled()
-    // check the secondary action icon exists
-    const secondaryIcon = canvas.getByTestId("icon-pen-to-square")
-    expect(secondaryIcon).toBeInTheDocument()
-    await userEvent.click(secondaryIcon)
-    // check the primary action was not called again
-    expect(args.action).toHaveBeenCalledTimes(1)
+    onClick: fn(),
+    secondaryActions: [
+      { icon: "pen-to-square", label: "Edit", onClick: fn() },
+      { icon: "copy", label: "Clone", onClick: fn() },
+      { icon: "trash-can", label: "Delete", onClick: fn() },
+    ],
   },
 }
 
@@ -127,9 +92,9 @@ export const FeaturedCard: Story = {
     ...RegularCard.args,
     icon: "plus",
     featured: true,
-    text: RegularCard.args?.text + " (Featured)",
+    text: "Featured Card",
+    secondaryActions: undefined,
   },
-  play: RegularCard.play, // just run the same tests to ensure nothing crazy happens when things are purple
 }
 
 // a card that is modified will have a purple glow around it
@@ -142,6 +107,23 @@ export const ModifiedCard: Story = {
   play: RegularCard.play, // just run the same tests to ensure nothing crazy happens when things are purple
 }
 
+export const Active: Story = {
+  args: {
+    ...RegularCard.args,
+    text: RegularCard.args?.text + " (Active)",
+    active: true,
+  },
+}
+
+export const ModifiedAndActive: Story = {
+  args: {
+    ...RegularCard.args,
+    text: RegularCard.args?.text + " (Both)",
+    modified: true,
+    active: true,
+  },
+}
+
 // A card that is disabled will have a gray background and gray text
 export const DisabledCard: Story = {
   args: {
@@ -149,43 +131,25 @@ export const DisabledCard: Story = {
     text: "Disabled Search",
     disabled: true,
   },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement)
-    // check the title exists
-    const text = canvas.getByText("Disabled Search")
-    expect(text).toBeInTheDocument()
-    // click it
-    await userEvent.click(text)
-    // check both actions were NOT called
-    expect(args.action).not.toHaveBeenCalled()
-    // check the secondary action icon does not exist
-    const secondaryIcon = await canvas.queryByTestId("icon-pen-to-square")
-    expect(secondaryIcon).not.toBeInTheDocument()
+}
+
+export const WithTooltip: Story = {
+  args: {
+    ...RegularCard.args,
+    onClick: undefined,
+    text: "Search with Tooltip",
+    icon: "ban",
+    tooltip: "You do not have access to this search",
   },
 }
 
-// Sometimes there will be no primary action - an app can not be run, but can still be edited for example
+// Sometimes there will be no primary action - an app can not be run, but can still be ed for example
 export const NoPrimaryAction: Story = {
   args: {
     ...RegularCard.args,
     text: "Editable Search",
     icon: undefined,
-    action: undefined,
-  },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement)
-    // check the title exists
-    const text = canvas.getByText("Editable Search")
-    expect(text).toBeInTheDocument()
-    // click it
-    await userEvent.click(text)
-    // check the main action is undefined
-    expect(args.action).toBe(undefined)
-    // check the secondary action icon exists
-    const secondaryIcon = await canvas.getByTestId("icon-pen-to-square")
-    expect(secondaryIcon).toBeInTheDocument()
-    await userEvent.click(secondaryIcon)
-    // check the secondary action was called
+    onClick: undefined,
   },
 }
 
@@ -194,20 +158,20 @@ export const NoSecondaryAction: Story = {
   args: {
     ...RegularCard.args,
     text: "Runnable Search",
-    secondaryIcon: undefined,
+    secondaryActions: undefined,
   },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement)
-    // check the title exists
-    const text = canvas.getByText("Runnable Search")
-    expect(text).toBeInTheDocument()
-    // click it
-    await userEvent.click(text)
-    // check the action was called
-    expect(args.action).toHaveBeenCalled()
-    // check the secondary action icon does not exist
-    const secondaryIcon = canvas.queryByTestId("icon-pen-to-square")
-    expect(secondaryIcon).not.toBeInTheDocument()
+}
+
+// Secondary actions should be able to exceed the 200px minimum width
+export const LongSecondaryActionText: Story = {
+  args: {
+    ...RegularCard.args,
+    text: "Runnable Search",
+    secondaryActions: [
+      { icon: "pen-to-square", label: "Edit", onClick: fn() },
+      { icon: "copy", label: "Clone this search because you need a new one. Go on, why not?", onClick: fn() },
+      { icon: "trash-can", label: "Delete", onClick: fn() },
+    ],
   },
 }
 
@@ -224,12 +188,6 @@ export const TruncatedText: Story = {
   args: {
     ...RegularCard.args,
     text: "Runnable Search, not editable, and is too big to fit on the card",
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    // check the title exists
-    const text = canvas.getByText("Runnable Search, not editable, and is too big to fit on the card")
-    expect(text).toBeVisible()
   },
 }
 
@@ -249,16 +207,101 @@ export const MinimalContent: Story = {
   },
 }
 
+export const InStack: Story = {
+  args: {
+    ...RegularCard.args,
+  },
+  render: (args) => (
+    <Stack>
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+    </Stack>
+  ),
+}
+
+export const InGroup: Story = {
+  args: {
+    ...RegularCard.args,
+  },
+  render: (args) => (
+    <Group>
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+      <ActionCard {...args} />
+    </Group>
+  ),
+}
+
 // A nice way to get a view on how the cards look together
-const GridExample = () => (
-  <Group gap={"lg"} justify={"left"}>
+export const GridExample3Items = () => (
+  <CardGrid>
+    <ActionCard {...(FeaturedCard.args as ActionCardProps)} />
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+  </CardGrid>
+)
+
+// A nice way to get a view on how the cards look together
+export const GridExample6Items = () => (
+  <CardGrid>
     <ActionCard {...(FeaturedCard.args as ActionCardProps)} />
     <ActionCard {...(RegularCard.args as ActionCardProps)} />
     <ActionCard {...(DisabledCard.args as ActionCardProps)} />
     <ActionCard {...(NoPrimaryAction.args as ActionCardProps)} />
     <ActionCard {...(NoSecondaryAction.args as ActionCardProps)} />
     <ActionCard {...(TruncatedText.args as ActionCardProps)} />
-  </Group>
+  </CardGrid>
 )
 
-export const CardGrid = () => <GridExample />
+// A nice way to get a view on how the cards look together
+export const SimpleGridExample3Items = () => (
+  <CardGrid>
+    <ActionCard {...(FeaturedCard.args as ActionCardProps)} />
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+  </CardGrid>
+)
+
+// A nice way to get a view on how the cards look together
+export const SimpleGridExample6Items = () => (
+  <CardGrid>
+    <ActionCard {...(FeaturedCard.args as ActionCardProps)} />
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+    <ActionCard {...(NoPrimaryAction.args as ActionCardProps)} />
+    <ActionCard {...(NoSecondaryAction.args as ActionCardProps)} />
+    <ActionCard {...(TruncatedText.args as ActionCardProps)} />
+  </CardGrid>
+)
+
+// A nice way to get a view on how the cards look together
+export const SimpleGridExample9Items = () => (
+  <CardGrid>
+    <ActionCard {...(FeaturedCard.args as ActionCardProps)} />
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+    <ActionCard {...(NoPrimaryAction.args as ActionCardProps)} />
+    <ActionCard {...(NoSecondaryAction.args as ActionCardProps)} />
+    <ActionCard {...(TruncatedText.args as ActionCardProps)} />
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+    <ActionCard {...(NoPrimaryAction.args as ActionCardProps)} />
+  </CardGrid>
+)
+
+// A nice way to get a view on how the cards look together
+export const ModifiedAndActiveGrid = () => (
+  <CardGrid>
+    <ActionCard {...(RegularCard.args as ActionCardProps)} />
+    <ActionCard {...(DisabledCard.args as ActionCardProps)} />
+    <ActionCard {...(ModifiedCard.args as ActionCardProps)} />
+    <ActionCard {...(ModifiedCard.args as ActionCardProps)} />
+    <ActionCard {...(Active.args as ActionCardProps)} />
+    <ActionCard {...(NoPrimaryAction.args as ActionCardProps)} />
+  </CardGrid>
+)

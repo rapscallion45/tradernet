@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import ActionIcon from "./ActionIcon"
-import { iconControl, sizeControl, variantControl } from "../../storybook/mixins"
+import { ActionIcon } from "./ActionIcon"
+import { iconControl, sizeControl, variantControl } from "../../../storybook/mixins"
 
 const meta = {
   title: "Tradernet/ActionIcon",

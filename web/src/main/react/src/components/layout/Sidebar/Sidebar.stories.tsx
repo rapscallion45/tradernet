@@ -26,7 +26,7 @@ const meta = {
         LongMenuItemsList: sidebarNavItems,
       },
       table: {
-        type: { summary: "FormpipeSidebarItem[]" },
+        type: { summary: "SidebarItem[]" },
         category: "Customisable",
       },
     },
@@ -61,7 +61,7 @@ const meta = {
         MockBottomLinkItem: mockBottomLinkItem,
       },
       table: {
-        type: { summary: "FormpipeSidebarItem" },
+        type: { summary: "SidebarItem" },
         category: "Customisable",
       },
     },

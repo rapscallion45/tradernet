@@ -1,10 +1,11 @@
-import { FC, ReactNode } from "react"
+import React, { FC, ReactNode } from "react"
 import {
   ActionIcon,
   Checkbox,
   CheckboxGroup,
   ColorSchemeScript,
   CSSVariablesResolver,
+  Highlight,
   FileInput,
   Input,
   InputWrapper,
@@ -17,6 +18,7 @@ import {
   SegmentedControl,
   Select,
   Tabs,
+  Stepper,
 } from "@mantine/core"
 import "@fontsource-variable/dm-sans"
 import "@fontsource-variable/lexend"
@@ -37,26 +39,37 @@ import tabsClasses from "./Tabs.module.css"
 import "global/global.css"
 import { DatePickerInput, DateTimePicker, TimeInput } from "@mantine/dates"
 import { Notifications } from "@mantine/notifications"
-import { IconArrowLeft, IconArrowRight, IconCalendar, IconCaretDown, IconCheck, IconCircleLetterI, IconClock, IconFolderOpen } from "@tabler/icons-react"
+import stepperClasses from "./Stepper.module.css"
+import {
+  IconArrowDown,
+  IconArrowLeft,
+  IconArrowRight,
+  IconCalendar,
+  IconCheck,
+  IconClock,
+  IconFolderOpen,
+  IconInfoCircle,
+  IconLineDashed,
+} from "@tabler/icons-react"
 
 // leave it on one line, prettier!
 // prettier-ignore
 export const colors = {
-    primary: ["#e8f7fd", "#cfeeff", "#b6e6fb", "#9eddf7", "#86d3f2", "#79cded", "#5fb9e4", "#46a6db", "#2f93d2", "#0f7fc7"],
-    secondary: ["#e6edf6", "#c4d2e8", "#9bb1d6", "#708cc3", "#4e6fb2", "#2f61b8", "#2c4d9f", "#1f3e82", "#162e66", "#0e2c5f"],
-    navy: ["#ebeffe", "#d3daf8", "#a3b2f4", "#7087f1", "#4763ef", "#314cee", "#2741ef", "#1d33d5", "#152ebf", "#0627a7"],
-    blue: ["#ebf8ff", "#d6edfa", "#a7daf8", "#76c6f6", "#55b5f5", "#44abf5", "#3ba5f6", "#2f90db", "#2281c4", "#006fad"],
-    teal: ["#e2fffd", "#d2f8f6", "#aaeee9", "#7ee5dd", "#5bddd3", "#43d8cd", "#32d6c9", "#1ebdb1", "#02a99d", "#009389"],
-    green: ["#f4fde7", "#e8f8d4", "#d1f1aa", "#b9e97c", "#a3e256", "#96de3d", "#8fdc2f", "#7bc221", "#6cac18", "#5a9508"],
-    yellow: ["#fffbe0", "#fff6ca", "#ffed99", "#ffe362", "#ffda36", "#ffd518", "#ffd201", "#e3b900", "#caa500", "#ae8e00"],
-    orange: ["#fff2e4", "#ffe4cf", "#fcc79e", "#faa869", "#f98e3e", "#f87d22", "#f87412", "#dd6306", "#c55600", "#ac4800"],
-    red: ["#ffe8ee", "#ffd1d9", "#fba1b1", "#f66d86", "#f24261", "#f0274a", "#f0163e", "#d60530", "#c00029", "#a80021"],
-    pink: ["#ffe9f7", "#ffd3e6", "#f7a4c8", "#f173a9", "#eb498f", "#e92f7f", "#e82077", "#cf1165", "#ba075a", "#a3004d"],
+  primary: ["#ebeffe", "#d3daf8", "#a3b2f4", "#7087f1", "#4763ef", "#314cee", "#2741ef", "#1d33d5", "#152ebf", "#0627a7"],
+  secondary: ["#ebeffe", "#d3daf8", "#a3b2f4", "#7087f1", "#4763ef", "#314cee", "#2741ef", "#1d33d5", "#152ebf", "#0627a7"],
+  navy: ["#ebeffe", "#d3daf8", "#a3b2f4", "#7087f1", "#4763ef", "#314cee", "#2741ef", "#1d33d5", "#152ebf", "#0627a7"],
+  blue: ["#ebf8ff", "#d6edfa", "#a7daf8", "#76c6f6", "#55b5f5", "#44abf5", "#3ba5f6", "#2f90db", "#2281c4", "#006fad"],
+  teal: ["#e2fffd", "#d2f8f6", "#aaeee9", "#7ee5dd", "#5bddd3", "#43d8cd", "#32d6c9", "#1ebdb1", "#02a99d", "#009389"],
+  green: ["#f4fde7", "#e8f8d4", "#d1f1aa", "#b9e97c", "#a3e256", "#96de3d", "#8fdc2f", "#7bc221", "#6cac18", "#5a9508"],
+  yellow: ["#fffbe0", "#fff6ca", "#ffed99", "#ffe362", "#ffda36", "#ffd518", "#ffd201", "#e3b900", "#caa500", "#ae8e00"],
+  orange: ["#fff2e4", "#ffe4cf", "#fcc79e", "#faa869", "#f98e3e", "#f87d22", "#f87412", "#dd6306", "#c55600", "#ac4800"],
+  red: ["#ffe8ee", "#ffd1d9", "#fba1b1", "#f66d86", "#f24261", "#f0274a", "#f0163e", "#d60530", "#c00029", "#a80021"],
+  pink: ["#ffe9f7", "#ffd3e6", "#f7a4c8", "#f173a9", "#eb498f", "#e92f7f", "#e82077", "#cf1165", "#ba075a", "#a3004d"],
 }
-const appTheme: MantineThemeOverride = {
-  primaryColor: "primary",
+const formpipeTheme: MantineThemeOverride = {
+  primaryColor: "secondary",
   primaryShade: 8,
-  // @ts-expect-error it's easier to leave colors untyped, Mantine knows what it's doing.
+  // @ts-ignore it's easier to leave colors untyped, Mantine knows what it's doing.
   colors: colors,
   fontFamily: "DM Sans Variable, Arial, sans-serif",
   headings: {
@@ -100,11 +113,17 @@ const appTheme: MantineThemeOverride = {
         arrowSize: 8,
       },
     },
+    Card: {
+      defaultProps: {
+        shadow: "xs",
+        radius: "sm",
+      },
+    },
     Checkbox: Checkbox.extend({
       classNames: checkboxClasses,
       defaultProps: {
         size: "sm",
-        icon: ({ indeterminate }) => (indeterminate ? <IconCheck /> : <IconCheck />),
+        icon: ({ indeterminate, ...others }) => (indeterminate ? <IconLineDashed {...others} /> : <IconCheck {...others} />),
       },
     }),
     CheckboxGroup: CheckboxGroup.extend({
@@ -113,6 +132,11 @@ const appTheme: MantineThemeOverride = {
           fontWeight: 700,
           fontFamily: "var(--mantine-font-family-headings)",
         },
+      },
+    }),
+    Highlight: Highlight.extend({
+      defaultProps: {
+        color: "primary",
       },
     }),
     Tabs: Tabs.extend({
@@ -171,14 +195,14 @@ const appTheme: MantineThemeOverride = {
     Select: Select.extend({
       classNames: selectClasses,
       defaultProps: {
-        rightSection: <IconCaretDown />,
+        rightSection: <IconArrowDown />,
         checkIconPosition: "right",
       },
     }),
     MultiSelect: MultiSelect.extend({
       classNames: selectClasses,
       defaultProps: {
-        rightSection: <IconCaretDown />,
+        rightSection: <IconArrowDown />,
         checkIconPosition: "right",
       },
     }),
@@ -187,7 +211,7 @@ const appTheme: MantineThemeOverride = {
       defaultProps: {
         variant: "info",
         p: "md",
-        icon: <IconCircleLetterI />,
+        icon: <IconInfoCircle />,
       },
     }),
     Progress: Progress.extend({
@@ -196,6 +220,10 @@ const appTheme: MantineThemeOverride = {
         radius: "xl",
         size: "sm",
       },
+    }),
+    Stepper: Stepper.extend({
+      defaultProps: {},
+      classNames: stepperClasses,
     }),
   },
 }
@@ -219,13 +247,10 @@ const resolver: CSSVariablesResolver = (theme) => ({
   },
 })
 
-export const AppMantineProvider: FC<{
-  defaultColorScheme?: MantineColorScheme
-  children: ReactNode
-}> = ({ defaultColorScheme, children }) => (
+export const AppMantineProvider: FC<{ defaultColorScheme?: MantineColorScheme; children: ReactNode }> = ({ defaultColorScheme, children }) => (
   <>
     <ColorSchemeScript defaultColorScheme={defaultColorScheme ?? "auto"} />
-    <MantineProvider defaultColorScheme={defaultColorScheme ?? "auto"} theme={appTheme} cssVariablesResolver={resolver}>
+    <MantineProvider defaultColorScheme={defaultColorScheme ?? "auto"} theme={formpipeTheme} cssVariablesResolver={resolver}>
       <Notifications position={"top-center"} />
       {children}
     </MantineProvider>

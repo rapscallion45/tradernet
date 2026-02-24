@@ -3,20 +3,22 @@ import { useFormContext } from "react-hook-form"
 import { Center, Image, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core"
 import { LoginData } from "api/types"
 import TradernetLogo from "assets/tradernet-logo.svg"
-import Button from "components/Button/Button"
+import { Button } from "components/Button/Button"
 
 /**
  * Login form component props
+ * @prop loggingIn - login pending flag
  * @prop onSubmit - form submission handler
  */
 type LoginFormProps = {
+  loggingIn: boolean
   onSubmit: (data: LoginData) => void
 }
 
 /**
  * Renders the login form and handles validation via react-hook-form.
  */
-const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
+const LoginForm: FC<LoginFormProps> = ({ loggingIn, onSubmit }) => {
   const {
     register,
     handleSubmit,
@@ -50,7 +52,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
         autoComplete="current-password"
         w={"100%"}
       />
-      <Button onClick={() => void handleSubmit(onSubmit)()} type={"submit"} fullWidth>
+      <Button loading={loggingIn} onClick={() => void handleSubmit(onSubmit)()} type={"submit"} fullWidth>
         Log in
       </Button>
     </Stack>

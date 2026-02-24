@@ -1,9 +1,9 @@
-import { ReactNode, useCallback } from "react"
 import { NotificationData, notifications, notificationsStore, useNotifications } from "@mantine/notifications"
 import { Progress, Stack, Text } from "@mantine/core"
-import { IconAlertTriangle, IconCircleCheck, IconCircleLetterI } from "@tabler/icons-react"
 import { AppNotification, AppNotificationVariant } from "global/types"
-import { useNotificationStorage } from "hooks/useNotificationStorage"
+import { useNotificationStorage } from "./useNotificationStorage"
+import { ReactNode, useCallback } from "react"
+import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from "@tabler/icons-react"
 
 /**
  * Hook to show a basic toast notification at the top of the screen.
@@ -95,7 +95,7 @@ const useToast = (): { toast: (notif: AppNotification) => void } => {
         message: content,
         // if we need an update in the future, or it's an error, don't auto-close, otherwise close fairly quickly
         autoClose: needsUpdateInFuture || variant === "error" ? false : 3000,
-        icon: icon(variant),
+        icon: iconVariant(variant),
       }
 
       // Update or show based on presence of existing notification with same ID
@@ -108,8 +108,8 @@ const useToast = (): { toast: (notif: AppNotification) => void } => {
 }
 
 // Determine the icon based on the category of the notification
-function icon(variant: AppNotificationVariant): ReactNode {
-  return variant === "error" ? <IconAlertTriangle /> : variant === "success" ? <IconCircleCheck /> : <IconCircleLetterI />
+function iconVariant(variant: AppNotificationVariant): ReactNode {
+  return variant === "error" ? <IconAlertTriangle /> : variant === "success" ? <IconCircleCheck /> : <IconInfoCircle />
 }
 
-export { useToast, icon }
+export { useToast, iconVariant }

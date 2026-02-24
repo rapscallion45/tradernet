@@ -1,8 +1,8 @@
 import { Box, Combobox, InputBase, useCombobox } from "@mantine/core"
 import { AppInputVariant, AppLength, AppSize } from "global/types"
 import { useState } from "react"
-import { IconCaretDown } from "@tabler/icons-react"
 import classes from "./Dropdown.module.css"
+import { IconArrowDown } from "@tabler/icons-react"
 
 export type Option = {
   value: string
@@ -21,7 +21,7 @@ export type DropdownProps<T extends Option> = {
   variant?: AppInputVariant
 }
 
-const Dropdown = <T extends Option>({ name, label, description, value, onChange, data, size = "sm", width, variant = "default" }: DropdownProps<T>) => {
+export const Dropdown = <T extends Option>({ name, label, description, value, onChange, data, size = "sm", width, variant = "default" }: DropdownProps<T>) => {
   console.log("value", value)
 
   const combobox = useCombobox()
@@ -57,11 +57,11 @@ const Dropdown = <T extends Option>({ name, label, description, value, onChange,
             label={label}
             description={description}
             size={size}
-            component={"button"}
-            type={"button"}
+            component="button"
+            type="button"
             pointer
-            rightSection={<IconCaretDown />}
-            rightSectionPointerEvents={"none"}
+            rightSection={<IconArrowDown size={15} />}
+            rightSectionPointerEvents="none"
             onClick={() => combobox.toggleDropdown()}>
             {selectedOption?.label}
           </InputBase>
@@ -79,5 +79,3 @@ const Dropdown = <T extends Option>({ name, label, description, value, onChange,
     </Box>
   )
 }
-
-export default Dropdown

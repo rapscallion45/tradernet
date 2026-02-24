@@ -9,11 +9,15 @@ body.resizing * {
 
 body {
   background-color: var(--mantine-color-body);
-  background-image: url("../assets/app-background.png");
+  background-image: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url("../assets/app-background.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
+
+  @mixin dark {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("../assets/app-background-dark.png");
+  }
 }
 
 :root {

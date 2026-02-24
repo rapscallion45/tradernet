@@ -4,7 +4,7 @@ import { useToast } from "hooks/useToast"
 import { ApiErrorBody, SafeResult, LoginData, LoginResponse, LogoutResponse } from "api/types"
 import useCrudHandling, { PartialHandlers } from "hooks/useCrudHandling"
 import { getErrorMessage } from "api/util"
-import { getRestClient } from "../api/RestClient"
+import { getRestClient } from "api/RestClient"
 
 /**
  * Custom hook pertaining logic for User login
@@ -76,11 +76,12 @@ export function useLogin() {
  * Custom hook pertaining logic for User logout
  */
 export function useLogout() {
-  const [handleError] = useCrudHandling<LogoutResponse>()
+  const [handleError, handleSuccess] = useCrudHandling<LogoutResponse>()
   const { toast } = useToast()
   const toastId = "logout-request"
 
   const defaultHandlers = (): PartialHandlers<LogoutResponse> => ({
+    success: () => window.location.reload(),
     apiModel: (error) =>
       toast({
         id: toastId,
@@ -110,6 +111,7 @@ export function useLogout() {
 
   const mutation = useMutation<LogoutResponse, AxiosError<ApiErrorBody>, void>({
     mutationFn: () => getRestClient().authResource.logout(),
+    onSuccess: (data) => handleSuccess(data, { ...defaultHandlers() }),
     onError: (error) => {
       try {
         handleError(error, { ...defaultHandlers() })

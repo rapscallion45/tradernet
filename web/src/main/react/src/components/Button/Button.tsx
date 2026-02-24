@@ -1,4 +1,4 @@
-import { AriaAttributes, forwardRef, ForwardRefExoticComponent, ReactNode } from "react"
+import React, { AriaAttributes, forwardRef, ForwardRefExoticComponent, ReactNode } from "react"
 import { Button as MantineButton } from "@mantine/core"
 import { AppSize, AppVariant } from "global/types"
 import classes from "./Button.module.css"
@@ -26,7 +26,7 @@ export type ButtonProps = AriaAttributes & {
  *
  * Standard controls such as `size`, `onClick` and `disabled` are also available.
  */
-const Button: ForwardRefExoticComponent<ButtonProps> = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button: ForwardRefExoticComponent<ButtonProps> = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "filled", size = "md", leftIcon, rightIcon, onClick, onMouseEnter, disabled, type = "button", fullWidth, loading, children, ...rest }, ref) => (
     <MantineButton
       ref={ref}
@@ -34,8 +34,8 @@ const Button: ForwardRefExoticComponent<ButtonProps> = forwardRef<HTMLButtonElem
       variant={variant}
       size={size}
       type={type}
-      leftSection={!!leftIcon}
-      rightSection={!!rightIcon}
+      leftSection={leftIcon}
+      rightSection={rightIcon}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       disabled={disabled}
@@ -46,5 +46,3 @@ const Button: ForwardRefExoticComponent<ButtonProps> = forwardRef<HTMLButtonElem
     </MantineButton>
   ),
 )
-
-export default Button

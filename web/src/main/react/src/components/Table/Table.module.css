@@ -1,0 +1,90 @@
+table {
+  --light: var(--mantine-color-gray-0);
+  --lighter: var(--mantine-color-gray-1);
+  --lightest: var(--mantine-color-gray-0);
+
+  --dark: var(--mantine-color-dark-7);
+  --darker: var(--mantine-color-dark-8);
+  --darkest: var(--mantine-color-dark-9);
+
+  position: relative;
+}
+
+/* Set the text of the header and the rows */
+.thead,
+.tbody {
+  color: light-dark(black, white);
+}
+
+/* Set the background color of the header */
+.th {
+  position: relative;
+  background-color: light-dark(var(--lighter), var(--darker));
+
+  div,
+  div div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.tr {
+  td {
+    background-color: light-dark(white, black);
+  }
+
+  &:hover td {
+    background-color: light-dark(var(--lightest), var(--darker));
+  }
+
+  &[data-selected="true"] {
+    background-color: light-dark(var(--lighter), var(--dark));
+  }
+
+  overflow: hidden;
+  white-space: nowrap;
+
+  div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.caption {
+  text-align: left;
+  color: light-dark(var(--solid-purple-color-light), var(--solid-purple-color-dark));
+  font-weight: 700;
+}
+
+.resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background-color: var(--mantine-color-gray-5);
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+
+  &[data-resizing="true"] {
+    background-color: var(--mantine-color-gray-6);
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .resizer {
+    opacity: 0;
+  }
+
+  *:hover > .resizer {
+    opacity: 1;
+  }
+}
+
+.pageSizeSelect {
+  width: 100px;
+}

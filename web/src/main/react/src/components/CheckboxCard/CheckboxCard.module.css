@@ -1,0 +1,48 @@
+.root {
+  composes: animate from "../../global/animation.module.css";
+  min-height: 5rem;
+  padding: var(--mantine-spacing-lg) !important;
+  width: 100%;
+
+  /* Keep cards the same size as the other form fields (see Input.module.css) */
+  @media (min-width: $mantine-breakpoint-sm) {
+    max-width: 34rem;
+  }
+
+  border-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+
+  &[data-checked] {
+    border-color: transparent;
+    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    box-shadow: var(--mantine-shadow-xs);
+
+    &:hover {
+      background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-9));
+    }
+  }
+
+  &[disabled] {
+    background-color: light-dark(var(--disabled-bg-color-light), var(--disabled-bg-color-dark)) !important;
+    color: light-dark(var(--disabled-color-light), var(--disabled-color-dark));
+    border: none;
+  }
+
+  &[data-modified] {
+    box-shadow: 0 0 0.3rem 0 light-dark(var(--mantine-color-secondary-2), var(--mantine-color-secondary-4));
+  }
+
+  &:hover {
+    background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
+  }
+}
+
+.label {
+  font-weight: bold;
+  font-size: var(--mantine-font-size-md);
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+}
+
+.description {
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-5));
+}

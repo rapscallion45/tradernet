@@ -4,17 +4,7 @@
   line-height: 1;
 }
 
-.root {
-  composes: animate from "../../global/animation.module.css";
-  cursor: pointer;
-
-  &[data-clickable="true"] {
-    &:hover {
-      background-color: light-dark(var(--hover-bg-light), var(--hover-bg-dark));
-    }
-  }
-
-  &[data-clickable="false"] {
-    cursor: unset;
-  }
+.secondaryText {
+  display: flex;
+  justify-content: flex-start;
 }

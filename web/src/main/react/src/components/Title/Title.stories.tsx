@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/react"
-import Title from "./Title"
-import { iconControl } from "../../storybook/mixins"
+import { Title } from "./Title"
+import { iconControl } from "../../../storybook/mixins"
 
 /**
  * Tradernet Paper story meta
@@ -20,7 +20,7 @@ const meta = {
       description: "The icon to display next to the title",
       table: {
         ...iconControl.table,
-        type: { summary: "FormpipeIcon" },
+        type: { summary: "ReactNode" },
       },
     },
     highlight: {

@@ -74,6 +74,14 @@ export type ClientAuthConfiguration = {
 }
 
 /**
+ * Health
+ */
+
+export type HealthResponse = {
+  status: string
+}
+
+/**
  * Auth
  */
 
@@ -108,7 +116,6 @@ export type SessionInfo = {
   id: number
   username: string
 }
-
 
 export type ForgotPasswordData = {
   username: string

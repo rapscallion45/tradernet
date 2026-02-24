@@ -1,5 +1,5 @@
-import { FC, ReactNode } from "react"
 import { Title as MantineTitle } from "@mantine/core"
+import { FC, ReactNode } from "react"
 import classes from "./Title.module.css"
 
 export type TitleProps = {
@@ -53,7 +53,7 @@ const splitTitleFromIndex = (title: string, highlight: number) =>
  * @param matchCase - Whether the matching should be case-sensitive
  * @param subtitle - If the title is a subtitle
  */
-const Title: FC<TitleProps> = ({ children, icon, highlight, firstMatch = true, matchCase = false, subtitle = false }) => {
+export const Title: FC<TitleProps> = ({ children, icon, highlight, firstMatch = true, matchCase = false, subtitle = false }) => {
   // If an icon is provided, build the icon component
   const iconComponent = icon ? <span style={{ marginRight: subtitle ? 10 : 15 }}>{icon}</span> : null
 
@@ -65,11 +65,9 @@ const Title: FC<TitleProps> = ({ children, icon, highlight, firstMatch = true, m
       : splitTitleFromWord(children, firstMatch, matchCase, highlight)
 
   return (
-    <MantineTitle classNames={classes} order={subtitle ? 2 : 1}>
+    <MantineTitle classNames={classes} order={subtitle ? 2 : 1} title={children}>
       {iconComponent}
       {textComponent}
     </MantineTitle>
   )
 }
-
-export default Title

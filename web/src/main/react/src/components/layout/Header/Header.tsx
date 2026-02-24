@@ -71,11 +71,7 @@ const Header = <T,>({
             aria-label={logoAriaLabel}>
             <HeaderLogos logoLightModeSrc={logoLightModeSrc} logoDarkModeSrc={logoDarkModeSrc} title={title} logoAlt={logoAlt} />
           </LinkComponent>
-          {leftSection && (
-            <Box pl={20} visibleFrom={"md"}>
-              {leftSection}
-            </Box>
-          )}
+          {leftSection && <Box visibleFrom={"md"}>{leftSection}</Box>}
         </Group>
         {rightSection && <Group gap={isMobile ? "xs" : "md"}>{wrapNodeList(rightSection)}</Group>}
       </Group>

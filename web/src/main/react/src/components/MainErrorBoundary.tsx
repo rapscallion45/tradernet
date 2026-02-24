@@ -2,7 +2,7 @@ import { FC } from "react"
 import { Badge, Card, Group, Stack, Text, Title } from "@mantine/core"
 import logo from "assets/tradernet-logo.svg"
 import CenterOnPage from "components/CenterOnPage"
-import Button from "components/Button/Button"
+import { Button } from "components/Button/Button"
 
 /**
  * Main Error Boundary props
