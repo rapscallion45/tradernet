@@ -31,6 +31,8 @@ type WorkerPayload = {
     candles: Candle[]
     lastPrice: number
     ticksPerSecond: number
+    status: "connected" | "disconnected" | "error"
+    error?: string
   }
 }
 
@@ -107,6 +109,8 @@ export const TradingChartPanel: FC = () => {
   const [pendingStart, setPendingStart] = useState<Point | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
   const [ticksPerSecond, setTicksPerSecond] = useState(0)
+  const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
+  const [streamError, setStreamError] = useState<string | null>(null)
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -239,6 +243,8 @@ export const TradingChartPanel: FC = () => {
       seriesRef.current = toCandleArrays(event.data.payload.candles)
       setLastPrice(event.data.payload.lastPrice)
       setTicksPerSecond(event.data.payload.ticksPerSecond)
+      setStreamStatus(event.data.payload.status)
+      setStreamError(event.data.payload.error || null)
 
       if (!chartRef.current || frameRef.current) {
         return
@@ -267,6 +273,7 @@ export const TradingChartPanel: FC = () => {
         intervalMs: Number(intervalMs),
         seedPrice: lastPrice,
         historySize: 240,
+        apiKey: import.meta.env.VITE_FINNHUB_API_KEY,
       },
     })
   }, [symbol, intervalMs])
@@ -337,7 +344,9 @@ export const TradingChartPanel: FC = () => {
         </Group>
 
         <Group gap="xs">
-          <Badge color="green" variant="light">{`${ticksPerSecond} ticks/s`}</Badge>
+          <Badge color={streamStatus === "connected" ? "green" : streamStatus === "error" ? "red" : "gray"} variant="light">
+            {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
+          </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${lastPrice.toFixed(2)}`}</Badge>
         </Group>
       </Group>
@@ -345,7 +354,7 @@ export const TradingChartPanel: FC = () => {
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {summary}
+            {streamError ? `${summary} · ${streamError}` : summary}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
