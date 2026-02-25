@@ -307,7 +307,7 @@ const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedP
   lastDataAt = Date.now()
 
   if (!apiKey) {
-    emit("error", "Missing VITE_ALPHA_VANTAGE_API_KEY")
+    emit("error", "Missing API key")
     return
   }
 
