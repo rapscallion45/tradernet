@@ -18,6 +18,8 @@ type StreamConfig = {
 
 type WorkerMessage = { type: "start"; payload: StreamConfig } | { type: "stop" }
 
+type StreamStatus = "connected" | "disconnected" | "error"
+
 let socket: WebSocket | null = null
 let emitTimer: number | undefined
 let current: Candle | null = null
@@ -32,71 +34,7 @@ let tickCount = 0
 const emaPeriod = 14
 const alpha = 2 / (emaPeriod + 1)
 
-const closeCurrentBar = (nextBucket: number, nextPrice: number, nextVolume: number) => {
-  if (!current) {
-    current = {
-      time: nextBucket,
-      open: nextPrice,
-      high: nextPrice,
-      low: nextPrice,
-      close: nextPrice,
-      volume: nextVolume,
-      ema: emaPrev,
-    }
-    return
-  }
-
-  emaPrev = alpha * current.close + (1 - alpha) * emaPrev
-  current.ema = emaPrev
-  candles.push(current)
-
-  if (candles.length > historySize) {
-    candles = candles.slice(candles.length - historySize)
-  }
-
-  current = {
-    time: nextBucket,
-    open: lastPrice,
-    high: nextPrice,
-    low: nextPrice,
-    close: nextPrice,
-    volume: nextVolume,
-    ema: emaPrev,
-  }
-}
-
-const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
-  const bucket = Math.floor(timestamp / intervalMs) * intervalMs
-
-  if (!current) {
-    current = {
-      time: bucket,
-      open: price,
-      high: price,
-      low: price,
-      close: price,
-      volume,
-      ema: emaPrev,
-    }
-    lastPrice = price
-    tickCount += 1
-    return
-  }
-
-  if (bucket !== current.time) {
-    closeCurrentBar(bucket, price, volume)
-  } else {
-    current.high = Math.max(current.high, price)
-    current.low = Math.min(current.low, price)
-    current.close = price
-    current.volume += volume
-  }
-
-  lastPrice = price
-  tickCount += 1
-}
-
-const emit = (status: "connected" | "disconnected" | "error" = "connected", error?: string) => {
+const emit = (status: StreamStatus = "connected", error?: string) => {
   self.postMessage({
     type: "bars",
     payload: {
@@ -120,6 +58,78 @@ const mapSymbolForFinnhub = (selectedSymbol: string): string => {
     return "BINANCE:ETHUSDT"
   }
   return selectedSymbol
+}
+
+const pushClosedCandle = (candle: Candle) => {
+  candles.push(candle)
+  if (candles.length > historySize) {
+    candles = candles.slice(candles.length - historySize)
+  }
+}
+
+const rolloverToNextBucket = (bucket: number, price: number, volume: number) => {
+  if (!current) {
+    current = {
+      time: bucket,
+      open: price,
+      high: price,
+      low: price,
+      close: price,
+      volume,
+      ema: emaPrev,
+    }
+    return
+  }
+
+  emaPrev = alpha * current.close + (1 - alpha) * emaPrev
+  current.ema = emaPrev
+  pushClosedCandle(current)
+
+  current = {
+    time: bucket,
+    open: lastPrice,
+    high: price,
+    low: price,
+    close: price,
+    volume,
+    ema: emaPrev,
+  }
+}
+
+const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
+  const bucket = Math.floor(timestamp / intervalMs) * intervalMs
+
+  if (!current) {
+    current = {
+      time: bucket,
+      open: price,
+      high: price,
+      low: price,
+      close: price,
+      volume,
+      ema: emaPrev,
+    }
+    lastPrice = price
+    tickCount += 1
+    return
+  }
+
+  // Finnhub can deliver out-of-order trades. Ignore stale buckets so bars remain monotonic.
+  if (bucket < current.time) {
+    return
+  }
+
+  if (bucket > current.time) {
+    rolloverToNextBucket(bucket, price, volume)
+  } else {
+    current.high = Math.max(current.high, price)
+    current.low = Math.min(current.low, price)
+    current.close = price
+    current.volume += volume
+  }
+
+  lastPrice = price
+  tickCount += 1
 }
 
 const stop = () => {

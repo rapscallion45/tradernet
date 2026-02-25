@@ -15,14 +15,14 @@ type Candle = {
 
 type DrawTool = "none" | "trendline" | "hline"
 
-type Point = {
-  x: number
-  y: number
+type ChartPoint = {
+  time: number
+  price: number
 }
 
 type Drawing =
   | { id: string; type: "hline"; y: number }
-  | { id: string; type: "trendline"; start: Point; end: Point }
+  | { id: string; type: "trendline"; start: ChartPoint; end: ChartPoint }
 
 type WorkerPayload = {
   type: "bars"
@@ -109,7 +109,7 @@ export const TradingChartPanel: FC = () => {
   const [intervalMs, setIntervalMs] = useState("1000")
   const [tool, setTool] = useState<DrawTool>("none")
   const [drawings, setDrawings] = useState<Drawing[]>([])
-  const [pendingStart, setPendingStart] = useState<Point | null>(null)
+  const [pendingStart, setPendingStart] = useState<ChartPoint | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
   const [ticksPerSecond, setTicksPerSecond] = useState(0)
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
@@ -162,16 +162,23 @@ export const TradingChartPanel: FC = () => {
         return
       }
 
+      const startX = plot.valToPos(drawing.start.time, "x", true) - left
+      const startY = plot.valToPos(drawing.start.price, "y", true) - top
+      const endX = plot.valToPos(drawing.end.time, "x", true) - left
+      const endY = plot.valToPos(drawing.end.price, "y", true) - top
+
       ctx.beginPath()
-      ctx.moveTo(drawing.start.x - left, drawing.start.y - top)
-      ctx.lineTo(drawing.end.x - left, drawing.end.y - top)
+      ctx.moveTo(startX, startY)
+      ctx.lineTo(endX, endY)
       ctx.stroke()
     })
 
     if (pendingStart) {
+      const x = plot.valToPos(pendingStart.time, "x", true) - left
+      const y = plot.valToPos(pendingStart.price, "y", true) - top
       ctx.fillStyle = "#38bdf8"
       ctx.beginPath()
-      ctx.arc(pendingStart.x - left, pendingStart.y - top, 4, 0, Math.PI * 2)
+      ctx.arc(x, y, 4, 0, Math.PI * 2)
       ctx.fill()
     }
   }
@@ -300,13 +307,15 @@ export const TradingChartPanel: FC = () => {
     }
 
     const rect = event.currentTarget.getBoundingClientRect()
-    const point = {
-      x: event.clientX - rect.left + plot.bbox.left,
-      y: event.clientY - rect.top + plot.bbox.top,
+    const x = event.clientX - rect.left + plot.bbox.left
+    const y = event.clientY - rect.top + plot.bbox.top
+    const point: ChartPoint = {
+      time: plot.posToVal(x, "x"),
+      price: plot.posToVal(y, "y"),
     }
 
     if (tool === "hline") {
-      setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "hline", y: plot.posToVal(point.y, "y") }])
+      setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "hline", y: point.price }])
       return
     }
 
@@ -315,7 +324,10 @@ export const TradingChartPanel: FC = () => {
       return
     }
 
-    setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "trendline", start: pendingStart, end: point }])
+    const start = pendingStart.time <= point.time ? pendingStart : point
+    const end = pendingStart.time <= point.time ? point : pendingStart
+
+    setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "trendline", start, end }])
     setPendingStart(null)
   }
 
