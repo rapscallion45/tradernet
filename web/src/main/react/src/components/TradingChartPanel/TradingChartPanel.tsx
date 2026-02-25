@@ -357,8 +357,8 @@ export const TradingChartPanel: FC = () => {
         y: { auto: true },
       },
       axes: [
-        { side: 2, stroke: axisStroke, grid: { stroke: gridStroke } },
-        { side: 1, stroke: axisStroke, grid: { stroke: gridStroke } },
+        { side: 2, stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
+        { side: 1, stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
       ],
       series: [
         { label: "Time" },
