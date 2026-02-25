@@ -606,10 +606,10 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select label="Symbol" value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" />
+          <Select value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" aria-label="Chart symbol" />
           <Select
-            label="Frequency"
             value={interval}
+            aria-label="Chart frequency"
             onChange={(value) => setInterval(value || "1000")}
             data={intervalOptions.map((option) => ({ value: option.value, label: option.label }))}
             w={150}
