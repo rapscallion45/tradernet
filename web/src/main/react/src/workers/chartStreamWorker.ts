@@ -22,7 +22,6 @@ type StreamStatus = "connected" | "disconnected" | "error"
 
 let socket: WebSocket | null = null
 let emitTimer: number | undefined
-let simTickTimer: number | undefined
 let current: Candle | null = null
 let candles: Candle[] = []
 let lastPrice = 100
@@ -31,7 +30,6 @@ let intervalMs = 1000
 let historySize = 240
 let symbol = "AAPL"
 let tickCount = 0
-let streamError: string | undefined
 
 const emaPeriod = 14
 const alpha = 2 / (emaPeriod + 1)
@@ -133,24 +131,12 @@ const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
   tickCount += 1
 }
 
-const startSimulation = () => {
-  simTickTimer = self.setInterval(() => {
-    const drift = (Math.random() - 0.5) * Math.max(lastPrice * 0.0025, 0.5)
-    const simulatedPrice = Math.max(0.01, lastPrice + drift)
-    ingestTrade(simulatedPrice, Math.random() * 3 + 0.5, Date.now())
-  }, 120)
-}
-
 const stop = () => {
   if (emitTimer) {
     self.clearInterval(emitTimer)
   }
   emitTimer = undefined
 
-  if (simTickTimer) {
-    self.clearInterval(simTickTimer)
-  }
-  simTickTimer = undefined
 
   if (socket) {
     socket.close()
@@ -169,14 +155,9 @@ const start = ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, 
   current = null
   candles = []
   tickCount = 0
-  streamError = undefined
 
   if (!apiKey) {
-    streamError = "Missing VITE_FINNHUB_API_KEY — using simulated stream"
-    startSimulation()
-    emitTimer = self.setInterval(() => {
-      emit("connected", streamError)
-    }, 1000)
+    emit("error", "Missing VITE_FINNHUB_API_KEY")
     return
   }
 

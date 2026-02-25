@@ -3,6 +3,7 @@ import { Badge, Button, Group, Paper, SegmentedControl, Select, Stack, Text, use
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
+import { useToast } from "hooks/useToast"
 
 type Candle = {
   time: number
@@ -150,8 +151,10 @@ export const TradingChartPanel: FC = () => {
   const candlesRef = useRef<Candle[]>([])
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [], sma20: [], bbUpper: [], bbLower: [] })
   const hoverPointRef = useRef<ChartPoint | null>(null)
+  const lastToastKeyRef = useRef<string>("")
 
   const { colorScheme } = useMantineColorScheme()
+  const { toast } = useToast()
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState("BTCUSD")
@@ -428,6 +431,48 @@ export const TradingChartPanel: FC = () => {
     drawOverlay()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, pendingStart])
+
+
+  useEffect(() => {
+    if (streamStatus === "error") {
+      const message = streamError || "Unknown data stream error"
+      const toastKey = `error:${message}`
+      if (lastToastKeyRef.current === toastKey) {
+        return
+      }
+
+      lastToastKeyRef.current = toastKey
+      toast({
+        id: "trading-chart-stream-error",
+        title: "Market data stream error",
+        message,
+        variant: "error",
+        timestamp: Date.now(),
+      })
+      return
+    }
+
+    if (streamStatus === "disconnected") {
+      const toastKey = "disconnected"
+      if (lastToastKeyRef.current === toastKey) {
+        return
+      }
+
+      lastToastKeyRef.current = toastKey
+      toast({
+        id: "trading-chart-stream-disconnected",
+        title: "Market data disconnected",
+        message: "Connection to market data feed was lost.",
+        variant: "error",
+        timestamp: Date.now(),
+      })
+      return
+    }
+
+    if (streamStatus === "connected") {
+      lastToastKeyRef.current = "connected"
+    }
+  }, [streamError, streamStatus, toast])
 
   const toPointFromMouse = (event: MouseEvent<HTMLCanvasElement>): ChartPoint | null => {
     const plot = chartRef.current
