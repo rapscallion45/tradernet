@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Paper, SegmentedControl, Select, Stack, Text } from "@mantine/core"
+import { Badge, Button, Group, Paper, SegmentedControl, Select, Stack, Text, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -102,6 +102,9 @@ export const TradingChartPanel: FC = () => {
   const candlesRef = useRef<Candle[]>([])
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [] })
 
+  const { colorScheme } = useMantineColorScheme()
+  const isDark = colorScheme === "dark"
+
   const [symbol, setSymbol] = useState("BTCUSD")
   const [intervalMs, setIntervalMs] = useState("1000")
   const [tool, setTool] = useState<DrawTool>("none")
@@ -179,6 +182,9 @@ export const TradingChartPanel: FC = () => {
       return
     }
 
+    const axisStroke = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)"
+    const gridStroke = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"
+
     const options: Options = {
       width: Math.max(host.clientWidth, 320),
       height: chartHeight,
@@ -187,8 +193,8 @@ export const TradingChartPanel: FC = () => {
         y: { auto: true },
       },
       axes: [
-        { stroke: "rgba(255,255,255,0.25)", grid: { stroke: "rgba(255,255,255,0.08)" } },
-        { stroke: "rgba(255,255,255,0.25)", grid: { stroke: "rgba(255,255,255,0.08)" } },
+        { stroke: axisStroke, grid: { stroke: gridStroke } },
+        { stroke: axisStroke, grid: { stroke: gridStroke } },
       ],
       series: [
         { label: "Time" },
@@ -208,6 +214,10 @@ export const TradingChartPanel: FC = () => {
     }
 
     chartRef.current = new uPlot(options, [[], [], []], host)
+
+    if (seriesRef.current.x.length > 0) {
+      chartRef.current.setData(toAlignedData(seriesRef.current), true)
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       if (!chartRef.current) {
@@ -232,7 +242,7 @@ export const TradingChartPanel: FC = () => {
       chartRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isDark])
 
   useEffect(() => {
     const worker = new Worker(new URL("../../workers/chartStreamWorker.ts", import.meta.url), { type: "module" })

@@ -7,7 +7,11 @@
 
 .plotHost {
   min-height: 420px;
-  background: #0a0d14;
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+}
+
+.plotHost :global(.uplot) {
+  background: transparent;
 }
 
 .overlayCanvas {
