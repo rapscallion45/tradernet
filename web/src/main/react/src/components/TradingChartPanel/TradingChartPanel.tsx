@@ -13,7 +13,7 @@ type Candle = {
   ema: number
 }
 
-type DrawTool = "none" | "trendline" | "hline"
+type DrawTool = "none" | "trendline" | "ray" | "hline" | "vline"
 
 type ChartPoint = {
   time: number
@@ -22,7 +22,9 @@ type ChartPoint = {
 
 type Drawing =
   | { id: string; type: "hline"; y: number }
+  | { id: string; type: "vline"; time: number }
   | { id: string; type: "trendline"; start: ChartPoint; end: ChartPoint }
+  | { id: string; type: "ray"; start: ChartPoint; end: ChartPoint }
 
 type WorkerPayload = {
   type: "bars"
@@ -43,20 +45,66 @@ type CandleArrays = {
   low: number[]
   close: number[]
   ema: number[]
+  sma20: Array<number | null>
+  bbUpper: Array<number | null>
+  bbLower: Array<number | null>
+}
+
+type Indicators = {
+  ema: boolean
+  sma: boolean
+  bb: boolean
 }
 
 const chartHeight = 420
 
-const toCandleArrays = (candles: Candle[]): CandleArrays => ({
-  x: candles.map((candle) => candle.time / 1000),
-  open: candles.map((candle) => candle.open),
-  high: candles.map((candle) => candle.high),
-  low: candles.map((candle) => candle.low),
-  close: candles.map((candle) => candle.close),
-  ema: candles.map((candle) => candle.ema),
-})
+const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
-const toAlignedData = (series: CandleArrays): AlignedData => [series.x, series.close, series.ema]
+const toCandleArrays = (candles: Candle[]): CandleArrays => {
+  const close = candles.map((candle) => candle.close)
+  const sma20: Array<number | null> = []
+  const bbUpper: Array<number | null> = []
+  const bbLower: Array<number | null> = []
+
+  for (let index = 0; index < close.length; index += 1) {
+    if (index < 19) {
+      sma20.push(null)
+      bbUpper.push(null)
+      bbLower.push(null)
+      continue
+    }
+
+    const slice = close.slice(index - 19, index + 1)
+    const avg = mean(slice)
+    const variance = slice.reduce((acc, value) => acc + (value - avg) ** 2, 0) / slice.length
+    const std = Math.sqrt(variance)
+
+    sma20.push(avg)
+    bbUpper.push(avg + std * 2)
+    bbLower.push(avg - std * 2)
+  }
+
+  return {
+    x: candles.map((candle) => candle.time / 1000),
+    open: candles.map((candle) => candle.open),
+    high: candles.map((candle) => candle.high),
+    low: candles.map((candle) => candle.low),
+    close,
+    ema: candles.map((candle) => candle.ema),
+    sma20,
+    bbUpper,
+    bbLower,
+  }
+}
+
+const toAlignedData = (series: CandleArrays, indicators: Indicators): AlignedData => [
+  series.x,
+  series.close,
+  indicators.ema ? series.ema : series.ema.map(() => null),
+  indicators.sma ? series.sma20 : series.sma20.map(() => null),
+  indicators.bb ? series.bbUpper : series.bbUpper.map(() => null),
+  indicators.bb ? series.bbLower : series.bbLower.map(() => null),
+]
 
 const createCandlestickPlugin = (seriesRef: MutableRefObject<CandleArrays>): Plugin => ({
   hooks: {
@@ -100,7 +148,7 @@ export const TradingChartPanel: FC = () => {
   const workerRef = useRef<Worker | null>(null)
   const frameRef = useRef<number | null>(null)
   const candlesRef = useRef<Candle[]>([])
-  const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [] })
+  const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [], sma20: [], bbUpper: [], bbLower: [] })
 
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === "dark"
@@ -108,6 +156,7 @@ export const TradingChartPanel: FC = () => {
   const [symbol, setSymbol] = useState("BTCUSD")
   const [intervalMs, setIntervalMs] = useState("1000")
   const [tool, setTool] = useState<DrawTool>("none")
+  const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
   const [pendingStart, setPendingStart] = useState<ChartPoint | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
@@ -117,10 +166,11 @@ export const TradingChartPanel: FC = () => {
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
+    const enabled = [indicators.ema ? "EMA14" : null, indicators.sma ? "SMA20" : null, indicators.bb ? "BB(20,2)" : null].filter(Boolean).join(", ")
     return candle
-      ? `O ${candle.open.toFixed(2)} H ${candle.high.toFixed(2)} L ${candle.low.toFixed(2)} C ${candle.close.toFixed(2)} · EMA14 ${candle.ema.toFixed(2)}`
+      ? `O ${candle.open.toFixed(2)} H ${candle.high.toFixed(2)} L ${candle.low.toFixed(2)} C ${candle.close.toFixed(2)} · ${enabled || "No indicators"}`
       : "Waiting for stream…"
-  }, [lastPrice])
+  }, [lastPrice, indicators])
 
   const drawOverlay = () => {
     const plot = chartRef.current
@@ -162,10 +212,31 @@ export const TradingChartPanel: FC = () => {
         return
       }
 
+      if (drawing.type === "vline") {
+        const x = plot.valToPos(drawing.time, "x", true) - left
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, height)
+        ctx.stroke()
+        return
+      }
+
       const startX = plot.valToPos(drawing.start.time, "x", true) - left
       const startY = plot.valToPos(drawing.start.price, "y", true) - top
       const endX = plot.valToPos(drawing.end.time, "x", true) - left
       const endY = plot.valToPos(drawing.end.price, "y", true) - top
+
+      if (drawing.type === "ray") {
+        const xMax = Number((plot as unknown as { scales: { x: { max: number } } }).scales.x.max)
+        const rayX = plot.valToPos(xMax, "x", true) - left
+        const slope = (endY - startY) / ((endX - startX) || 1)
+        const rayY = startY + slope * (rayX - startX)
+        ctx.beginPath()
+        ctx.moveTo(startX, startY)
+        ctx.lineTo(rayX, rayY)
+        ctx.stroke()
+        return
+      }
 
       ctx.beginPath()
       ctx.moveTo(startX, startY)
@@ -207,6 +278,9 @@ export const TradingChartPanel: FC = () => {
         { label: "Time" },
         { label: "Close", stroke: "rgba(0,0,0,0)", width: 0 },
         { label: "EMA14", stroke: "#facc15", width: 2 },
+        { label: "SMA20", stroke: "#38bdf8", width: 2 },
+        { label: "BB Upper", stroke: "#a78bfa", width: 1 },
+        { label: "BB Lower", stroke: "#a78bfa", width: 1 },
       ],
       plugins: [
         createCandlestickPlugin(seriesRef),
@@ -220,10 +294,10 @@ export const TradingChartPanel: FC = () => {
       ],
     }
 
-    chartRef.current = new uPlot(options, [[], [], []], host)
+    chartRef.current = new uPlot(options, [[], [], [], [], [], []], host)
 
     if (seriesRef.current.x.length > 0) {
-      chartRef.current.setData(toAlignedData(seriesRef.current), true)
+      chartRef.current.setData(toAlignedData(seriesRef.current, indicators), true)
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -269,7 +343,7 @@ export const TradingChartPanel: FC = () => {
 
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null
-        chartRef.current?.setData(toAlignedData(seriesRef.current), true)
+        chartRef.current?.setData(toAlignedData(seriesRef.current, indicators), true)
         drawOverlay()
       })
     }
@@ -281,6 +355,19 @@ export const TradingChartPanel: FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!chartRef.current || frameRef.current) {
+      return
+    }
+
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null
+      chartRef.current?.setData(toAlignedData(seriesRef.current, indicators), true)
+      drawOverlay()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indicators])
 
   useEffect(() => {
     workerRef.current?.postMessage({
@@ -319,6 +406,11 @@ export const TradingChartPanel: FC = () => {
       return
     }
 
+    if (tool === "vline") {
+      setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "vline", time: point.time }])
+      return
+    }
+
     if (!pendingStart) {
       setPendingStart(point)
       return
@@ -327,8 +419,12 @@ export const TradingChartPanel: FC = () => {
     const start = pendingStart.time <= point.time ? pendingStart : point
     const end = pendingStart.time <= point.time ? point : pendingStart
 
-    setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: "trendline", start, end }])
+    setDrawings((prev) => [...prev, { id: crypto.randomUUID(), type: tool === "ray" ? "ray" : "trendline", start, end }])
     setPendingStart(null)
+  }
+
+  const toggleIndicator = (key: keyof Indicators) => {
+    setIndicators((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   return (
@@ -357,9 +453,20 @@ export const TradingChartPanel: FC = () => {
             data={[
               { value: "none", label: "Pan" },
               { value: "trendline", label: "Trendline" },
-              { value: "hline", label: "Horizontal" },
+              { value: "ray", label: "Ray" },
+              { value: "hline", label: "H-Line" },
+              { value: "vline", label: "V-Line" },
             ]}
           />
+          <Button size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
+            EMA
+          </Button>
+          <Button size="xs" variant={indicators.sma ? "filled" : "light"} onClick={() => toggleIndicator("sma")}>
+            SMA
+          </Button>
+          <Button size="xs" variant={indicators.bb ? "filled" : "light"} onClick={() => toggleIndicator("bb")}>
+            BB
+          </Button>
           <Button size="xs" variant="light" onClick={() => setDrawings([])}>
             Clear drawings
           </Button>
