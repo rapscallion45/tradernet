@@ -194,3 +194,38 @@ From `web/src/main/react/package.json`:
 - `yarn build` — build production assets.
 - `yarn lint` — lint the web UI.
 - `yarn format` — check formatting.
+
+## Market AI engine architecture (Binance -> Java backend -> React)
+
+A new backend module (`services/market-ai-service`) provides a reference implementation for real-time market intelligence:
+
+- **Ingestion**: consumes Binance trade stream (`wss://stream.binance.com:9443/ws/{symbol}@trade`).
+- **Aggregation**: builds 1-second OHLCV bars from trades.
+- **Feature engine**: computes incremental EMA/RSI features on bar close.
+- **AI signal engine**: emits BUY/SELL/HOLD-style signal events with confidence and model metadata.
+- **Backend fanout**: in-memory publisher lets REST and WebSocket layers consume the same stream.
+
+### API surface for frontend integration
+
+- `GET /api/market/bars?limit=500` returns recent chart bars.
+- `GET /api/market/signals?limit=200` returns recent AI signals.
+- `WS /api/ws/market` streams envelope events:
+  - `{ "type": "bar", "payload": { ... } }`
+  - `{ "type": "signal", "payload": { ... } }`
+
+This is designed to fit the React + uPlot chart workflow where bars are streamed in near-real time and signal overlays are rendered from the same timeline.
+
+
+### Scoring modes (rules vs model)
+
+The Market AI engine now supports pluggable scoring via system properties:
+
+- `-Dmarket.ai.scorer=linear` (default): uses a lightweight linear-logit model scorer.
+- `-Dmarket.ai.scorer=rules`: uses rule thresholds as a fallback strategy.
+
+Optional thresholds for the linear scorer:
+
+- `-Dmarket.ai.model.buyThreshold=0.62`
+- `-Dmarket.ai.model.sellThreshold=0.38`
+
+This design allows introducing a dedicated AI runtime (for example ONNX Runtime, XGBoost, or DJL) without changing the API or chart integration layer.

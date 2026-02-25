@@ -27,6 +27,17 @@ type Drawing =
   | { id: string; type: "trendline"; start: ChartPoint; end: ChartPoint }
   | { id: string; type: "ray"; start: ChartPoint; end: ChartPoint }
 
+type SignalSide = "BUY" | "SELL" | "HOLD"
+
+type ChartSignal = {
+  symbol: string
+  eventTime: number
+  side: SignalSide
+  confidence: number
+  modelVersion: string
+  notes: string[]
+}
+
 type WorkerPayload = {
   type: "bars"
   payload: {
@@ -36,6 +47,7 @@ type WorkerPayload = {
     ticksPerSecond: number
     status: "connected" | "disconnected" | "error"
     error?: string
+    signal?: ChartSignal | null
   }
 }
 
@@ -159,8 +171,7 @@ export const TradingChartPanel: FC = () => {
   const { toast } = useToast()
   const isDark = colorScheme === "dark"
 
-  const [symbol, setSymbol] = useState("BTCUSD")
-  const [intervalMs, setIntervalMs] = useState("86400000")
+  const [symbol, setSymbol] = useState("BTCUSDT")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -169,6 +180,7 @@ export const TradingChartPanel: FC = () => {
   const [ticksPerSecond, setTicksPerSecond] = useState(0)
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
+  const [signal, setSignal] = useState<ChartSignal | null>(null)
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -383,6 +395,7 @@ export const TradingChartPanel: FC = () => {
       setTicksPerSecond(event.data.payload.ticksPerSecond)
       setStreamStatus(event.data.payload.status)
       setStreamError(event.data.payload.error || null)
+      setSignal(event.data.payload.signal || null)
 
       if (!chartRef.current || frameRef.current) {
         return
@@ -426,13 +439,10 @@ export const TradingChartPanel: FC = () => {
       type: "start",
       payload: {
         symbol,
-        intervalMs: Number(intervalMs),
-        seedPrice: lastPrice,
-        historySize: 240,
-        apiKey: import.meta.env.VITE_ALPHA_VANTAGE_API_KEY,
+        historySize: 500,
       },
     })
-  }, [symbol, intervalMs])
+  }, [symbol])
 
   useEffect(() => {
     drawOverlay()
@@ -568,28 +578,7 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select label="Symbol" value={symbol} onChange={(value) => setSymbol(value || "BTCUSD")} data={["BTCUSD", "ETHUSD", "AAPL", "TSLA"]} w={130} size="xs" />
-          <Select
-            label="Candle"
-            value={intervalMs}
-            onChange={(value) => setIntervalMs(value || "86400000")}
-            data={[
-              { value: "86400000", label: "1D" },
-              { value: "259200000", label: "3D" },
-              { value: "604800000", label: "1W" },
-              { value: "1209600000", label: "2W" },
-              { value: "2592000000", label: "1M" },
-              { value: "7776000000", label: "3M" },
-              { value: "15552000000", label: "6M" },
-              { value: "31536000000", label: "1Y" },
-              { value: "63072000000", label: "2Y" },
-              { value: "157680000000", label: "5Y" },
-            ]}
-            w={120}
-            size="xs"
-            searchable
-            maxDropdownHeight={260}
-          />
+          <Select label="Symbol" value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" />
           <SegmentedControl
             size="xs"
             value={tool}
@@ -624,13 +613,16 @@ export const TradingChartPanel: FC = () => {
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${lastPrice.toFixed(2)}`}</Badge>
+          <Badge color={signal?.side === "BUY" ? "green" : signal?.side === "SELL" ? "red" : "gray"} variant="filled">
+            {signal ? `${signal.side} ${(signal.confidence * 100).toFixed(0)}%` : "HOLD"}
+          </Badge>
         </Group>
       </Group>
 
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {streamError ? `${summary} · ${streamError}` : summary}
+            {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
