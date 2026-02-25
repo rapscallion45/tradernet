@@ -10,6 +10,7 @@ type Candle = {
 
 type StreamConfig = {
   symbol: string
+  intervalMs: number | null
   historySize: number
 }
 
@@ -45,8 +46,10 @@ type WsEnvelope =
 
 let emitTimer: number | undefined
 let socket: WebSocket | null = null
+let rawBars: MarketBar[] = []
 let candles: Candle[] = []
 let historySize = 500
+let intervalMs: number | null = 1_000
 let symbol = "BTCUSDT"
 let tickCount = 0
 let streamSession = 0
@@ -70,16 +73,6 @@ const normalizeSymbol = (value: string): string => {
   return upper
 }
 
-const toCandle = (bar: MarketBar): Candle => ({
-  time: bar.bucketStart,
-  open: bar.open,
-  high: bar.high,
-  low: bar.low,
-  close: bar.close,
-  volume: bar.volume,
-  ema: bar.close,
-})
-
 const recomputeEma = () => {
   let emaPrev = candles[0]?.close ?? 0
   candles = candles.map((candle, index) => {
@@ -91,22 +84,69 @@ const recomputeEma = () => {
   })
 }
 
-const upsertBar = (bar: MarketBar) => {
-  const incoming = toCandle(bar)
-  const existingIndex = candles.findIndex((candle) => candle.time === incoming.time)
+const aggregateBars = (bars: MarketBar[], bucketMs: number): MarketBar[] => {
+  const byBucket = new Map<number, MarketBar>()
 
-  if (existingIndex >= 0) {
-    candles[existingIndex] = incoming
-  } else {
-    candles.push(incoming)
-    candles.sort((left, right) => left.time - right.time)
+  for (const bar of bars) {
+    const bucketStart = Math.floor(bar.bucketStart / bucketMs) * bucketMs
+    const existing = byBucket.get(bucketStart)
+
+    if (!existing) {
+      byBucket.set(bucketStart, {
+        ...bar,
+        bucketStart,
+      })
+      continue
+    }
+
+    const merged: MarketBar = {
+      ...existing,
+      high: Math.max(existing.high, bar.high),
+      low: Math.min(existing.low, bar.low),
+      close: bar.close,
+      volume: existing.volume + bar.volume,
+      closed: existing.closed && bar.closed,
+    }
+    byBucket.set(bucketStart, merged)
   }
 
-  if (candles.length > historySize) {
-    candles = candles.slice(candles.length - historySize)
-  }
+  return [...byBucket.values()].sort((left, right) => left.bucketStart - right.bucketStart)
+}
+
+const rebuildDisplayCandles = () => {
+  const sourceBars = intervalMs ? aggregateBars(rawBars, intervalMs) : rawBars
+  const trimmed = sourceBars.slice(-historySize)
+
+  candles = trimmed.map((bar) => ({
+    time: bar.bucketStart,
+    open: bar.open,
+    high: bar.high,
+    low: bar.low,
+    close: bar.close,
+    volume: bar.volume,
+    ema: bar.close,
+  }))
 
   recomputeEma()
+}
+
+const upsertRawBar = (bar: MarketBar) => {
+  const existingIndex = rawBars.findIndex((entry) => entry.bucketStart === bar.bucketStart)
+
+  if (existingIndex >= 0) {
+    rawBars[existingIndex] = bar
+  } else {
+    rawBars.push(bar)
+    rawBars.sort((left, right) => left.bucketStart - right.bucketStart)
+  }
+
+  // Keep enough 1s data for large interval aggregations while keeping memory bounded.
+  const rawMax = Math.max(historySize * 4, 2_000)
+  if (rawBars.length > rawMax) {
+    rawBars = rawBars.slice(rawBars.length - rawMax)
+  }
+
+  rebuildDisplayCandles()
   lastDataAt = Date.now()
   tickCount += 1
 }
@@ -150,8 +190,9 @@ const resolveWebsocketUrl = () => {
 
 const preload = async (sessionId: number) => {
   const apiBase = resolveApiBase()
+  const barsFetchLimit = Math.max(historySize * 4, 2_000)
   const [barsResponse, signalResponse] = await Promise.all([
-    fetch(`${apiBase}/market/bars?limit=${historySize}`),
+    fetch(`${apiBase}/market/bars?limit=${barsFetchLimit}`),
     fetch(`${apiBase}/market/signals?limit=1`),
   ])
 
@@ -164,18 +205,17 @@ const preload = async (sessionId: number) => {
   }
 
   const barsPayload = (await barsResponse.json()) as MarketBar[]
-  candles = barsPayload
+  rawBars = barsPayload
     .filter((bar) => !bar.symbol || bar.symbol.toUpperCase() === symbol)
-    .map(toCandle)
-    .sort((left, right) => left.time - right.time)
-    .slice(-historySize)
+    .sort((left, right) => left.bucketStart - right.bucketStart)
+
+  rebuildDisplayCandles()
 
   if (signalResponse.ok) {
     const signals = (await signalResponse.json()) as AiSignal[]
     lastSignal = signals.at(-1) || null
   }
 
-  recomputeEma()
   streamStatus = "connected"
   streamError = undefined
   lastDataAt = Date.now()
@@ -205,7 +245,7 @@ const connectSocket = (sessionId: number) => {
     if (envelope.type === "bar" && envelope.payload) {
       const bar = envelope.payload as MarketBar
       if (!bar.symbol || bar.symbol.toUpperCase() === symbol) {
-        upsertBar(bar)
+        upsertRawBar(bar)
       }
     }
 
@@ -257,12 +297,14 @@ const stop = () => {
   streamStatus = "disconnected"
 }
 
-const start = async ({ symbol: selectedSymbol, historySize: nextHistorySize }: StreamConfig) => {
+const start = async ({ symbol: selectedSymbol, intervalMs: selectedIntervalMs, historySize: nextHistorySize }: StreamConfig) => {
   stop()
 
   const sessionId = streamSession
   symbol = normalizeSymbol(selectedSymbol)
+  intervalMs = selectedIntervalMs
   historySize = nextHistorySize
+  rawBars = []
   candles = []
   tickCount = 0
   lastSignal = null

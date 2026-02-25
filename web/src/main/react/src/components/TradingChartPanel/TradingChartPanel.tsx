@@ -71,6 +71,32 @@ type Indicators = {
 
 const chartHeight = 420
 
+const intervalOptions = [
+  { value: "1000", label: "1 second" },
+  { value: "5000", label: "5 second" },
+  { value: "10000", label: "10 second" },
+  { value: "15000", label: "15 second" },
+  { value: "30000", label: "30 second" },
+  { value: "60000", label: "1 minute" },
+  { value: "300000", label: "5 minute" },
+  { value: "600000", label: "10 minute" },
+  { value: "900000", label: "15 minute" },
+  { value: "1800000", label: "30 minute" },
+  { value: "3600000", label: "1 hour" },
+  { value: "21600000", label: "6 hour" },
+  { value: "43200000", label: "12 hour" },
+  { value: "86400000", label: "1 day" },
+  { value: "432000000", label: "5 day" },
+  { value: "864000000", label: "10 day" },
+  { value: "1296000000", label: "15 day" },
+  { value: "2592000000", label: "1 month" },
+  { value: "7776000000", label: "3 month" },
+  { value: "15552000000", label: "6 month" },
+  { value: "31536000000", label: "1 year" },
+  { value: "max", label: "Max" },
+] as const
+
+
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
 const toCandleArrays = (candles: Candle[]): CandleArrays => {
@@ -172,6 +198,7 @@ export const TradingChartPanel: FC = () => {
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState("BTCUSDT")
+  const [interval, setInterval] = useState("1000")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -439,10 +466,11 @@ export const TradingChartPanel: FC = () => {
       type: "start",
       payload: {
         symbol,
-        historySize: 500,
+        intervalMs: interval === "max" ? null : Number(interval),
+        historySize: interval === "max" ? 2000 : 500,
       },
     })
-  }, [symbol])
+  }, [symbol, interval])
 
   useEffect(() => {
     drawOverlay()
@@ -579,6 +607,14 @@ export const TradingChartPanel: FC = () => {
       <Group className={classes.toolbar} justify="space-between">
         <Group>
           <Select label="Symbol" value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" />
+          <Select
+            label="Frequency"
+            value={interval}
+            onChange={(value) => setInterval(value || "1000")}
+            data={intervalOptions.map((option) => ({ value: option.value, label: option.label }))}
+            w={150}
+            size="xs"
+          />
           <SegmentedControl
             size="xs"
             value={tool}
