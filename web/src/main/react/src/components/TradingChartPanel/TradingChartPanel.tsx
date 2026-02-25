@@ -152,6 +152,7 @@ export const TradingChartPanel: FC = () => {
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [], sma20: [], bbUpper: [], bbLower: [] })
   const hoverPointRef = useRef<ChartPoint | null>(null)
   const lastToastKeyRef = useRef<string>("")
+  const disconnectToastTimerRef = useRef<number | null>(null)
 
   const { colorScheme } = useMantineColorScheme()
   const { toast } = useToast()
@@ -434,38 +435,44 @@ export const TradingChartPanel: FC = () => {
 
 
   useEffect(() => {
+    if (disconnectToastTimerRef.current) {
+      window.clearTimeout(disconnectToastTimerRef.current)
+      disconnectToastTimerRef.current = null
+    }
+
     if (streamStatus === "error") {
       const message = streamError || "Unknown data stream error"
       const toastKey = `error:${message}`
-      if (lastToastKeyRef.current === toastKey) {
-        return
+      if (lastToastKeyRef.current !== toastKey) {
+        lastToastKeyRef.current = toastKey
+        toast({
+          id: "trading-chart-stream-error",
+          title: "Market data stream error",
+          message,
+          variant: "error",
+          timestamp: Date.now(),
+        })
       }
-
-      lastToastKeyRef.current = toastKey
-      toast({
-        id: "trading-chart-stream-error",
-        title: "Market data stream error",
-        message,
-        variant: "error",
-        timestamp: Date.now(),
-      })
       return
     }
 
     if (streamStatus === "disconnected") {
-      const toastKey = "disconnected"
-      if (lastToastKeyRef.current === toastKey) {
-        return
-      }
+      const message = streamError || "Connection to market data feed was lost."
+      const toastKey = `disconnected:${message}`
+      disconnectToastTimerRef.current = window.setTimeout(() => {
+        if (lastToastKeyRef.current === toastKey) {
+          return
+        }
 
-      lastToastKeyRef.current = toastKey
-      toast({
-        id: "trading-chart-stream-disconnected",
-        title: "Market data disconnected",
-        message: "Connection to market data feed was lost.",
-        variant: "error",
-        timestamp: Date.now(),
-      })
+        lastToastKeyRef.current = toastKey
+        toast({
+          id: "trading-chart-stream-disconnected",
+          title: "Market data disconnected",
+          message,
+          variant: "error",
+          timestamp: Date.now(),
+        })
+      }, 20_000)
       return
     }
 
@@ -473,6 +480,15 @@ export const TradingChartPanel: FC = () => {
       lastToastKeyRef.current = "connected"
     }
   }, [streamError, streamStatus, toast])
+
+
+  useEffect(() => {
+    return () => {
+      if (disconnectToastTimerRef.current) {
+        window.clearTimeout(disconnectToastTimerRef.current)
+      }
+    }
+  }, [])
 
   const toPointFromMouse = (event: MouseEvent<HTMLCanvasElement>): ChartPoint | null => {
     const plot = chartRef.current

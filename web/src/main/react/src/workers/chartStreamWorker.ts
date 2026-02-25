@@ -40,9 +40,12 @@ let intervalMs = 1000
 let historySize = 240
 let symbol = "AAPL"
 let tickCount = 0
+let streamSession = 0
+let lastDataAt = 0
 
 const emaPeriod = 14
 const alpha = 2 / (emaPeriod + 1)
+const noDataTimeoutMs = 20_000
 
 const emit = (status: StreamStatus = "connected", error?: string) => {
   self.postMessage({
@@ -145,24 +148,36 @@ const hydrateFromHistory = (response: FinnhubCandlesResponse, seedPrice: number)
   if (candles.length > historySize) {
     candles = candles.slice(candles.length - historySize)
   }
+
+  lastDataAt = Date.now()
 }
 
-const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number) => {
+const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number, sessionId: number) => {
   const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
   const url = buildHistoryUrl(finnhubSymbol, apiKey)
 
   try {
     const response = await fetch(url)
+    if (sessionId !== streamSession) {
+      return
+    }
+
     if (!response.ok) {
       emit("error", `History preload failed (${response.status})`)
       return
     }
 
     const payload = (await response.json()) as FinnhubCandlesResponse
+    if (sessionId !== streamSession) {
+      return
+    }
+
     hydrateFromHistory(payload, seedPrice)
     emit("connected")
   } catch {
-    emit("error", "History preload failed")
+    if (sessionId === streamSession) {
+      emit("error", "History preload failed")
+    }
   }
 }
 
@@ -216,6 +231,7 @@ const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
       ema: emaPrev,
     }
     lastPrice = price
+    lastDataAt = Date.now()
     tickCount += 1
     return
   }
@@ -234,10 +250,13 @@ const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
   }
 
   lastPrice = price
+  lastDataAt = Date.now()
   tickCount += 1
 }
 
 const stop = () => {
+  streamSession += 1
+
   if (emitTimer) {
     self.clearInterval(emitTimer)
   }
@@ -252,6 +271,8 @@ const stop = () => {
 const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, historySize: nextHistorySize, apiKey }: StreamConfig) => {
   stop()
 
+  const sessionId = streamSession
+
   symbol = selectedSymbol
   intervalMs = nextIntervalMs
   historySize = nextHistorySize
@@ -260,23 +281,35 @@ const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedP
   current = null
   candles = []
   tickCount = 0
+  lastDataAt = Date.now()
 
   if (!apiKey) {
     emit("error", "Missing VITE_FINNHUB_API_KEY")
     return
   }
 
-  await preloadHistory(apiKey, selectedSymbol, seedPrice)
+  await preloadHistory(apiKey, selectedSymbol, seedPrice, sessionId)
+  if (sessionId !== streamSession) {
+    return
+  }
 
   const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
   socket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`)
 
   socket.onopen = () => {
+    if (sessionId !== streamSession) {
+      return
+    }
+
     socket?.send(JSON.stringify({ type: "subscribe", symbol: finnhubSymbol }))
     emit("connected")
   }
 
   socket.onmessage = (event) => {
+    if (sessionId !== streamSession) {
+      return
+    }
+
     try {
       const message = JSON.parse(event.data as string) as {
         type?: string
@@ -300,15 +333,31 @@ const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedP
   }
 
   socket.onerror = () => {
+    if (sessionId !== streamSession) {
+      return
+    }
     emit("error", "Finnhub socket error")
   }
 
   socket.onclose = () => {
+    if (sessionId !== streamSession) {
+      return
+    }
     emit("disconnected")
   }
 
   emitTimer = self.setInterval(() => {
-    emit(socket?.readyState === WebSocket.OPEN ? "connected" : "disconnected")
+    if (sessionId !== streamSession) {
+      return
+    }
+
+    const isOpen = socket?.readyState === WebSocket.OPEN
+    if (isOpen && Date.now() - lastDataAt > noDataTimeoutMs) {
+      emit("disconnected", "No market data received in 20 seconds")
+      return
+    }
+
+    emit(isOpen ? "connected" : "disconnected")
   }, 1000)
 }
 
