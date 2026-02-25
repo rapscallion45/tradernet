@@ -149,6 +149,7 @@ export const TradingChartPanel: FC = () => {
   const frameRef = useRef<number | null>(null)
   const candlesRef = useRef<Candle[]>([])
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [], sma20: [], bbUpper: [], bbLower: [] })
+  const hoverPointRef = useRef<ChartPoint | null>(null)
 
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === "dark"
@@ -227,7 +228,7 @@ export const TradingChartPanel: FC = () => {
       const endY = plot.valToPos(drawing.end.price, "y", true) - top
 
       if (drawing.type === "ray") {
-        const xMax = Number((plot as unknown as { scales: { x: { max: number } } }).scales.x.max)
+        const xMax = plot.scales.x.max ?? drawing.end.time
         const rayX = plot.valToPos(xMax, "x", true) - left
         const slope = (endY - startY) / ((endX - startX) || 1)
         const rayY = startY + slope * (rayX - startX)
@@ -252,6 +253,47 @@ export const TradingChartPanel: FC = () => {
       ctx.arc(x, y, 4, 0, Math.PI * 2)
       ctx.fill()
     }
+
+    const hover = hoverPointRef.current
+    if (hover) {
+      const hoverX = plot.valToPos(hover.time, "x", true) - left
+      const hoverY = plot.valToPos(hover.price, "y", true) - top
+      const crosshair = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.55)"
+      const chipBg = isDark ? "rgba(22, 28, 36, 0.95)" : "rgba(255,255,255,0.95)"
+      const chipFg = isDark ? "#e5e7eb" : "#111827"
+
+      ctx.strokeStyle = crosshair
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 4])
+      ctx.beginPath()
+      ctx.moveTo(hoverX, 0)
+      ctx.lineTo(hoverX, height)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(0, hoverY)
+      ctx.lineTo(width, hoverY)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      const yLabel = hover.price.toFixed(2)
+      const xLabel = new Date(hover.time * 1000).toLocaleString()
+
+      ctx.font = "11px sans-serif"
+      const yLabelWidth = Math.ceil(ctx.measureText(yLabel).width) + 10
+      const xLabelWidth = Math.ceil(ctx.measureText(xLabel).width) + 10
+      const chipHeight = 18
+
+      ctx.fillStyle = chipBg
+      ctx.fillRect(Math.max(0, width - yLabelWidth), Math.min(height - chipHeight, Math.max(0, hoverY - chipHeight / 2)), yLabelWidth, chipHeight)
+      ctx.fillStyle = chipFg
+      ctx.fillText(yLabel, Math.max(4, width - yLabelWidth + 5), Math.min(height - 5, Math.max(12, hoverY + 4)))
+
+      const xChipX = Math.min(Math.max(0, hoverX - xLabelWidth / 2), Math.max(0, width - xLabelWidth))
+      ctx.fillStyle = chipBg
+      ctx.fillRect(xChipX, Math.max(0, height - chipHeight), xLabelWidth, chipHeight)
+      ctx.fillStyle = chipFg
+      ctx.fillText(xLabel, xChipX + 5, Math.max(0, height - 5))
+    }
   }
 
   useEffect(() => {
@@ -272,7 +314,7 @@ export const TradingChartPanel: FC = () => {
       },
       axes: [
         { stroke: axisStroke, grid: { stroke: gridStroke } },
-        { stroke: axisStroke, grid: { stroke: gridStroke } },
+        { side: 1, stroke: axisStroke, grid: { stroke: gridStroke } },
       ],
       series: [
         { label: "Time" },
@@ -387,18 +429,41 @@ export const TradingChartPanel: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, pendingStart])
 
-  const handleOverlayClick = (event: MouseEvent<HTMLCanvasElement>) => {
+  const toPointFromMouse = (event: MouseEvent<HTMLCanvasElement>): ChartPoint | null => {
     const plot = chartRef.current
-    if (!plot || tool === "none") {
-      return
+    if (!plot) {
+      return null
     }
 
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left + plot.bbox.left
     const y = event.clientY - rect.top + plot.bbox.top
-    const point: ChartPoint = {
+
+    return {
       time: plot.posToVal(x, "x"),
       price: plot.posToVal(y, "y"),
+    }
+  }
+
+  const handleOverlayMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
+    const point = toPointFromMouse(event)
+    if (!point) {
+      return
+    }
+
+    hoverPointRef.current = point
+    drawOverlay()
+  }
+
+  const handleOverlayMouseLeave = () => {
+    hoverPointRef.current = null
+    drawOverlay()
+  }
+
+  const handleOverlayClick = (event: MouseEvent<HTMLCanvasElement>) => {
+    const point = toPointFromMouse(event)
+    if (!point || tool === "none") {
+      return
     }
 
     if (tool === "hline") {
@@ -513,7 +578,7 @@ export const TradingChartPanel: FC = () => {
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
-        <canvas ref={overlayRef} className={classes.overlayCanvas} onClick={handleOverlayClick} />
+        <canvas ref={overlayRef} className={classes.overlayCanvas} onClick={handleOverlayClick} onMouseMove={handleOverlayMouseMove} onMouseLeave={handleOverlayMouseLeave} />
       </Paper>
     </Stack>
   )
