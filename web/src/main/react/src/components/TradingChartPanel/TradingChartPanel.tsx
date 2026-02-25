@@ -423,7 +423,7 @@ export const TradingChartPanel: FC = () => {
         intervalMs: Number(intervalMs),
         seedPrice: lastPrice,
         historySize: 240,
-        apiKey: import.meta.env.VITE_FINNHUB_API_KEY,
+        apiKey: import.meta.env.VITE_ALPHA_VANTAGE_API_KEY,
       },
     })
   }, [symbol, intervalMs])

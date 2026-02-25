@@ -20,18 +20,16 @@ type WorkerMessage = { type: "start"; payload: StreamConfig } | { type: "stop" }
 
 type StreamStatus = "connected" | "disconnected" | "error"
 
-type FinnhubCandlesResponse = {
-  c: number[]
-  h: number[]
-  l: number[]
-  o: number[]
-  t: number[]
-  v: number[]
-  s: "ok" | "no_data"
+type AlphavantageSeriesEntry = {
+  "1. open": string
+  "2. high": string
+  "3. low": string
+  "4. close": string
+  "5. volume"?: string
 }
 
-let socket: WebSocket | null = null
 let emitTimer: number | undefined
+let pollTimer: number | undefined
 let current: Candle | null = null
 let candles: Candle[] = []
 let lastPrice = 100
@@ -46,6 +44,7 @@ let lastDataAt = 0
 const emaPeriod = 14
 const alpha = 2 / (emaPeriod + 1)
 const noDataTimeoutMs = 20_000
+const pollIntervalMs = 15_000
 
 const emit = (status: StreamStatus = "connected", error?: string) => {
   self.postMessage({
@@ -63,122 +62,51 @@ const emit = (status: StreamStatus = "connected", error?: string) => {
   tickCount = 0
 }
 
-const mapSymbolForFinnhub = (selectedSymbol: string): string => {
+const parseCryptoPair = (selectedSymbol: string): { base: string; quote: string } | null => {
   if (selectedSymbol === "BTCUSD") {
-    return "BINANCE:BTCUSDT"
+    return { base: "BTC", quote: "USD" }
   }
   if (selectedSymbol === "ETHUSD") {
-    return "BINANCE:ETHUSDT"
+    return { base: "ETH", quote: "USD" }
   }
-  return selectedSymbol
+  return null
 }
 
-const mapResolution = (value: number): string => {
+const mapResolutionToMinutes = (value: number): number => {
   if (value <= 60_000) {
-    return "1"
+    return 1
   }
   if (value <= 5 * 60_000) {
-    return "5"
+    return 5
   }
   if (value <= 15 * 60_000) {
-    return "15"
+    return 15
   }
   if (value <= 30 * 60_000) {
-    return "30"
+    return 30
   }
   if (value <= 60 * 60_000) {
-    return "60"
+    return 60
   }
-  if (value <= 24 * 60 * 60_000) {
-    return "D"
-  }
-  if (value <= 7 * 24 * 60 * 60_000) {
-    return "W"
-  }
-  return "M"
+  return 60
 }
 
-const buildHistoryUrl = (finnhubSymbol: string, token: string) => {
-  const now = Math.floor(Date.now() / 1000)
-  const clampedLookbackMs = Math.min(historySize * Math.max(intervalMs, 60_000), 5 * 365 * 24 * 60 * 60_000)
-  const from = Math.max(0, now - Math.floor(clampedLookbackMs / 1000))
-  const resolution = mapResolution(intervalMs)
-  const endpoint = finnhubSymbol.includes(":") ? "crypto/candle" : "stock/candle"
-  return `https://finnhub.io/api/v1/${endpoint}?symbol=${encodeURIComponent(finnhubSymbol)}&resolution=${resolution}&from=${from}&to=${now}&token=${token}`
-}
-
-const hydrateFromHistory = (response: FinnhubCandlesResponse, seedPrice: number) => {
-  candles = []
-  current = null
-  lastPrice = seedPrice
-  emaPrev = seedPrice
-
-  if (response.s !== "ok" || response.t.length === 0) {
-    return
+const parseAlphaSeries = (payload: Record<string, unknown>): Record<string, AlphavantageSeriesEntry> | null => {
+  if (typeof payload.Note === "string") {
+    throw new Error(payload.Note)
   }
 
-  const rawCandles: Candle[] = response.t.map((timestamp, index) => {
-    const close = response.c[index]
-    return {
-      time: timestamp * 1000,
-      open: response.o[index],
-      high: response.h[index],
-      low: response.l[index],
-      close,
-      volume: response.v[index] ?? 0,
-      ema: close,
-    }
-  })
-
-  rawCandles.sort((left, right) => left.time - right.time)
-
-  rawCandles.forEach((bar, index) => {
-    emaPrev = alpha * bar.close + (1 - alpha) * emaPrev
-    bar.ema = emaPrev
-
-    if (index === rawCandles.length - 1) {
-      current = bar
-      lastPrice = bar.close
-      return
-    }
-
-    candles.push(bar)
-  })
-
-  if (candles.length > historySize) {
-    candles = candles.slice(candles.length - historySize)
+  if (typeof payload["Error Message"] === "string") {
+    throw new Error(payload["Error Message"] as string)
   }
 
-  lastDataAt = Date.now()
-}
-
-const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number, sessionId: number) => {
-  const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
-  const url = buildHistoryUrl(finnhubSymbol, apiKey)
-
-  try {
-    const response = await fetch(url)
-    if (sessionId !== streamSession) {
-      return
-    }
-
-    if (!response.ok) {
-      emit("error", `History preload failed (${response.status})`)
-      return
-    }
-
-    const payload = (await response.json()) as FinnhubCandlesResponse
-    if (sessionId !== streamSession) {
-      return
-    }
-
-    hydrateFromHistory(payload, seedPrice)
-    emit("connected")
-  } catch {
-    if (sessionId === streamSession) {
-      emit("error", "History preload failed")
+  for (const [key, value] of Object.entries(payload)) {
+    if (key.startsWith("Time Series") && value && typeof value === "object") {
+      return value as Record<string, AlphavantageSeriesEntry>
     }
   }
+
+  return null
 }
 
 const pushClosedCandle = (candle: Candle) => {
@@ -188,14 +116,14 @@ const pushClosedCandle = (candle: Candle) => {
   }
 }
 
-const rolloverToNextBucket = (bucket: number, price: number, volume: number) => {
+const rolloverToNextBucket = (bucket: number, open: number, high: number, low: number, close: number, volume: number) => {
   if (!current) {
     current = {
       time: bucket,
-      open: price,
-      high: price,
-      low: price,
-      close: price,
+      open,
+      high,
+      low,
+      close,
       volume,
       ema: emaPrev,
     }
@@ -208,29 +136,29 @@ const rolloverToNextBucket = (bucket: number, price: number, volume: number) => 
 
   current = {
     time: bucket,
-    open: lastPrice,
-    high: price,
-    low: price,
-    close: price,
+    open,
+    high,
+    low,
+    close,
     volume,
     ema: emaPrev,
   }
 }
 
-const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
+const ingestBar = (open: number, high: number, low: number, close: number, volume: number, timestamp: number) => {
   const bucket = Math.floor(timestamp / intervalMs) * intervalMs
 
   if (!current) {
     current = {
       time: bucket,
-      open: price,
-      high: price,
-      low: price,
-      close: price,
+      open,
+      high,
+      low,
+      close,
       volume,
       ema: emaPrev,
     }
-    lastPrice = price
+    lastPrice = close
     lastDataAt = Date.now()
     tickCount += 1
     return
@@ -241,17 +169,112 @@ const ingestTrade = (price: number, volume = 1, timestamp = Date.now()) => {
   }
 
   if (bucket > current.time) {
-    rolloverToNextBucket(bucket, price, volume)
+    rolloverToNextBucket(bucket, open, high, low, close, volume)
   } else {
-    current.high = Math.max(current.high, price)
-    current.low = Math.min(current.low, price)
-    current.close = price
+    current.high = Math.max(current.high, high)
+    current.low = Math.min(current.low, low)
+    current.close = close
     current.volume += volume
   }
 
-  lastPrice = price
+  lastPrice = close
   lastDataAt = Date.now()
   tickCount += 1
+}
+
+const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number, sessionId: number) => {
+  candles = []
+  current = null
+  lastPrice = seedPrice
+  emaPrev = seedPrice
+
+  const crypto = parseCryptoPair(selectedSymbol)
+  const intervalMinutes = mapResolutionToMinutes(intervalMs)
+  const endpoint = crypto
+    ? `https://www.alphavantage.co/query?function=CRYPTO_INTRADAY&symbol=${crypto.base}&market=${crypto.quote}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
+    : `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(selectedSymbol)}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
+
+  const response = await fetch(endpoint)
+  if (sessionId !== streamSession) {
+    return
+  }
+
+  if (!response.ok) {
+    throw new Error(`History preload failed (${response.status})`)
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>
+  if (sessionId !== streamSession) {
+    return
+  }
+
+  const series = parseAlphaSeries(payload)
+  if (!series) {
+    throw new Error("History preload returned no data")
+  }
+
+  const sortedEntries = Object.entries(series)
+    .map(([time, values]) => ({
+      timestamp: Date.parse(time),
+      open: Number(values["1. open"]),
+      high: Number(values["2. high"]),
+      low: Number(values["3. low"]),
+      close: Number(values["4. close"]),
+      volume: Number(values["5. volume"] || 0),
+    }))
+    .filter((bar) => Number.isFinite(bar.timestamp) && Number.isFinite(bar.open) && Number.isFinite(bar.high) && Number.isFinite(bar.low) && Number.isFinite(bar.close))
+    .sort((left, right) => left.timestamp - right.timestamp)
+
+  const relevant = sortedEntries.slice(Math.max(0, sortedEntries.length - historySize * 4))
+  relevant.forEach((bar) => ingestBar(bar.open, bar.high, bar.low, bar.close, bar.volume, bar.timestamp))
+
+  lastDataAt = Date.now()
+  emit("connected")
+}
+
+const pollLivePrice = async (apiKey: string, selectedSymbol: string, sessionId: number) => {
+  const crypto = parseCryptoPair(selectedSymbol)
+  const endpoint = crypto
+    ? `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${crypto.base}&to_currency=${crypto.quote}&apikey=${apiKey}`
+    : `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(selectedSymbol)}&apikey=${apiKey}`
+
+  try {
+    const response = await fetch(endpoint)
+    if (sessionId !== streamSession) {
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(`Live quote failed (${response.status})`)
+    }
+
+    const payload = (await response.json()) as Record<string, unknown>
+    if (sessionId !== streamSession) {
+      return
+    }
+
+    if (typeof payload.Note === "string") {
+      throw new Error(payload.Note)
+    }
+
+    if (typeof payload["Error Message"] === "string") {
+      throw new Error(payload["Error Message"] as string)
+    }
+
+    const price = crypto
+      ? Number((payload["Realtime Currency Exchange Rate"] as Record<string, string> | undefined)?.["5. Exchange Rate"])
+      : Number((payload["Global Quote"] as Record<string, string> | undefined)?.["05. price"])
+
+    if (!Number.isFinite(price)) {
+      return
+    }
+
+    ingestBar(lastPrice, Math.max(lastPrice, price), Math.min(lastPrice, price), price, 0, Date.now())
+  } catch {
+    if (sessionId === streamSession) {
+      emit("error", "Alpha Vantage live quote failed")
+    }
+  }
 }
 
 const stop = () => {
@@ -262,10 +285,10 @@ const stop = () => {
   }
   emitTimer = undefined
 
-  if (socket) {
-    socket.close()
-    socket = null
+  if (pollTimer) {
+    self.clearInterval(pollTimer)
   }
+  pollTimer = undefined
 }
 
 const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, historySize: nextHistorySize, apiKey }: StreamConfig) => {
@@ -284,81 +307,42 @@ const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedP
   lastDataAt = Date.now()
 
   if (!apiKey) {
-    emit("error", "Missing VITE_FINNHUB_API_KEY")
+    emit("error", "Missing VITE_ALPHA_VANTAGE_API_KEY")
     return
   }
 
-  await preloadHistory(apiKey, selectedSymbol, seedPrice, sessionId)
+  try {
+    await preloadHistory(apiKey, selectedSymbol, seedPrice, sessionId)
+  } catch (error) {
+    if (sessionId === streamSession) {
+      const message = error instanceof Error ? error.message : "History preload failed"
+      emit("error", message)
+    }
+    return
+  }
+
   if (sessionId !== streamSession) {
     return
   }
 
-  const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
-  socket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`)
-
-  socket.onopen = () => {
-    if (sessionId !== streamSession) {
-      return
-    }
-
-    socket?.send(JSON.stringify({ type: "subscribe", symbol: finnhubSymbol }))
-    emit("connected")
-  }
-
-  socket.onmessage = (event) => {
-    if (sessionId !== streamSession) {
-      return
-    }
-
-    try {
-      const message = JSON.parse(event.data as string) as {
-        type?: string
-        data?: Array<{ p: number; v?: number; t: number }>
-      }
-
-      if (message.type !== "trade" || !message.data?.length) {
-        return
-      }
-
-      for (const trade of message.data) {
-        if (!Number.isFinite(trade.p)) {
-          continue
-        }
-
-        ingestTrade(trade.p, trade.v ?? 1, trade.t)
-      }
-    } catch {
-      emit("error", "Failed parsing Finnhub payload")
-    }
-  }
-
-  socket.onerror = () => {
-    if (sessionId !== streamSession) {
-      return
-    }
-    emit("error", "Finnhub socket error")
-  }
-
-  socket.onclose = () => {
-    if (sessionId !== streamSession) {
-      return
-    }
-    emit("disconnected")
-  }
+  pollTimer = self.setInterval(() => {
+    void pollLivePrice(apiKey, selectedSymbol, sessionId)
+  }, pollIntervalMs)
 
   emitTimer = self.setInterval(() => {
     if (sessionId !== streamSession) {
       return
     }
 
-    const isOpen = socket?.readyState === WebSocket.OPEN
-    if (isOpen && Date.now() - lastDataAt > noDataTimeoutMs) {
+    if (Date.now() - lastDataAt > noDataTimeoutMs) {
       emit("disconnected", "No market data received in 20 seconds")
       return
     }
 
-    emit(isOpen ? "connected" : "disconnected")
+    emit("connected")
   }, 1000)
+
+  void pollLivePrice(apiKey, selectedSymbol, sessionId)
 }
 
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
