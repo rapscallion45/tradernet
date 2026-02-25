@@ -313,7 +313,7 @@ export const TradingChartPanel: FC = () => {
         y: { auto: true },
       },
       axes: [
-        { stroke: axisStroke, grid: { stroke: gridStroke } },
+        { side: 2, stroke: axisStroke, grid: { stroke: gridStroke } },
         { side: 1, stroke: axisStroke, grid: { stroke: gridStroke } },
       ],
       series: [
@@ -436,12 +436,12 @@ export const TradingChartPanel: FC = () => {
     }
 
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = event.clientX - rect.left + plot.bbox.left
-    const y = event.clientY - rect.top + plot.bbox.top
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
 
     return {
-      time: plot.posToVal(x, "x"),
-      price: plot.posToVal(y, "y"),
+      time: plot.posToVal(x, "x", false),
+      price: plot.posToVal(y, "y", false),
     }
   }
 
