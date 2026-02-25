@@ -25,8 +25,11 @@ public class MarketResource {
 
     @GET
     @Path("/bars")
-    public List<MarketBar> getBars(@DefaultValue("500") @QueryParam("limit") int limit) {
-        return marketAiService.getBars(limit);
+    public List<MarketBar> getBars(
+            @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @DefaultValue("1S") @QueryParam("interval") String interval,
+            @DefaultValue("500") @QueryParam("limit") int limit) {
+        return marketAiService.getBars(symbol, interval, limit);
     }
 
     @GET
