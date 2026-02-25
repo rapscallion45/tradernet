@@ -53,7 +53,7 @@ public class BinanceTradeStreamClient {
                     if (price > 0.0 && quantity > 0.0) {
                         listener.accept(new MarketTrade(eventSymbol, eventTime, price, quantity));
                     }
-                } catch (RuntimeException ex) {
+                } catch (Exception ex) {
                     LOG.warn("Unable to parse Binance trade payload", ex);
                 }
                 webSocket.request(1);
