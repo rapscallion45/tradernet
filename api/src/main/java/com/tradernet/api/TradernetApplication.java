@@ -3,6 +3,7 @@ package com.tradernet.api;
 import com.tradernet.api.resources.AuthResource;
 import com.tradernet.api.resources.GroupResource;
 import com.tradernet.api.resources.HealthResource;
+import com.tradernet.api.resources.MarketResource;
 import com.tradernet.api.resources.OrderResource;
 import com.tradernet.api.resources.PasswordResource;
 import com.tradernet.api.resources.RoleResource;
@@ -27,6 +28,7 @@ public class TradernetApplication extends Application {
             AuthResource.class,
             GroupResource.class,
             HealthResource.class,
+            MarketResource.class,
             OrderResource.class,
             PasswordResource.class,
             RoleResource.class,

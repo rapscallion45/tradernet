@@ -73,6 +73,13 @@
             <version>${project.version}</version>
             <type>ejb</type>
         </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>market-ai-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>facade-service</artifactId>
@@ -135,6 +142,11 @@
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>signal-service</artifactId>
+                        </ejbModule>
+
+                        <ejbModule>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>market-ai-service</artifactId>
                         </ejbModule>
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
