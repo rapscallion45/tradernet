@@ -151,6 +151,7 @@ export const TradingChartPanel: FC = () => {
   const candlesRef = useRef<Candle[]>([])
   const seriesRef = useRef<CandleArrays>({ x: [], open: [], high: [], low: [], close: [], ema: [], sma20: [], bbUpper: [], bbLower: [] })
   const hoverPointRef = useRef<ChartPoint | null>(null)
+  const indicatorsRef = useRef<Indicators>({ ema: true, sma: false, bb: false })
   const lastToastKeyRef = useRef<string>("")
   const disconnectToastTimerRef = useRef<number | null>(null)
 
@@ -389,7 +390,7 @@ export const TradingChartPanel: FC = () => {
 
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null
-        chartRef.current?.setData(toAlignedData(seriesRef.current, indicators), true)
+        chartRef.current?.setData(toAlignedData(seriesRef.current, indicatorsRef.current), true)
         drawOverlay()
       })
     }
@@ -402,6 +403,11 @@ export const TradingChartPanel: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+
+  useEffect(() => {
+    indicatorsRef.current = indicators
+  }, [indicators])
+
   useEffect(() => {
     if (!chartRef.current || frameRef.current) {
       return
@@ -409,7 +415,7 @@ export const TradingChartPanel: FC = () => {
 
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null
-      chartRef.current?.setData(toAlignedData(seriesRef.current, indicators), true)
+      chartRef.current?.setData(toAlignedData(seriesRef.current, indicatorsRef.current), true)
       drawOverlay()
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
