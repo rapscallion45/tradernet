@@ -20,6 +20,16 @@ type WorkerMessage = { type: "start"; payload: StreamConfig } | { type: "stop" }
 
 type StreamStatus = "connected" | "disconnected" | "error"
 
+type FinnhubCandlesResponse = {
+  c: number[]
+  h: number[]
+  l: number[]
+  o: number[]
+  t: number[]
+  v: number[]
+  s: "ok" | "no_data"
+}
+
 let socket: WebSocket | null = null
 let emitTimer: number | undefined
 let current: Candle | null = null
@@ -58,6 +68,102 @@ const mapSymbolForFinnhub = (selectedSymbol: string): string => {
     return "BINANCE:ETHUSDT"
   }
   return selectedSymbol
+}
+
+const mapResolution = (value: number): string => {
+  if (value <= 60_000) {
+    return "1"
+  }
+  if (value <= 5 * 60_000) {
+    return "5"
+  }
+  if (value <= 15 * 60_000) {
+    return "15"
+  }
+  if (value <= 30 * 60_000) {
+    return "30"
+  }
+  if (value <= 60 * 60_000) {
+    return "60"
+  }
+  if (value <= 24 * 60 * 60_000) {
+    return "D"
+  }
+  if (value <= 7 * 24 * 60 * 60_000) {
+    return "W"
+  }
+  return "M"
+}
+
+const buildHistoryUrl = (finnhubSymbol: string, token: string) => {
+  const now = Math.floor(Date.now() / 1000)
+  const clampedLookbackMs = Math.min(historySize * Math.max(intervalMs, 60_000), 5 * 365 * 24 * 60 * 60_000)
+  const from = Math.max(0, now - Math.floor(clampedLookbackMs / 1000))
+  const resolution = mapResolution(intervalMs)
+  const endpoint = finnhubSymbol.includes(":") ? "crypto/candle" : "stock/candle"
+  return `https://finnhub.io/api/v1/${endpoint}?symbol=${encodeURIComponent(finnhubSymbol)}&resolution=${resolution}&from=${from}&to=${now}&token=${token}`
+}
+
+const hydrateFromHistory = (response: FinnhubCandlesResponse, seedPrice: number) => {
+  candles = []
+  current = null
+  lastPrice = seedPrice
+  emaPrev = seedPrice
+
+  if (response.s !== "ok" || response.t.length === 0) {
+    return
+  }
+
+  const rawCandles: Candle[] = response.t.map((timestamp, index) => {
+    const close = response.c[index]
+    return {
+      time: timestamp * 1000,
+      open: response.o[index],
+      high: response.h[index],
+      low: response.l[index],
+      close,
+      volume: response.v[index] ?? 0,
+      ema: close,
+    }
+  })
+
+  rawCandles.sort((left, right) => left.time - right.time)
+
+  rawCandles.forEach((bar, index) => {
+    emaPrev = alpha * bar.close + (1 - alpha) * emaPrev
+    bar.ema = emaPrev
+
+    if (index === rawCandles.length - 1) {
+      current = bar
+      lastPrice = bar.close
+      return
+    }
+
+    candles.push(bar)
+  })
+
+  if (candles.length > historySize) {
+    candles = candles.slice(candles.length - historySize)
+  }
+}
+
+const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number) => {
+  const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
+  const url = buildHistoryUrl(finnhubSymbol, apiKey)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      emit("error", `History preload failed (${response.status})`)
+      return
+    }
+
+    const payload = (await response.json()) as FinnhubCandlesResponse
+    hydrateFromHistory(payload, seedPrice)
+    emit("connected")
+  } catch {
+    emit("error", "History preload failed")
+  }
 }
 
 const pushClosedCandle = (candle: Candle) => {
@@ -137,14 +243,13 @@ const stop = () => {
   }
   emitTimer = undefined
 
-
   if (socket) {
     socket.close()
     socket = null
   }
 }
 
-const start = ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, historySize: nextHistorySize, apiKey }: StreamConfig) => {
+const start = async ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, historySize: nextHistorySize, apiKey }: StreamConfig) => {
   stop()
 
   symbol = selectedSymbol
@@ -160,6 +265,8 @@ const start = ({ symbol: selectedSymbol, intervalMs: nextIntervalMs, seedPrice, 
     emit("error", "Missing VITE_FINNHUB_API_KEY")
     return
   }
+
+  await preloadHistory(apiKey, selectedSymbol, seedPrice)
 
   const finnhubSymbol = mapSymbolForFinnhub(selectedSymbol)
   socket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`)
@@ -211,5 +318,5 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     return
   }
 
-  start(event.data.payload)
+  void start(event.data.payload)
 }
