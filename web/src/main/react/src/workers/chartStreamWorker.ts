@@ -66,35 +66,6 @@ const parseCryptoPair = (selectedSymbol: string): { base: string; quote: string 
   return null
 }
 
-const mapResolutionToMinutes = (value: number): number => {
-  if (value <= 60_000) {
-    return 1
-  }
-  if (value <= 5 * 60_000) {
-    return 5
-  }
-  if (value <= 15 * 60_000) {
-    return 15
-  }
-  if (value <= 30 * 60_000) {
-    return 30
-  }
-  return 60
-}
-
-const getIntervalTier = (value: number): "intraday" | "daily" | "weekly" | "monthly" => {
-  if (value <= 60 * 60_000) {
-    return "intraday"
-  }
-  if (value <= 24 * 60 * 60_000) {
-    return "daily"
-  }
-  if (value <= 7 * 24 * 60 * 60_000) {
-    return "weekly"
-  }
-  return "monthly"
-}
-
 const parseAlphaSeries = (payload: Record<string, unknown>): AlphaSeriesMap | null => {
   const providerMessage =
     (typeof payload.Note === "string" && payload.Note) ||
@@ -198,33 +169,12 @@ const ingestBar = (open: number, high: number, low: number, close: number, volum
 
 const buildHistoryEndpoint = (selectedSymbol: string, apiKey: string) => {
   const crypto = parseCryptoPair(selectedSymbol)
-  const tier = getIntervalTier(intervalMs)
 
   if (!crypto) {
-    if (tier === "intraday") {
-      const intervalMinutes = mapResolutionToMinutes(intervalMs)
-      return `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(selectedSymbol)}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
-    }
-    if (tier === "daily") {
-      return `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(selectedSymbol)}&outputsize=full&apikey=${apiKey}`
-    }
-    if (tier === "weekly") {
-      return `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=${encodeURIComponent(selectedSymbol)}&apikey=${apiKey}`
-    }
-    return `https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=${encodeURIComponent(selectedSymbol)}&apikey=${apiKey}`
+    return `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(selectedSymbol)}&outputsize=full&apikey=${apiKey}`
   }
 
-  if (tier === "intraday") {
-    const intervalMinutes = mapResolutionToMinutes(intervalMs)
-    return `https://www.alphavantage.co/query?function=CRYPTO_INTRADAY&symbol=${crypto.base}&market=${crypto.quote}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
-  }
-  if (tier === "daily") {
-    return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
-  }
-  if (tier === "weekly") {
-    return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_WEEKLY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
-  }
-  return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_MONTHLY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
+  return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
 }
 
 const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number, sessionId: number) => {

@@ -159,7 +159,7 @@ export const TradingChartPanel: FC = () => {
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState("BTCUSD")
-  const [intervalMs, setIntervalMs] = useState("60000")
+  const [intervalMs, setIntervalMs] = useState("86400000")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -566,24 +566,8 @@ export const TradingChartPanel: FC = () => {
           <Select
             label="Candle"
             value={intervalMs}
-            onChange={(value) => setIntervalMs(value || "60000")}
+            onChange={(value) => setIntervalMs(value || "86400000")}
             data={[
-              { value: "1000", label: "1s" },
-              { value: "5000", label: "5s" },
-              { value: "10000", label: "10s" },
-              { value: "15000", label: "15s" },
-              { value: "30000", label: "30s" },
-              { value: "60000", label: "1m" },
-              { value: "180000", label: "3m" },
-              { value: "300000", label: "5m" },
-              { value: "900000", label: "15m" },
-              { value: "1800000", label: "30m" },
-              { value: "3600000", label: "1h" },
-              { value: "7200000", label: "2h" },
-              { value: "14400000", label: "4h" },
-              { value: "21600000", label: "6h" },
-              { value: "28800000", label: "8h" },
-              { value: "43200000", label: "12h" },
               { value: "86400000", label: "1D" },
               { value: "259200000", label: "3D" },
               { value: "604800000", label: "1W" },
