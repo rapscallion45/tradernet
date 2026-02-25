@@ -20,13 +20,7 @@ type WorkerMessage = { type: "start"; payload: StreamConfig } | { type: "stop" }
 
 type StreamStatus = "connected" | "disconnected" | "error"
 
-type AlphavantageSeriesEntry = {
-  "1. open": string
-  "2. high": string
-  "3. low": string
-  "4. close": string
-  "5. volume"?: string
-}
+type AlphaSeriesMap = Record<string, Record<string, string>>
 
 let emitTimer: number | undefined
 let pollTimer: number | undefined
@@ -85,28 +79,48 @@ const mapResolutionToMinutes = (value: number): number => {
   if (value <= 30 * 60_000) {
     return 30
   }
-  if (value <= 60 * 60_000) {
-    return 60
-  }
   return 60
 }
 
-const parseAlphaSeries = (payload: Record<string, unknown>): Record<string, AlphavantageSeriesEntry> | null => {
-  if (typeof payload.Note === "string") {
-    throw new Error(payload.Note)
+const getIntervalTier = (value: number): "intraday" | "daily" | "weekly" | "monthly" => {
+  if (value <= 60 * 60_000) {
+    return "intraday"
   }
+  if (value <= 24 * 60 * 60_000) {
+    return "daily"
+  }
+  if (value <= 7 * 24 * 60 * 60_000) {
+    return "weekly"
+  }
+  return "monthly"
+}
 
-  if (typeof payload["Error Message"] === "string") {
-    throw new Error(payload["Error Message"] as string)
+const parseAlphaSeries = (payload: Record<string, unknown>): AlphaSeriesMap | null => {
+  const providerMessage =
+    (typeof payload.Note === "string" && payload.Note) ||
+    (typeof payload["Error Message"] === "string" && (payload["Error Message"] as string)) ||
+    (typeof payload.Information === "string" && payload.Information)
+
+  if (providerMessage) {
+    throw new Error(providerMessage)
   }
 
   for (const [key, value] of Object.entries(payload)) {
     if (key.startsWith("Time Series") && value && typeof value === "object") {
-      return value as Record<string, AlphavantageSeriesEntry>
+      return value as AlphaSeriesMap
     }
   }
 
   return null
+}
+
+const pickNumericField = (entry: Record<string, string>, includes: string[]) => {
+  const key = Object.keys(entry).find((field) => includes.every((token) => field.toLowerCase().includes(token)))
+  if (!key) {
+    return NaN
+  }
+
+  return Number(entry[key])
 }
 
 const pushClosedCandle = (candle: Candle) => {
@@ -182,18 +196,44 @@ const ingestBar = (open: number, high: number, low: number, close: number, volum
   tickCount += 1
 }
 
+const buildHistoryEndpoint = (selectedSymbol: string, apiKey: string) => {
+  const crypto = parseCryptoPair(selectedSymbol)
+  const tier = getIntervalTier(intervalMs)
+
+  if (!crypto) {
+    if (tier === "intraday") {
+      const intervalMinutes = mapResolutionToMinutes(intervalMs)
+      return `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(selectedSymbol)}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
+    }
+    if (tier === "daily") {
+      return `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(selectedSymbol)}&outputsize=full&apikey=${apiKey}`
+    }
+    if (tier === "weekly") {
+      return `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=${encodeURIComponent(selectedSymbol)}&apikey=${apiKey}`
+    }
+    return `https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=${encodeURIComponent(selectedSymbol)}&apikey=${apiKey}`
+  }
+
+  if (tier === "intraday") {
+    const intervalMinutes = mapResolutionToMinutes(intervalMs)
+    return `https://www.alphavantage.co/query?function=CRYPTO_INTRADAY&symbol=${crypto.base}&market=${crypto.quote}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
+  }
+  if (tier === "daily") {
+    return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
+  }
+  if (tier === "weekly") {
+    return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_WEEKLY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
+  }
+  return `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_MONTHLY&symbol=${crypto.base}&market=${crypto.quote}&apikey=${apiKey}`
+}
+
 const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice: number, sessionId: number) => {
   candles = []
   current = null
   lastPrice = seedPrice
   emaPrev = seedPrice
 
-  const crypto = parseCryptoPair(selectedSymbol)
-  const intervalMinutes = mapResolutionToMinutes(intervalMs)
-  const endpoint = crypto
-    ? `https://www.alphavantage.co/query?function=CRYPTO_INTRADAY&symbol=${crypto.base}&market=${crypto.quote}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
-    : `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${encodeURIComponent(selectedSymbol)}&interval=${intervalMinutes}min&outputsize=full&apikey=${apiKey}`
-
+  const endpoint = buildHistoryEndpoint(selectedSymbol, apiKey)
   const response = await fetch(endpoint)
   if (sessionId !== streamSession) {
     return
@@ -216,17 +256,17 @@ const preloadHistory = async (apiKey: string, selectedSymbol: string, seedPrice:
   const sortedEntries = Object.entries(series)
     .map(([time, values]) => ({
       timestamp: Date.parse(time),
-      open: Number(values["1. open"]),
-      high: Number(values["2. high"]),
-      low: Number(values["3. low"]),
-      close: Number(values["4. close"]),
-      volume: Number(values["5. volume"] || 0),
+      open: pickNumericField(values, ["open"]),
+      high: pickNumericField(values, ["high"]),
+      low: pickNumericField(values, ["low"]),
+      close: pickNumericField(values, ["close"]),
+      volume: pickNumericField(values, ["volume"]),
     }))
     .filter((bar) => Number.isFinite(bar.timestamp) && Number.isFinite(bar.open) && Number.isFinite(bar.high) && Number.isFinite(bar.low) && Number.isFinite(bar.close))
     .sort((left, right) => left.timestamp - right.timestamp)
 
   const relevant = sortedEntries.slice(Math.max(0, sortedEntries.length - historySize * 4))
-  relevant.forEach((bar) => ingestBar(bar.open, bar.high, bar.low, bar.close, bar.volume, bar.timestamp))
+  relevant.forEach((bar) => ingestBar(bar.open, bar.high, bar.low, bar.close, Number.isFinite(bar.volume) ? bar.volume : 0, bar.timestamp))
 
   lastDataAt = Date.now()
   emit("connected")
@@ -253,12 +293,13 @@ const pollLivePrice = async (apiKey: string, selectedSymbol: string, sessionId: 
       return
     }
 
-    if (typeof payload.Note === "string") {
-      throw new Error(payload.Note)
-    }
+    const providerMessage =
+      (typeof payload.Note === "string" && payload.Note) ||
+      (typeof payload["Error Message"] === "string" && (payload["Error Message"] as string)) ||
+      (typeof payload.Information === "string" && payload.Information)
 
-    if (typeof payload["Error Message"] === "string") {
-      throw new Error(payload["Error Message"] as string)
+    if (providerMessage) {
+      throw new Error(providerMessage)
     }
 
     const price = crypto
