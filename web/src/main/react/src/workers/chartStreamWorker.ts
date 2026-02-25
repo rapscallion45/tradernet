@@ -10,6 +10,7 @@ type Candle = {
 
 type StreamConfig = {
   symbol: string
+  intervalToken: string
   intervalMs: number | null
   historySize: number
 }
@@ -49,6 +50,7 @@ let socket: WebSocket | null = null
 let rawBars: MarketBar[] = []
 let candles: Candle[] = []
 let historySize = 500
+let intervalToken = "1S"
 let intervalMs: number | null = 1_000
 let symbol = "BTCUSDT"
 let tickCount = 0
@@ -192,7 +194,7 @@ const preload = async (sessionId: number) => {
   const apiBase = resolveApiBase()
   const barsFetchLimit = Math.max(historySize * 4, 2_000)
   const [barsResponse, signalResponse] = await Promise.all([
-    fetch(`${apiBase}/market/bars?limit=${barsFetchLimit}`),
+    fetch(`${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}`),
     fetch(`${apiBase}/market/signals?limit=1`),
   ])
 
@@ -297,11 +299,12 @@ const stop = () => {
   streamStatus = "disconnected"
 }
 
-const start = async ({ symbol: selectedSymbol, intervalMs: selectedIntervalMs, historySize: nextHistorySize }: StreamConfig) => {
+const start = async ({ symbol: selectedSymbol, intervalToken: selectedIntervalToken, intervalMs: selectedIntervalMs, historySize: nextHistorySize }: StreamConfig) => {
   stop()
 
   const sessionId = streamSession
   symbol = normalizeSymbol(selectedSymbol)
+  intervalToken = selectedIntervalToken
   intervalMs = selectedIntervalMs
   historySize = nextHistorySize
   rawBars = []

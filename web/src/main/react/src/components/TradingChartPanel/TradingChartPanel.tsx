@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Paper, SegmentedControl, Select, Stack, Text, useMantineColorScheme } from "@mantine/core"
+import { Badge, Button, Group, Modal, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -71,32 +71,35 @@ type Indicators = {
 
 const chartHeight = 420
 
-const intervalOptions = [
-  { value: "1000", label: "1 second" },
-  { value: "5000", label: "5 second" },
-  { value: "10000", label: "10 second" },
-  { value: "15000", label: "15 second" },
-  { value: "30000", label: "30 second" },
-  { value: "60000", label: "1 minute" },
-  { value: "300000", label: "5 minute" },
-  { value: "600000", label: "10 minute" },
-  { value: "900000", label: "15 minute" },
-  { value: "1800000", label: "30 minute" },
-  { value: "3600000", label: "1 hour" },
-  { value: "21600000", label: "6 hour" },
-  { value: "43200000", label: "12 hour" },
-  { value: "86400000", label: "1 day" },
-  { value: "432000000", label: "5 day" },
-  { value: "864000000", label: "10 day" },
-  { value: "1296000000", label: "15 day" },
-  { value: "2592000000", label: "1 month" },
-  { value: "7776000000", label: "3 month" },
-  { value: "15552000000", label: "6 month" },
-  { value: "31536000000", label: "1 year" },
-  { value: "max", label: "Max" },
-] as const
+const intervalPresets = ["1S", "5S", "15S", "30S", "1M", "5M", "15M", "1H", "4H", "1D", "1MO", "1Y"] as const
 
+const intervalPattern = /^(\d+)(S|M|H|D|MO|Y)$/
 
+const intervalUnitMs: Record<string, number> = {
+  S: 1_000,
+  M: 60_000,
+  H: 3_600_000,
+  D: 86_400_000,
+  MO: 2_592_000_000,
+  Y: 31_536_000_000,
+}
+
+const normalizeIntervalToken = (token: string): string => {
+  const normalized = token.trim().toUpperCase()
+  return intervalPattern.test(normalized) ? normalized : "1S"
+}
+
+const intervalTokenToMs = (token: string): number => {
+  const parsed = normalizeIntervalToken(token).match(intervalPattern)
+  if (!parsed) {
+    return 1_000
+  }
+
+  const amount = Number(parsed[1])
+  const unit = parsed[2]
+  const multiplier = intervalUnitMs[unit] || 1_000
+  return Math.max(1_000, amount * multiplier)
+}
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
 const toCandleArrays = (candles: Candle[]): CandleArrays => {
@@ -198,7 +201,9 @@ export const TradingChartPanel: FC = () => {
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState("BTCUSDT")
-  const [interval, setInterval] = useState("1000")
+  const [intervalToken, setIntervalToken] = useState("1S")
+  const [intervalModalOpened, setIntervalModalOpened] = useState(false)
+  const [intervalDraft, setIntervalDraft] = useState("1S")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -466,11 +471,12 @@ export const TradingChartPanel: FC = () => {
       type: "start",
       payload: {
         symbol,
-        intervalMs: interval === "max" ? null : Number(interval),
-        historySize: interval === "max" ? 2000 : 500,
+        intervalToken,
+        intervalMs: intervalTokenToMs(intervalToken),
+        historySize: 500,
       },
     })
-  }, [symbol, interval])
+  }, [intervalToken, symbol])
 
   useEffect(() => {
     drawOverlay()
@@ -607,14 +613,17 @@ export const TradingChartPanel: FC = () => {
       <Group className={classes.toolbar} justify="space-between">
         <Group>
           <Select value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" aria-label="Chart symbol" />
-          <Select
-            value={interval}
-            aria-label="Chart frequency"
-            onChange={(value) => setInterval(value || "1000")}
-            data={intervalOptions.map((option) => ({ value: option.value, label: option.label }))}
-            w={150}
+          <Button
             size="xs"
-          />
+            variant="light"
+            aria-label="Chart frequency"
+            onClick={() => {
+              setIntervalDraft(intervalToken)
+              setIntervalModalOpened(true)
+            }}
+          >
+            Interval {intervalToken}
+          </Button>
           <SegmentedControl
             size="xs"
             value={tool}
@@ -664,6 +673,41 @@ export const TradingChartPanel: FC = () => {
         <div ref={chartHostRef} className={classes.plotHost} />
         <canvas ref={overlayRef} className={classes.overlayCanvas} onClick={handleOverlayClick} onMouseMove={handleOverlayMouseMove} onMouseLeave={handleOverlayMouseLeave} />
       </Paper>
+      <Modal opened={intervalModalOpened} onClose={() => setIntervalModalOpened(false)} title="Set chart interval" centered>
+        <Stack>
+          <Text size="sm" c="dimmed">
+            Use format number + unit: S (seconds), M (minutes), H (hours), D (days), MO (months), Y (years). Example: 15D.
+          </Text>
+          <TextInput
+            value={intervalDraft}
+            onChange={(event) => setIntervalDraft(event.currentTarget.value.toUpperCase())}
+            placeholder="15D"
+            aria-label="Custom interval"
+          />
+          <Group gap="xs">
+            {intervalPresets.map((preset) => (
+              <Button key={preset} size="xs" variant="subtle" onClick={() => setIntervalDraft(preset)}>
+                {preset}
+              </Button>
+            ))}
+          </Group>
+          <Group justify="flex-end">
+            <Button size="xs" variant="subtle" onClick={() => setIntervalModalOpened(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="xs"
+              onClick={() => {
+                const normalized = normalizeIntervalToken(intervalDraft)
+                setIntervalToken(normalized)
+                setIntervalModalOpened(false)
+              }}
+            >
+              Apply
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
