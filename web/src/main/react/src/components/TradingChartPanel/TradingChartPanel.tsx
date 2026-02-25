@@ -484,9 +484,14 @@ export const TradingChartPanel: FC = () => {
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
 
+    // posToVal(..., can=false) expects plot-space css pixels relative to uPlot root,
+    // so include plot bbox offsets instead of raw overlay-local coordinates.
+    const plotX = x + plot.bbox.left
+    const plotY = y + plot.bbox.top
+
     return {
-      time: plot.posToVal(x, "x", false),
-      price: plot.posToVal(y, "y", false),
+      time: plot.posToVal(plotX, "x", false),
+      price: plot.posToVal(plotY, "y", false),
     }
   }
 
