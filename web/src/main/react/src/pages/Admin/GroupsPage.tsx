@@ -6,23 +6,23 @@ import { CardGrid } from "components/CardGrid/CardGrid"
 import PageHeader from "components/layout/PageHeader/PageHeader"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { Title } from "components/Title/Title"
-import useRoles from "hooks/useRoles"
+import useGroups from "hooks/useGroups"
 
 /**
  * Admin groups page
  */
 const GroupsPage: FC = () => {
-  const { data: roles = [] } = useRoles()
+  const { data: groups = [] } = useGroups()
 
   return (
     <Stack gap={"xl"}>
-      <PageHeader title={<Title>Groups</Title>} description={"View all role groups in the system."} />
+      <PageHeader title={<Title>Groups</Title>} description={"View all user groups in the system."} />
 
       <Stack>
         <SectionHeading>GROUPS</SectionHeading>
         <CardGrid>
-          {roles.map((role) => (
-            <ActionCard key={role.name} text={role.name} icon={<IconUsersGroup />} secondaryText={"Role group"} />
+          {groups.map((group) => (
+            <ActionCard key={group.id} text={`Group ${group.id}`} icon={<IconUsersGroup />} secondaryText={"User group"} />
           ))}
         </CardGrid>
       </Stack>

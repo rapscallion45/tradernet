@@ -1,7 +1,7 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
 import { Group, Image } from "@mantine/core"
-import { IconHome, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
 import QuickNavigation from "components/QuickNavigation"
@@ -22,7 +22,7 @@ export const sidebarItems: SidebarItem[] = [
     icon: <IconHome />,
   },
   {
-    label: "Users & Groups",
+    label: "Admin",
     icon: <IconUsersGroup />,
     subItems: [
       {
@@ -34,6 +34,11 @@ export const sidebarItems: SidebarItem[] = [
         label: "Groups",
         path: Routes.AdminGroups,
         icon: <IconUsersGroup />,
+      },
+      {
+        label: "Security Roles",
+        path: Routes.AdminSecurityRoles,
+        icon: <IconShield />,
       },
     ],
   },

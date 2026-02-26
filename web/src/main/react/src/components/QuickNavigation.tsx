@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Spotlight, SpotlightActionData, SpotlightActionGroupData } from "@mantine/spotlight"
 import Routes from "global/Routes"
 import classes from "./QuickNavigation.module.css"
-import { IconHome, IconSearch, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 
 /** default icon size */
 const iconSize = "lg"
@@ -36,6 +36,13 @@ const QuickNavigation: FC = () => {
       description: "View groups",
       onClick: () => navigate(Routes.AdminGroups),
       leftSection: <IconUsersGroup />,
+    },
+    {
+      id: "security-roles",
+      label: "Security Roles",
+      description: "View security roles",
+      onClick: () => navigate(Routes.AdminSecurityRoles),
+      leftSection: <IconShield />,
     },
   ]
 

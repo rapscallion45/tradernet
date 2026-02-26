@@ -21,6 +21,7 @@ const UsersPage: FC = () => {
         <SectionHeading>USERS</SectionHeading>
         <CardGrid>
           {users.map((user) => (
+            // roleNames represent security role assignments on each user
             <UserCard
               key={user.id ?? user.username}
               username={user.username}

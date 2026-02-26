@@ -3,6 +3,7 @@ import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
 import GroupsPage from "pages/Admin/GroupsPage"
+import SecurityRolesPage from "pages/Admin/SecurityRolesPage"
 import UsersPage from "pages/Admin/UsersPage"
 import AuthGate from "components/auth/AuthGate"
 import Layout from "components/layout/Layout"
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
           {
             path: "groups",
             element: <GroupsPage />,
+          },
+          {
+            path: "security-roles",
+            element: <SecurityRolesPage />,
           },
         ],
       },

@@ -15,4 +15,7 @@ export enum QueryClientKeys {
 
   /** Roles */
   Roles = "Roles",
+
+  /** Groups */
+  Groups = "Groups",
 }
