@@ -25,6 +25,9 @@ public class RoleEntity {
     @ManyToMany(mappedBy = "roles")
     private final Set<UserEntity> users = new HashSet<>();
 
+    @ManyToMany(mappedBy = "roles")
+    private final Set<GroupEntity> groups = new HashSet<>();
+
     public Long getId() {
         return id;
     }
@@ -47,5 +50,13 @@ public class RoleEntity {
 
     void removeUserReference(UserEntity user) {
         users.remove(user);
+    }
+
+    void addGroupReference(GroupEntity group) {
+        groups.add(group);
+    }
+
+    void removeGroupReference(GroupEntity group) {
+        groups.remove(group);
     }
 }

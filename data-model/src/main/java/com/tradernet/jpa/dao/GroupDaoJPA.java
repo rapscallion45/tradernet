@@ -24,13 +24,19 @@ public class GroupDaoJPA implements GroupDao {
 
     @Override
     public List<GroupEntity> findAll() {
-        return entityManager.createQuery("SELECT g FROM GroupEntity g", GroupEntity.class)
+        return entityManager.createQuery("SELECT DISTINCT g FROM GroupEntity g LEFT JOIN FETCH g.users LEFT JOIN FETCH g.roles", GroupEntity.class)
             .getResultList();
     }
 
     @Override
     public Optional<GroupEntity> findById(long id) {
-        return Optional.ofNullable(entityManager.find(GroupEntity.class, id));
+        return entityManager.createQuery(
+                "SELECT DISTINCT g FROM GroupEntity g LEFT JOIN FETCH g.users LEFT JOIN FETCH g.roles WHERE g.id = :id",
+                GroupEntity.class
+            )
+            .setParameter("id", id)
+            .getResultStream()
+            .findFirst();
     }
 
     @Override

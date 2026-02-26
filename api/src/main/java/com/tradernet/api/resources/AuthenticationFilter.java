@@ -2,6 +2,8 @@ package com.tradernet.api.resources;
 
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
+import com.tradernet.user.UserService;
+import jakarta.inject.Inject;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -19,6 +21,9 @@ import java.util.Set;
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
+
+    @Inject
+    private UserService userService;
 
     private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
         "auth",
@@ -76,14 +81,18 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (isPathInPrefixSet(path, ADMIN_PATH_PREFIXES) && !hasAnyRole(authUser.get(), ADMIN_ROLES)) {
+        AuthUserDto effectiveAuthUser = userService.findByUsernameWithRoles(authUser.get().getUsername())
+            .map(AuthUserDto::fromUser)
+            .orElse(authUser.get());
+
+        if (isPathInPrefixSet(path, ADMIN_PATH_PREFIXES) && !hasAnyRole(effectiveAuthUser, ADMIN_ROLES)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
             return;
         }
 
-        if (isPathInPrefixSet(path, SUPER_USER_PATH_PREFIXES) && !hasAnyRole(authUser.get(), SUPER_USER_ROLES)) {
+        if (isPathInPrefixSet(path, SUPER_USER_PATH_PREFIXES) && !hasAnyRole(effectiveAuthUser, SUPER_USER_ROLES)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());

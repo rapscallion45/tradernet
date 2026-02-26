@@ -48,7 +48,11 @@ public class UserService {
      */
     public Optional<UserEntity> findByUsernameWithRoles(String username) {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles where lower(u.username) = :username",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups g " +
+                    "left join fetch g.roles " +
+                    "where lower(u.username) = :username",
                 UserEntity.class
             )
             .setParameter("username", username.toLowerCase())
@@ -63,7 +67,11 @@ public class UserService {
      */
     public List<UserEntity> findAllWithRoles() {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles order by u.username",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups g " +
+                    "left join fetch g.roles " +
+                    "order by u.username",
                 UserEntity.class
             )
             .getResultList();
@@ -77,7 +85,11 @@ public class UserService {
      */
     public Optional<UserEntity> findByIdWithRoles(long id) {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles where u.id = :id",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups g " +
+                    "left join fetch g.roles " +
+                    "where u.id = :id",
                 UserEntity.class
             )
             .setParameter("id", id)
