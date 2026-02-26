@@ -39,6 +39,23 @@ public class UserService {
     }
 
     /**
+     * Finds a user by username and eagerly loads roles to avoid lazy-loading issues
+     * when accessed outside of an active persistence context.
+     *
+     * @param username The username to search for
+     * @return Optional containing the User if found, empty otherwise
+     */
+    public Optional<UserEntity> findByUsernameWithRoles(String username) {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u left join fetch u.roles where lower(u.username) = :username",
+                UserEntity.class
+            )
+            .setParameter("username", username.toLowerCase())
+            .getResultStream()
+            .findFirst();
+    }
+
+    /**
      * Creates a new user with the given username and password.
      * The password is hashed using BCrypt before storing in the database.
      *

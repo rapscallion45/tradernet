@@ -63,7 +63,7 @@ public class AuthResource {
             return Response.ok(new LoginResponseDto(LoginStatus.INCORRECT_CREDENTIALS)).build();
         }
 
-        Optional<UserEntity> user = userService.findByUsername(username);
+        Optional<UserEntity> user = userService.findByUsernameWithRoles(username);
         if (user.isEmpty()) {
             return Response.ok(new LoginResponseDto(LoginStatus.USER_NOT_FOUND)).build();
         }
