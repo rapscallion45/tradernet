@@ -3,6 +3,8 @@ import { ApiInterface } from "api/ApiInterface"
 import ApiInterfaceAxios from "api/ApiInterfaceAxios"
 import { AuthResource } from "api/Auth"
 import { HealthResource } from "api/Health"
+import { RolesResource } from "api/Roles"
+import { UsersResource } from "api/Users"
 
 let client: RestClient | null = null
 
@@ -29,10 +31,14 @@ export class RestClient {
 
   authResource: AuthResource
   healthResource: HealthResource
+  rolesResource: RolesResource
+  usersResource: UsersResource
 
   constructor(apiInterface: ApiInterface) {
     this.apiInterface = apiInterface
     this.authResource = new AuthResource(this.apiInterface)
     this.healthResource = new HealthResource(this.apiInterface)
+    this.rolesResource = new RolesResource(this.apiInterface)
+    this.usersResource = new UsersResource(this.apiInterface)
   }
 }
