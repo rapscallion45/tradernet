@@ -6,25 +6,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Lightweight auth user payload.
+ * Lightweight user payload for API responses.
  */
-public class AuthUserDto {
+public class UserProfileDto {
 
     private long id;
     private String username;
+    private String fullName;
     private Set<String> roleNames = new HashSet<>();
 
-    public AuthUserDto() {
+    public UserProfileDto() {
     }
 
-    public AuthUserDto(long id, String username, Set<String> roleNames) {
+    public UserProfileDto(long id, String username, String fullName, Set<String> roleNames) {
         this.id = id;
         this.username = username;
+        this.fullName = fullName;
         this.roleNames = roleNames;
     }
 
-    public static AuthUserDto fromUser(UserEntity user) {
-        return new AuthUserDto(user.getPk(), user.getUsername(), new HashSet<>(user.getRoleNames()));
+    public static UserProfileDto fromUser(UserEntity user) {
+        return new UserProfileDto(
+            user.getPk(),
+            user.getUsername(),
+            user.getFullName(),
+            new HashSet<>(user.getRoleNames())
+        );
     }
 
     public long getId() {
@@ -41,6 +48,14 @@ public class AuthUserDto {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public Set<String> getRoleNames() {

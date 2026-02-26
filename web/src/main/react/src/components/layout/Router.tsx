@@ -2,6 +2,9 @@ import { createBrowserRouter, isRouteErrorResponse, useRouteError } from "react-
 import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
+import GroupsPage from "pages/Admin/GroupsPage"
+import UsersPage from "pages/Admin/UsersPage"
+import AuthGate from "components/auth/AuthGate"
 import Layout from "components/layout/Layout"
 
 /**
@@ -44,6 +47,20 @@ export const router = createBrowserRouter([
       {
         path: Routes.Dashboard,
         element: <Dashboard />,
+      },
+      {
+        path: "/admin",
+        element: <AuthGate />,
+        children: [
+          {
+            path: "users",
+            element: <UsersPage />,
+          },
+          {
+            path: "groups",
+            element: <GroupsPage />,
+          },
+        ],
       },
     ],
   },

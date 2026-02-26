@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -34,6 +35,52 @@ public class UserService {
     public Optional<UserEntity> findByUsername(String username) {
         return entityManager.createNamedQuery("GetUserByUsername", UserEntity.class)
             .setParameter("username", username.toLowerCase())
+            .getResultStream()
+            .findFirst();
+    }
+
+    /**
+     * Finds a user by username and eagerly loads roles to avoid lazy-loading issues
+     * when accessed outside of an active persistence context.
+     *
+     * @param username The username to search for
+     * @return Optional containing the User if found, empty otherwise
+     */
+    public Optional<UserEntity> findByUsernameWithRoles(String username) {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u left join fetch u.roles where lower(u.username) = :username",
+                UserEntity.class
+            )
+            .setParameter("username", username.toLowerCase())
+            .getResultStream()
+            .findFirst();
+    }
+
+    /**
+     * Finds all users and eagerly loads roles.
+     *
+     * @return List of users with roles loaded
+     */
+    public List<UserEntity> findAllWithRoles() {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u left join fetch u.roles order by u.username",
+                UserEntity.class
+            )
+            .getResultList();
+    }
+
+    /**
+     * Finds a user by id and eagerly loads roles.
+     *
+     * @param id User id
+     * @return Optional containing the User if found, empty otherwise
+     */
+    public Optional<UserEntity> findByIdWithRoles(long id) {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u left join fetch u.roles where u.id = :id",
+                UserEntity.class
+            )
+            .setParameter("id", id)
             .getResultStream()
             .findFirst();
     }

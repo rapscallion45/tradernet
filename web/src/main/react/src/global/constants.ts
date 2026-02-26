@@ -9,4 +9,10 @@ export enum QueryClientKeys {
 
   /** Server health check */
   HealthCheck = "HealthCheck",
+
+  /** Users */
+  Users = "Users",
+
+  /** Roles */
+  Roles = "Roles",
 }
