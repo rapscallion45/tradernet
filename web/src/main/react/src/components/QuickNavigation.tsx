@@ -2,8 +2,9 @@ import { FC } from "react"
 import { useNavigate } from "react-router-dom"
 import { Spotlight, SpotlightActionData, SpotlightActionGroupData } from "@mantine/spotlight"
 import Routes from "global/Routes"
+import useCurrentUser from "hooks/useCurrentUser"
 import classes from "./QuickNavigation.module.css"
-import { IconHome, IconSearch, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 
 /** default icon size */
 const iconSize = "lg"
@@ -13,6 +14,8 @@ const iconSize = "lg"
  */
 const QuickNavigation: FC = () => {
   const navigate = useNavigate()
+  const { data: currentUser } = useCurrentUser()
+  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "ALL Rights")
 
   const baseActions: SpotlightActionData[] = [
     // Dashboard
@@ -38,6 +41,16 @@ const QuickNavigation: FC = () => {
       leftSection: <IconUsersGroup />,
     },
   ]
+
+  if (isSuperUser) {
+    baseActions.push({
+      id: "security-roles",
+      label: "Security Roles",
+      description: "View security roles",
+      onClick: () => navigate(Routes.AdminSecurityRoles),
+      leftSection: <IconShield />,
+    })
+  }
 
   // Create action groups based on user role settings
   const actionsList: SpotlightActionGroupData[] = [

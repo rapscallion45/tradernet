@@ -2,6 +2,7 @@ import { ClientAuthConfiguration } from "api/types"
 import { ApiInterface } from "api/ApiInterface"
 import ApiInterfaceAxios from "api/ApiInterfaceAxios"
 import { AuthResource } from "api/Auth"
+import { GroupsResource } from "api/Groups"
 import { HealthResource } from "api/Health"
 import { RolesResource } from "api/Roles"
 import { UsersResource } from "api/Users"
@@ -31,6 +32,7 @@ export class RestClient {
 
   authResource: AuthResource
   healthResource: HealthResource
+  groupsResource: GroupsResource
   rolesResource: RolesResource
   usersResource: UsersResource
 
@@ -38,6 +40,7 @@ export class RestClient {
     this.apiInterface = apiInterface
     this.authResource = new AuthResource(this.apiInterface)
     this.healthResource = new HealthResource(this.apiInterface)
+    this.groupsResource = new GroupsResource(this.apiInterface)
     this.rolesResource = new RolesResource(this.apiInterface)
     this.usersResource = new UsersResource(this.apiInterface)
   }

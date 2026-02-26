@@ -1,7 +1,11 @@
 package com.tradernet.user;
 
+import com.tradernet.jpa.dao.GroupDao;
+import com.tradernet.jpa.dao.ResourceDao;
 import com.tradernet.jpa.dao.RoleDao;
 import com.tradernet.jpa.dao.UserDao;
+import com.tradernet.jpa.entities.GroupEntity;
+import com.tradernet.jpa.entities.ResourceEntity;
 import com.tradernet.jpa.entities.RoleEntity;
 import com.tradernet.jpa.entities.UserEntity;
 import jakarta.annotation.PostConstruct;
@@ -39,17 +43,27 @@ public class SystemBootstrapService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemBootstrapService.class);
 
-    private static final String SUPER_USER_ROLE = "SUPER USER";
-    private static final String ADMIN_ROLE = "ADMIN";
-    private static final String STANDARD_ROLE = "STANDARD";
+    private static final String ALL_RIGHTS_ROLE = "ALL Rights";
+    private static final String ADMIN_RIGHTS_ROLE = "Admin Rights";
+    private static final String STANDARD_RIGHTS_ROLE = "Standard Rights";
+
+    private static final String SUPER_USERS_GROUP = "Super Users";
+    private static final String ADMINISTRATORS_GROUP = "Administrators";
+    private static final String STANDARD_USERS_GROUP = "Standard Users";
 
     private static final String DEFAULT_SUPER_USER_USERNAME =
-        System.getProperty("tradernet.bootstrap.superuser.username", "admin");
+        System.getProperty("tradernet.bootstrap.superuser.username", "superuser");
     private static final String DEFAULT_SUPER_USER_PASSWORD =
-        System.getProperty("tradernet.bootstrap.superuser.password", "ChangeMe");
+        System.getProperty("tradernet.bootstrap.superuser.password", "changeme");
 
     @EJB
     private RoleDao roleDao;
+
+    @EJB
+    private GroupDao groupDao;
+
+    @EJB
+    private ResourceDao resourceDao;
 
     @EJB
     private UserDao userDao;
@@ -64,18 +78,35 @@ public class SystemBootstrapService {
     void bootstrap() {
         initializeSchemaForH2();
 
-        RoleEntity superUserRole = ensureRole(SUPER_USER_ROLE);
-        ensureRole(ADMIN_ROLE);
-        ensureRole(STANDARD_ROLE);
+        RoleEntity allRightsRole = ensureRole(ALL_RIGHTS_ROLE);
+        RoleEntity adminRightsRole = ensureRole(ADMIN_RIGHTS_ROLE);
+        RoleEntity standardRightsRole = ensureRole(STANDARD_RIGHTS_ROLE);
+
+        List<ResourceEntity> resources = ensureProtectedResources();
+        ensureRoleHasResources(allRightsRole, resources);
+        ensureRoleHasResources(adminRightsRole, resources.stream().filter(resource ->
+            "users".equals(resource.getPathPrefix()) || "groups".equals(resource.getPathPrefix())
+        ).collect(Collectors.toList()));
+
+        GroupEntity superUsersGroup = ensureGroup(SUPER_USERS_GROUP);
+        GroupEntity administratorsGroup = ensureGroup(ADMINISTRATORS_GROUP);
+        GroupEntity standardUsersGroup = ensureGroup(STANDARD_USERS_GROUP);
+
+        assignRoleToGroup(superUsersGroup, allRightsRole);
+        assignRoleToGroup(administratorsGroup, adminRightsRole);
+        assignRoleToGroup(standardUsersGroup, standardRightsRole);
 
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD));
+            .orElseGet(() -> userDao.findByUsername("admin")
+                .map(existingAdmin -> migrateAdminUser(existingAdmin, DEFAULT_SUPER_USER_PASSWORD))
+                .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD)));
 
-        if (!superUser.getRoleNames().contains(SUPER_USER_ROLE)) {
-            superUser.addRole(superUserRole);
+        if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
+            superUser.addGroup(superUsersGroup);
             userDao.save(superUser);
-            LOG.info("Ensured '{}' role for bootstrap user '{}'.", SUPER_USER_ROLE, DEFAULT_SUPER_USER_USERNAME);
+            LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", SUPER_USERS_GROUP, DEFAULT_SUPER_USER_USERNAME);
         }
+
     }
 
     private RoleEntity ensureRole(String roleName) {
@@ -92,11 +123,67 @@ public class SystemBootstrapService {
     private UserEntity createSuperUser(String username, String password) {
         UserEntity user = new UserEntity(username);
         user.setPk(nextUserId());
+        user.setFullName("Super User");
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
-        user.addRole(ensureRole(SUPER_USER_ROLE));
         userDao.save(user);
         LOG.info("Created bootstrap super user '{}'.", username);
         return user;
+    }
+
+    private UserEntity migrateAdminUser(UserEntity user, String newPassword) {
+        user.setUsername(DEFAULT_SUPER_USER_USERNAME);
+        user.setFullName("Super User");
+        user.setPasswordHash(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
+        userDao.save(user);
+        LOG.info("Migrated legacy admin user to '{}'.", DEFAULT_SUPER_USER_USERNAME);
+        return user;
+    }
+
+    private GroupEntity ensureGroup(String groupName) {
+        return groupDao.findByName(groupName)
+            .orElseGet(() -> {
+                GroupEntity group = new GroupEntity();
+                group.setName(groupName);
+                groupDao.save(group);
+                return groupDao.findByName(groupName).orElse(group);
+            });
+    }
+
+    private List<ResourceEntity> ensureProtectedResources() {
+        ensureResource("Users", "users");
+        ensureResource("Groups", "groups");
+        ensureResource("Security Roles", "roles");
+        ensureResource("Orders", "orders");
+        ensureResource("Trades", "trades");
+        ensureResource("Signals", "signals");
+        ensureResource("Market", "market");
+        ensureResource("User Properties", "user-properties");
+        ensureResource("Passwords", "passwords");
+        ensureResource("Health", "health");
+        return resourceDao.findAll();
+    }
+
+    private ResourceEntity ensureResource(String name, String pathPrefix) {
+        return resourceDao.findByName(name)
+            .orElseGet(() -> {
+                ResourceEntity resource = new ResourceEntity();
+                resource.setName(name);
+                resource.setPathPrefix(pathPrefix);
+                resourceDao.save(resource);
+                return resourceDao.findByName(name).orElse(resource);
+            });
+    }
+
+    private void ensureRoleHasResources(RoleEntity role, List<ResourceEntity> resources) {
+        role.setResources(new java.util.HashSet<>(resources));
+        roleDao.save(role);
+    }
+
+    private void assignRoleToGroup(GroupEntity group, RoleEntity role) {
+        if (group.getRoles().stream().noneMatch(existing -> role.getName().equals(existing.getName()))) {
+            group.addRole(role);
+            groupDao.save(group);
+        }
     }
 
     private long nextUserId() {

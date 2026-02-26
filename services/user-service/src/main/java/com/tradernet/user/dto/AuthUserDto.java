@@ -4,6 +4,7 @@ import com.tradernet.jpa.entities.UserEntity;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Lightweight auth user payload.
@@ -24,7 +25,15 @@ public class AuthUserDto {
     }
 
     public static AuthUserDto fromUser(UserEntity user) {
-        return new AuthUserDto(user.getPk(), user.getUsername(), new HashSet<>(user.getRoleNames()));
+        Set<String> groupRoleNames = user.getGroupsIncParents().stream()
+            .flatMap(group -> group.getRoles().stream())
+            .map(role -> role.getName())
+            .collect(Collectors.toSet());
+
+        Set<String> effectiveRoleNames = new HashSet<>(user.getRoleNames());
+        effectiveRoleNames.addAll(groupRoleNames);
+
+        return new AuthUserDto(user.getPk(), user.getUsername(), effectiveRoleNames);
     }
 
     public long getId() {

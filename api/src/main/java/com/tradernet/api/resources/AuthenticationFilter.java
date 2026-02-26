@@ -2,6 +2,10 @@ package com.tradernet.api.resources;
 
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
+import com.tradernet.user.UserService;
+import com.tradernet.jpa.dao.ResourceDao;
+import com.tradernet.jpa.entities.ResourceEntity;
+import jakarta.inject.Inject;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -12,6 +16,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Enforces authenticated sessions for all non-auth REST endpoints.
@@ -20,6 +25,12 @@ import java.util.Set;
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
+    @Inject
+    private UserService userService;
+
+    @Inject
+    private ResourceDao resourceDao;
+
     private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
         "auth",
         "auth/login",
@@ -27,8 +38,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         "auth/session",
         "auth/forgot-password"
     );
-    private static final Set<String> ADMIN_ROLES = Set.of("SUPER USER", "ADMIN");
-
     private String normalisePath(String path) {
         if (path == null) {
             return "";
@@ -46,13 +55,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return PUBLIC_AUTH_PATHS.contains(normalisePath(path));
     }
 
-    private boolean isAdminApiPath(String path) {
-        String normalisedPath = normalisePath(path);
-        return normalisedPath.startsWith("users") || normalisedPath.startsWith("roles");
-    }
-
-    private boolean hasAdminRole(AuthUserDto authUser) {
-        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(ADMIN_ROLES::contains);
+    private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
+        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(allowedRoles::contains);
     }
 
     @Override
@@ -73,10 +77,26 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (isAdminApiPath(path) && !hasAdminRole(authUser.get())) {
+        AuthUserDto effectiveAuthUser = userService.findByUsernameWithRoles(authUser.get().getUsername())
+            .map(AuthUserDto::fromUser)
+            .orElse(authUser.get());
+
+        Set<String> requiredRoles = resourceDao.findAllWithRoles().stream()
+            .filter(resource -> pathMatchesResource(path, resource))
+            .flatMap(resource -> resource.getRoles().stream())
+            .map(role -> role.getName())
+            .collect(Collectors.toSet());
+
+        if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
         }
+    }
+
+    private boolean pathMatchesResource(String path, ResourceEntity resource) {
+        String normalisedPath = normalisePath(path);
+        String pathPrefix = resource.getPathPrefix();
+        return pathPrefix != null && !pathPrefix.isBlank() && normalisedPath.startsWith(pathPrefix);
     }
 }
