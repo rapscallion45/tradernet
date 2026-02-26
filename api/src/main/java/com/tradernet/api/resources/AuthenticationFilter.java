@@ -28,6 +28,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         "auth/forgot-password"
     );
     private static final Set<String> ADMIN_ROLES = Set.of("SUPER USER", "ADMIN");
+    private static final Set<String> SUPER_USER_ROLES = Set.of("SUPER USER");
 
     private String normalisePath(String path) {
         if (path == null) {
@@ -46,13 +47,18 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return PUBLIC_AUTH_PATHS.contains(normalisePath(path));
     }
 
-    private boolean isAdminApiPath(String path) {
+    private boolean isUsersOrGroupsApiPath(String path) {
         String normalisedPath = normalisePath(path);
-        return normalisedPath.startsWith("users") || normalisedPath.startsWith("roles");
+        return normalisedPath.startsWith("users") || normalisedPath.startsWith("groups");
     }
 
-    private boolean hasAdminRole(AuthUserDto authUser) {
-        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(ADMIN_ROLES::contains);
+    private boolean isRolesApiPath(String path) {
+        String normalisedPath = normalisePath(path);
+        return normalisedPath.startsWith("roles");
+    }
+
+    private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
+        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(allowedRoles::contains);
     }
 
     @Override
@@ -73,7 +79,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (isAdminApiPath(path) && !hasAdminRole(authUser.get())) {
+        if (isUsersOrGroupsApiPath(path) && !hasAnyRole(authUser.get(), ADMIN_ROLES)) {
+            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
+                .entity(new MessageResponseDto("Insufficient permissions"))
+                .build());
+            return;
+        }
+
+        if (isRolesApiPath(path) && !hasAnyRole(authUser.get(), SUPER_USER_ROLES)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
