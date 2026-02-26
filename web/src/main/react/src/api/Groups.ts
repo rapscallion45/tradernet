@@ -4,6 +4,7 @@ import { List } from "api/types"
 
 export type Group = {
   id: number
+  name?: string
   usernames: string[]
   roleNames: string[]
 }

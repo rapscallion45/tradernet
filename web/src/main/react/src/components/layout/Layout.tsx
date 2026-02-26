@@ -51,7 +51,7 @@ export const sidebarItems: SidebarItem[] = [
 const Layout: FC = () => {
   const location = useLocation()
   const { data: currentUser } = useCurrentUser()
-  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "SUPER USER")
+  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "All Rights" || role === "SUPER USER")
   const visibleSidebarItems = isSuperUser ? sidebarItems : sidebarItems.filter((item) => item.label !== "Security Roles")
 
   return (

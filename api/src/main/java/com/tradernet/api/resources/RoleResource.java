@@ -17,7 +17,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,12 +30,6 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class RoleResource {
 
-    private static final List<ResourceSeed> DEFAULT_RESOURCES = List.of(
-        new ResourceSeed("Users", "users"),
-        new ResourceSeed("Groups", "groups"),
-        new ResourceSeed("Security Roles", "roles")
-    );
-
     @Inject
     private RoleDao roleDao;
 
@@ -45,14 +38,12 @@ public class RoleResource {
 
     @GET
     public List<RoleDto> getRoles() {
-        ensureDefaultResourcesExist();
         return roleDao.findAllWithResources().stream().map(RoleDto::fromEntity).collect(Collectors.toList());
     }
 
     @GET
     @Path("/{name}")
     public Response getRole(@PathParam("name") String name) {
-        ensureDefaultResourcesExist();
         return roleDao.findAllWithResources().stream()
             .filter(role -> role.getName().equals(name))
             .findFirst()
@@ -63,7 +54,6 @@ public class RoleResource {
     @GET
     @Path("/resources")
     public List<String> getResources() {
-        ensureDefaultResourcesExist();
         return resourceDao.findAll().stream().map(ResourceEntity::getName).sorted().collect(Collectors.toList());
     }
 
@@ -74,7 +64,6 @@ public class RoleResource {
             throw new BadRequestException("Request body is required");
         }
 
-        ensureDefaultResourcesExist();
         return roleDao.findAllWithResources().stream()
             .filter(role -> role.getName().equals(name))
             .findFirst()
@@ -86,24 +75,12 @@ public class RoleResource {
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 
-    private void ensureDefaultResourcesExist() {
-        for (ResourceSeed resourceSeed : DEFAULT_RESOURCES) {
-            if (resourceDao.findByName(resourceSeed.name).isPresent()) {
-                continue;
-            }
-            ResourceEntity resource = new ResourceEntity();
-            resource.setName(resourceSeed.name);
-            resource.setPathPrefix(resourceSeed.pathPrefix);
-            resourceDao.save(resource);
-        }
-    }
-
     private Set<ResourceEntity> resolveResources(Set<String> resourceNames) {
         if (resourceNames == null || resourceNames.isEmpty()) {
             return new HashSet<>();
         }
 
-        List<ResourceEntity> allResources = new ArrayList<>(resourceDao.findAll());
+        List<ResourceEntity> allResources = resourceDao.findAll();
         Set<ResourceEntity> resources = new HashSet<>();
         for (String resourceName : resourceNames) {
             ResourceEntity resource = allResources.stream()
@@ -115,13 +92,4 @@ public class RoleResource {
         return resources;
     }
 
-    private static class ResourceSeed {
-        private final String name;
-        private final String pathPrefix;
-
-        private ResourceSeed(String name, String pathPrefix) {
-            this.name = name;
-            this.pathPrefix = pathPrefix;
-        }
-    }
 }

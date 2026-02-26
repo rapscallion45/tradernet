@@ -60,7 +60,7 @@ const GroupsPage: FC = () => {
           {groups.map((group) => (
             <ActionCard
               key={group.id}
-              text={`Group ${group.id}`}
+              text={group.name ?? `Group ${group.id}`}
               icon={<IconUsersGroup />}
               secondaryText={"User group"}
               onClick={() => {
@@ -75,7 +75,7 @@ const GroupsPage: FC = () => {
       <SideDrawer
         name={"group-details"}
         location={"right"}
-        title={selectedGroup ? `Group ${selectedGroup.id}` : "Group"}
+        title={selectedGroup ? selectedGroup.name ?? `Group ${selectedGroup.id}` : "Group"}
         onClose={() => {
           setSelectedGroupId(undefined)
           close()

@@ -15,7 +15,7 @@ const iconSize = "lg"
 const QuickNavigation: FC = () => {
   const navigate = useNavigate()
   const { data: currentUser } = useCurrentUser()
-  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "SUPER USER")
+  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "All Rights" || role === "SUPER USER")
 
   const baseActions: SpotlightActionData[] = [
     // Dashboard

@@ -7,7 +7,7 @@ type AuthGateProps = {
   requiredRoles?: string[]
 }
 
-const defaultRequiredRoles = ["SUPER USER", "ADMIN"]
+const defaultRequiredRoles = ["All Rights", "Admin Rights", "SUPER USER", "ADMIN"]
 
 /**
  * Route guard for Admin pages

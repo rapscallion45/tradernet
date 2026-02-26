@@ -25,6 +25,8 @@ public class GroupEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
+
     @ManyToMany
     @JoinTable(name = "tblGroupUsers")
     private final Set<UserEntity> users = new HashSet<>();
@@ -51,6 +53,14 @@ public class GroupEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     void addUserReference(UserEntity user) {

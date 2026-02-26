@@ -11,14 +11,16 @@ import java.util.stream.Collectors;
 public class GroupDto {
 
     private Long id;
+    private String name;
     private Set<String> usernames;
     private Set<String> roleNames;
 
     public GroupDto() {
     }
 
-    public GroupDto(Long id, Set<String> usernames, Set<String> roleNames) {
+    public GroupDto(Long id, String name, Set<String> usernames, Set<String> roleNames) {
         this.id = id;
+        this.name = name;
         this.usernames = usernames;
         this.roleNames = roleNames;
     }
@@ -26,6 +28,7 @@ public class GroupDto {
     public static GroupDto fromEntity(GroupEntity group) {
         return new GroupDto(
             group.getId(),
+            group.getName(),
             group.getUsers().stream().map(user -> user.getUsername()).collect(Collectors.toSet()),
             group.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
         );
@@ -41,6 +44,14 @@ public class GroupDto {
 
     public Set<String> getUsernames() {
         return usernames;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setUsernames(Set<String> usernames) {

@@ -63,7 +63,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "security-roles",
-            element: <AuthGate requiredRoles={["SUPER USER"]} />,
+            element: <AuthGate requiredRoles={["All Rights", "SUPER USER"]} />,
             children: [
               {
                 path: "",

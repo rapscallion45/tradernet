@@ -40,6 +40,17 @@ public class GroupDaoJPA implements GroupDao {
     }
 
     @Override
+    public Optional<GroupEntity> findByName(String name) {
+        return entityManager.createQuery(
+                "SELECT DISTINCT g FROM GroupEntity g LEFT JOIN FETCH g.users LEFT JOIN FETCH g.roles WHERE g.name = :name",
+                GroupEntity.class
+            )
+            .setParameter("name", name)
+            .getResultStream()
+            .findFirst();
+    }
+
+    @Override
     public void deleteAll() {
         entityManager.createQuery("DELETE FROM GroupEntity").executeUpdate();
     }

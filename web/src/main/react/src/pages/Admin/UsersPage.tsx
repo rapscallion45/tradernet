@@ -27,7 +27,9 @@ const UsersPage: FC = () => {
               username={user.username}
               fullName={user.fullName}
               groups={user.roleNames ?? []}
-              isAdmin={(user.roleNames ?? []).some((role) => role === "SUPER USER" || role === "ADMIN")}
+              isAdmin={(user.roleNames ?? []).some(
+                (role) => role === "All Rights" || role === "Admin Rights" || role === "SUPER USER" || role === "ADMIN",
+              )}
             />
           ))}
         </CardGrid>
