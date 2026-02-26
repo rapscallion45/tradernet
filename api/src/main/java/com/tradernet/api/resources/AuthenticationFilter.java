@@ -3,6 +3,10 @@ package com.tradernet.api.resources;
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.UserService;
+import com.tradernet.jpa.dao.ResourceDao;
+import com.tradernet.jpa.dao.RoleDao;
+import com.tradernet.jpa.entities.ResourceEntity;
+import com.tradernet.jpa.entities.RoleEntity;
 import jakarta.inject.Inject;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
@@ -14,6 +18,9 @@ import jakarta.ws.rs.ext.Provider;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Enforces authenticated sessions for all non-auth REST endpoints.
@@ -25,6 +32,12 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     @Inject
     private UserService userService;
 
+    @Inject
+    private ResourceDao resourceDao;
+
+    @Inject
+    private RoleDao roleDao;
+
     private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
         "auth",
         "auth/login",
@@ -32,11 +45,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         "auth/session",
         "auth/forgot-password"
     );
-    private static final Set<String> ADMIN_PATH_PREFIXES = Set.of("users", "groups");
-    private static final Set<String> SUPER_USER_PATH_PREFIXES = Set.of("roles");
-    private static final Set<String> ADMIN_ROLES = Set.of("SUPER USER", "ADMIN");
-    private static final Set<String> SUPER_USER_ROLES = Set.of("SUPER USER");
-
     private String normalisePath(String path) {
         if (path == null) {
             return "";
@@ -54,17 +62,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return PUBLIC_AUTH_PATHS.contains(normalisePath(path));
     }
 
-    private boolean isPathInPrefixSet(String path, Set<String> pathPrefixes) {
-        String normalisedPath = normalisePath(path);
-        return pathPrefixes.stream().anyMatch(normalisedPath::startsWith);
-    }
-
     private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
         return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(allowedRoles::contains);
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+        ensureDefaultResourceRoleAssignments();
+
         String path = requestContext.getUriInfo().getPath();
         if (isPublicAuthPath(path)) {
             return;
@@ -85,17 +90,68 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             .map(AuthUserDto::fromUser)
             .orElse(authUser.get());
 
-        if (isPathInPrefixSet(path, ADMIN_PATH_PREFIXES) && !hasAnyRole(effectiveAuthUser, ADMIN_ROLES)) {
+        Set<String> requiredRoles = resourceDao.findAllWithRoles().stream()
+            .filter(resource -> pathMatchesResource(path, resource))
+            .flatMap(resource -> resource.getRoles().stream())
+            .map(role -> role.getName())
+            .collect(Collectors.toSet());
+
+        if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
+        }
+    }
+
+    private boolean pathMatchesResource(String path, ResourceEntity resource) {
+        String normalisedPath = normalisePath(path);
+        String pathPrefix = resource.getPathPrefix();
+        return pathPrefix != null && !pathPrefix.isBlank() && normalisedPath.startsWith(pathPrefix);
+    }
+
+    private void ensureDefaultResourceRoleAssignments() {
+        ensureResourceExists("Users", "users");
+        ensureResourceExists("Groups", "groups");
+        ensureResourceExists("Security Roles", "roles");
+
+        List<RoleEntity> roles = roleDao.findAllWithResources();
+        if (roles.isEmpty()) {
             return;
         }
 
-        if (isPathInPrefixSet(path, SUPER_USER_PATH_PREFIXES) && !hasAnyRole(effectiveAuthUser, SUPER_USER_ROLES)) {
-            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
-                .entity(new MessageResponseDto("Insufficient permissions"))
-                .build());
+        assignDefaultIfUnconfigured("Users", Set.of("SUPER USER", "ADMIN"), roles);
+        assignDefaultIfUnconfigured("Groups", Set.of("SUPER USER", "ADMIN"), roles);
+        assignDefaultIfUnconfigured("Security Roles", Set.of("SUPER USER"), roles);
+    }
+
+    private void ensureResourceExists(String resourceName, String pathPrefix) {
+        if (resourceDao.findByName(resourceName).isPresent()) {
+            return;
+        }
+
+        ResourceEntity resource = new ResourceEntity();
+        resource.setName(resourceName);
+        resource.setPathPrefix(pathPrefix);
+        resourceDao.save(resource);
+    }
+
+    private void assignDefaultIfUnconfigured(String resourceName, Set<String> defaultRoleNames, List<RoleEntity> roles) {
+        ResourceEntity resource = resourceDao.findByName(resourceName).orElse(null);
+        if (resource == null || !resource.getRoles().isEmpty()) {
+            return;
+        }
+
+        Set<RoleEntity> matchingRoles = roles.stream()
+            .filter(role -> defaultRoleNames.contains(role.getName()))
+            .collect(Collectors.toCollection(HashSet::new));
+
+        if (matchingRoles.isEmpty()) {
+            return;
+        }
+
+        for (RoleEntity role : matchingRoles) {
+            role.addResource(resource);
+            roleDao.save(role);
         }
     }
 }

@@ -4,6 +4,11 @@ import { List } from "api/types"
 
 export type Role = {
   name: string
+  resourceNames: string[]
+}
+
+export type UpdateRole = {
+  resourceNames: string[]
 }
 
 /**
@@ -16,5 +21,13 @@ export class RolesResource extends RestResource<Role> {
 
   getRoles(): List<Role> {
     return this._list()
+  }
+
+  getResources(): List<string> {
+    return this.typedSubPath<string>("resources")._list()
+  }
+
+  updateRole(name: string, payload: UpdateRole): Promise<Role> {
+    return this.typedSubPath<Role, UpdateRole>(name)._update({ data: payload })
   }
 }
