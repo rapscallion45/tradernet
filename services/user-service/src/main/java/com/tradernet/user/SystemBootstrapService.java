@@ -101,6 +101,8 @@ public class SystemBootstrapService {
                 .map(existingAdmin -> migrateAdminUser(existingAdmin, DEFAULT_SUPER_USER_PASSWORD))
                 .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD)));
 
+        ensureBootstrapCredentials(superUser, DEFAULT_SUPER_USER_PASSWORD);
+
         if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
             superUser.addGroup(superUsersGroup);
             userDao.save(superUser);
@@ -137,6 +139,13 @@ public class SystemBootstrapService {
         userDao.save(user);
         LOG.info("Migrated legacy admin user to '{}'.", DEFAULT_SUPER_USER_USERNAME);
         return user;
+    }
+
+    private void ensureBootstrapCredentials(UserEntity user, String password) {
+        user.setFullName("Super User");
+        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        userDao.save(user);
+        LOG.info("Reset bootstrap credentials for user '{}'.", user.getUsername());
     }
 
     private GroupEntity ensureGroup(String groupName) {
