@@ -1,7 +1,7 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.jpa.dao.UserDao;
-import com.tradernet.jpa.entities.UserEntity;
+import com.tradernet.user.UserService;
+import com.tradernet.user.dto.UserProfileDto;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST API for querying users.
@@ -20,26 +21,29 @@ import java.util.List;
 public class UserResource {
 
     @Inject
-    private UserDao userDao;
+    private UserService userService;
 
     @GET
-    public List<UserEntity> getUsers() {
-        return userDao.findAll();
+    public List<UserProfileDto> getUsers() {
+        return userService.findAllWithRoles()
+            .stream()
+            .map(UserProfileDto::fromUser)
+            .collect(Collectors.toList());
     }
 
     @GET
     @Path("/{id}")
     public Response getUser(@PathParam("id") long id) {
-        return userDao.findById(id)
-            .map(user -> Response.ok(user).build())
+        return userService.findByIdWithRoles(id)
+            .map(user -> Response.ok(UserProfileDto.fromUser(user)).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/by-username/{username}")
     public Response getUserByUsername(@PathParam("username") String username) {
-        return userDao.findByUsername(username)
-            .map(user -> Response.ok(user).build())
+        return userService.findByUsernameWithRoles(username)
+            .map(user -> Response.ok(UserProfileDto.fromUser(user)).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 }
