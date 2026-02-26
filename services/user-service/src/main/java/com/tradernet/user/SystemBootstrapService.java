@@ -97,9 +97,7 @@ public class SystemBootstrapService {
         assignRoleToGroup(standardUsersGroup, standardRightsRole);
 
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> userDao.findByUsername("admin")
-                .map(existingAdmin -> migrateAdminUser(existingAdmin, DEFAULT_SUPER_USER_PASSWORD))
-                .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD)));
+            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD));
 
         ensureBootstrapCredentials(superUser, DEFAULT_SUPER_USER_PASSWORD);
 
@@ -129,15 +127,6 @@ public class SystemBootstrapService {
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         userDao.save(user);
         LOG.info("Created bootstrap super user '{}'.", username);
-        return user;
-    }
-
-    private UserEntity migrateAdminUser(UserEntity user, String newPassword) {
-        user.setUsername(DEFAULT_SUPER_USER_USERNAME);
-        user.setFullName("Super User");
-        user.setPasswordHash(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
-        userDao.save(user);
-        LOG.info("Migrated legacy admin user to '{}'.", DEFAULT_SUPER_USER_USERNAME);
         return user;
     }
 
