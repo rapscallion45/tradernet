@@ -16,10 +16,28 @@ import jakarta.ws.rs.ext.Provider;
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
+    private static final String AUTH_BASE_PATH = "auth";
+    private static final String AUTH_BASE_PATH_WITH_SLASH = "/auth";
+
+    private boolean isPublicAuthPath(String path) {
+        if (path == null || path.isBlank()) {
+            return false;
+        }
+
+        String normalisedPath = path.startsWith("/") ? path : "/" + path;
+        return normalisedPath.equals(AUTH_BASE_PATH_WITH_SLASH + "/login")
+            || normalisedPath.equals(AUTH_BASE_PATH_WITH_SLASH + "/logout")
+            || normalisedPath.equals(AUTH_BASE_PATH_WITH_SLASH + "/session")
+            || normalisedPath.equals(AUTH_BASE_PATH_WITH_SLASH + "/forgot-password")
+            || normalisedPath.startsWith(AUTH_BASE_PATH_WITH_SLASH + "/")
+            || normalisedPath.equals(AUTH_BASE_PATH_WITH_SLASH)
+            || path.startsWith(AUTH_BASE_PATH);
+    }
+
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
-        if (path == null || path.startsWith("auth")) {
+        if (isPublicAuthPath(path)) {
             return;
         }
 
