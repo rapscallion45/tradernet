@@ -33,7 +33,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    private static final String SESSION_COOKIE_NAME = "tradernet_session";
+    public static final String SESSION_COOKIE_NAME = "tradernet_session";
     private static final Duration SESSION_DURATION = Duration.ofHours(8);
     private static final Map<String, AuthUserDto> SESSIONS = new ConcurrentHashMap<>();
 
@@ -93,7 +93,7 @@ public class AuthResource {
     @Path("/logout")
     public Response logout(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
         if (sessionId != null) {
-            SESSIONS.remove(sessionId);
+            removeSession(sessionId);
         }
         NewCookie clearCookie = new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value("")
@@ -109,20 +109,14 @@ public class AuthResource {
     @GET
     @Path("/session")
     public Response getSession(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
+        Optional<AuthUserDto> user = getSessionUser(sessionId);
+        if (user.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity(new MessageResponseDto("Not authenticated"))
                 .build();
         }
 
-        AuthUserDto user = SESSIONS.get(sessionId);
-        if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new MessageResponseDto("Session expired"))
-                .build();
-        }
-
-        return Response.ok(user).build();
+        return Response.ok(user.get()).build();
     }
 
     @POST
@@ -152,5 +146,19 @@ public class AuthResource {
 
         return Response.ok(new MessageResponseDto("Password reset"))
             .build();
+    }
+
+    public static Optional<AuthUserDto> getSessionUser(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(SESSIONS.get(sessionId));
+    }
+
+    public static void removeSession(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return;
+        }
+        SESSIONS.remove(sessionId);
     }
 }

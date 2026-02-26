@@ -1,6 +1,7 @@
 package com.tradernet.api;
 
 import com.tradernet.api.resources.AuthResource;
+import com.tradernet.api.resources.AuthenticationFilter;
 import com.tradernet.api.resources.GroupResource;
 import com.tradernet.api.resources.HealthResource;
 import com.tradernet.api.resources.MarketResource;
@@ -26,6 +27,7 @@ public class TradernetApplication extends Application {
     public Set<Class<?>> getClasses() {
         return Set.of(
             AuthResource.class,
+            AuthenticationFilter.class,
             GroupResource.class,
             HealthResource.class,
             MarketResource.class,
