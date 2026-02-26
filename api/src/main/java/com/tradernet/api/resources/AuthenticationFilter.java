@@ -27,6 +27,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         "auth/session",
         "auth/forgot-password"
     );
+    private static final Set<String> ADMIN_PATH_PREFIXES = Set.of("users", "groups");
+    private static final Set<String> SUPER_USER_PATH_PREFIXES = Set.of("roles");
     private static final Set<String> ADMIN_ROLES = Set.of("SUPER USER", "ADMIN");
     private static final Set<String> SUPER_USER_ROLES = Set.of("SUPER USER");
 
@@ -47,14 +49,9 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return PUBLIC_AUTH_PATHS.contains(normalisePath(path));
     }
 
-    private boolean isUsersOrGroupsApiPath(String path) {
+    private boolean isPathInPrefixSet(String path, Set<String> pathPrefixes) {
         String normalisedPath = normalisePath(path);
-        return normalisedPath.startsWith("users") || normalisedPath.startsWith("groups");
-    }
-
-    private boolean isRolesApiPath(String path) {
-        String normalisedPath = normalisePath(path);
-        return normalisedPath.startsWith("roles");
+        return pathPrefixes.stream().anyMatch(normalisedPath::startsWith);
     }
 
     private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
@@ -79,14 +76,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (isUsersOrGroupsApiPath(path) && !hasAnyRole(authUser.get(), ADMIN_ROLES)) {
+        if (isPathInPrefixSet(path, ADMIN_PATH_PREFIXES) && !hasAnyRole(authUser.get(), ADMIN_ROLES)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
             return;
         }
 
-        if (isRolesApiPath(path) && !hasAnyRole(authUser.get(), SUPER_USER_ROLES)) {
+        if (isPathInPrefixSet(path, SUPER_USER_PATH_PREFIXES) && !hasAnyRole(authUser.get(), SUPER_USER_ROLES)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
