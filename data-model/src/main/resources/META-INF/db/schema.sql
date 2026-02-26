@@ -42,12 +42,17 @@ CREATE TABLE IF NOT EXISTS tblGroups (
 );
 
 CREATE TABLE IF NOT EXISTS tblGroupUsers (
-    GroupEntity_id BIGINT NOT NULL,
+    groups_id BIGINT NOT NULL,
     users_id BIGINT NOT NULL,
-    PRIMARY KEY (GroupEntity_id, users_id),
-    FOREIGN KEY (GroupEntity_id) REFERENCES tblGroups(id),
+    PRIMARY KEY (groups_id, users_id),
+    FOREIGN KEY (groups_id) REFERENCES tblGroups(id),
     FOREIGN KEY (users_id) REFERENCES tblUsers(id)
 );
+
+-- Backward compatibility for older schemas that created GroupEntity_id
+ALTER TABLE tblGroupUsers ADD COLUMN IF NOT EXISTS GroupEntity_id BIGINT;
+ALTER TABLE tblGroupUsers ADD COLUMN IF NOT EXISTS groups_id BIGINT;
+UPDATE tblGroupUsers SET groups_id = GroupEntity_id WHERE groups_id IS NULL;
 
 CREATE TABLE IF NOT EXISTS tblGroupParents (
     groupId BIGINT NOT NULL,
