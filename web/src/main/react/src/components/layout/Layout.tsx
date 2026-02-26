@@ -11,6 +11,7 @@ import AppLayout from "components/layout/AppLayout/AppLayout"
 import Header from "components/layout/Header/Header"
 import ColorSchemeToggle from "components/layout/ColorSchemeToggle/ColorSchemeToggle"
 import Sidebar from "components/layout/Sidebar/Sidebar"
+import useCurrentUser from "hooks/useCurrentUser"
 import { SidebarItem } from "global/types"
 import TradernetLogo from "assets/tradernet-logo.svg"
 
@@ -22,7 +23,7 @@ export const sidebarItems: SidebarItem[] = [
     icon: <IconHome />,
   },
   {
-    label: "Admin",
+    label: "Users & Groups",
     icon: <IconUsersGroup />,
     subItems: [
       {
@@ -35,12 +36,12 @@ export const sidebarItems: SidebarItem[] = [
         path: Routes.AdminGroups,
         icon: <IconUsersGroup />,
       },
-      {
-        label: "Security Roles",
-        path: Routes.AdminSecurityRoles,
-        icon: <IconShield />,
-      },
     ],
+  },
+  {
+    label: "Security Roles",
+    path: Routes.AdminSecurityRoles,
+    icon: <IconShield />,
   },
 ]
 
@@ -49,6 +50,9 @@ export const sidebarItems: SidebarItem[] = [
  */
 const Layout: FC = () => {
   const location = useLocation()
+  const { data: currentUser } = useCurrentUser()
+  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "SUPER USER")
+  const visibleSidebarItems = isSuperUser ? sidebarItems : sidebarItems.filter((item) => item.label !== "Security Roles")
 
   return (
     <AppLayout
@@ -67,7 +71,14 @@ const Layout: FC = () => {
           rightSection={[<ColorSchemeToggle />, <AccountDrawer />]}
         />
       }
-      sidebar={<Sidebar<ReactRouterLinkProps> items={sidebarItems} activePath={location.pathname} LinkComponent={ReactRouterLink} linkPropName={"to"} />}>
+      sidebar={
+        <Sidebar<ReactRouterLinkProps>
+          items={visibleSidebarItems}
+          activePath={location.pathname}
+          LinkComponent={ReactRouterLink}
+          linkPropName={"to"}
+        />
+      }>
       <Suspense fallback={<PageLoadingSkeleton />}>
         <QuickNavigation />
         <Outlet />
