@@ -52,6 +52,8 @@ public class UserService {
                     "left join fetch u.roles " +
                     "left join fetch u.groups " +
                     "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
                     "where lower(u.username) = :username",
                 UserEntity.class
             )
@@ -71,6 +73,8 @@ public class UserService {
                     "left join fetch u.roles " +
                     "left join fetch u.groups " +
                     "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
                     "order by u.username",
                 UserEntity.class
             )
@@ -89,6 +93,8 @@ public class UserService {
                     "left join fetch u.roles " +
                     "left join fetch u.groups " +
                     "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
                     "where u.id = :id",
                 UserEntity.class
             )
