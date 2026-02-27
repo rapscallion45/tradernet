@@ -1,23 +1,31 @@
 import { FC, useMemo } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Stack } from "@mantine/core"
+import { User } from "api/types"
 import { CardGrid } from "components/CardGrid/CardGrid"
 import PageHeader from "components/layout/PageHeader/PageHeader"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { Table } from "components/Table/Table"
 import { Title } from "components/Title/Title"
 import { UserCard } from "components/UserCard/UserCard"
-import { User } from "api/types"
+import useGroups from "hooks/useGroups"
 import useUsers from "hooks/useUsers"
 
 const USER_CARD_GROUPS = new Set(["Super Users", "Administrators"])
 const FALLBACK_GROUP_NAME = "Unassigned"
+
+type GroupSection = {
+  key: string
+  groupName: string
+  users: User[]
+}
 
 /**
  * Admin users page
  */
 const UsersPage: FC = () => {
   const { data: users = [] } = useUsers()
+  const { data: groups = [] } = useGroups()
 
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
@@ -32,33 +40,52 @@ const UsersPage: FC = () => {
   )
 
   const groupedUsers = useMemo(() => {
-    const groupMap = new Map<string, User[]>()
+    const usersByUsername = new Map(users.map((user) => [user.username, user] as const))
 
-    users.forEach((user) => {
-      const userGroups = user.roleNames?.length ? user.roleNames : [FALLBACK_GROUP_NAME]
+    const sections: GroupSection[] = groups.map((group) => ({
+      key: `group-${group.id}`,
+      groupName: group.name ?? `Group ${group.id}`,
+      users: (group.usernames ?? [])
+        .map((username) => usersByUsername.get(username))
+        .filter((user): user is User => user !== undefined),
+    }))
 
-      userGroups.forEach((groupName) => {
-        const existingGroup = groupMap.get(groupName) ?? []
-        existingGroup.push(user)
-        groupMap.set(groupName, existingGroup)
+    const assignedUsernames = new Set(groups.flatMap((group) => group.usernames ?? []))
+    const unassignedUsers = users.filter((user) => !assignedUsernames.has(user.username))
+
+    if (unassignedUsers.length > 0) {
+      sections.push({
+        key: "unassigned",
+        groupName: FALLBACK_GROUP_NAME,
+        users: unassignedUsers,
       })
-    })
+    }
 
-    const allGroupNames = Array.from(groupMap.keys()).sort((a, b) => a.localeCompare(b))
-    const prioritizedGroupNames = ["Super Users", "Administrators", ...allGroupNames]
+    const prioritizedGroupNames = ["Super Users", "Administrators"]
 
-    return prioritizedGroupNames
-      .filter((groupName, index, source) => source.indexOf(groupName) === index)
-      .filter((groupName) => groupMap.has(groupName))
-      .map((groupName) => ({ groupName, users: groupMap.get(groupName) ?? [] }))
-  }, [users])
+    return sections
+      .filter((section) => section.users.length > 0)
+      .sort((a, b) => {
+        const aPriority = prioritizedGroupNames.indexOf(a.groupName)
+        const bPriority = prioritizedGroupNames.indexOf(b.groupName)
+
+        if (aPriority >= 0 || bPriority >= 0) {
+          if (aPriority < 0) return 1
+          if (bPriority < 0) return -1
+
+          return aPriority - bPriority
+        }
+
+        return a.groupName.localeCompare(b.groupName)
+      })
+  }, [groups, users])
 
   return (
     <Stack gap={"xl"}>
       <PageHeader title={<Title>Users</Title>} description={"View all users and their role assignments."} />
 
-      {groupedUsers.map(({ groupName, users: usersInGroup }) => (
-        <Stack key={groupName}>
+      {groupedUsers.map(({ key, groupName, users: usersInGroup }) => (
+        <Stack key={key}>
           <SectionHeading>{groupName}</SectionHeading>
 
           {USER_CARD_GROUPS.has(groupName) ? (
