@@ -279,7 +279,7 @@ export const TradingChartPanel: FC = () => {
       if (drawing.type === "ray") {
         const xMax = plot.scales.x.max ?? drawing.end.time
         const rayX = plot.valToPos(xMax, "x", true) - left
-        const slope = (endY - startY) / ((endX - startX) || 1)
+        const slope = (endY - startY) / (endX - startX || 1)
         const rayY = startY + slope * (rayX - startX)
         ctx.beginPath()
         ctx.moveTo(startX, startY)
@@ -448,7 +448,6 @@ export const TradingChartPanel: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-
   useEffect(() => {
     indicatorsRef.current = indicators
   }, [indicators])
@@ -482,7 +481,6 @@ export const TradingChartPanel: FC = () => {
     drawOverlay()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawings, pendingStart])
-
 
   useEffect(() => {
     if (disconnectToastTimerRef.current) {
@@ -530,7 +528,6 @@ export const TradingChartPanel: FC = () => {
       lastToastKeyRef.current = "connected"
     }
   }, [streamError, streamStatus, toast])
-
 
   useEffect(() => {
     return () => {
@@ -620,8 +617,7 @@ export const TradingChartPanel: FC = () => {
             onClick={() => {
               setIntervalDraft(intervalToken)
               setIntervalModalOpened(true)
-            }}
-          >
+            }}>
             Interval {intervalToken}
           </Button>
           <SegmentedControl
@@ -671,7 +667,13 @@ export const TradingChartPanel: FC = () => {
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
-        <canvas ref={overlayRef} className={classes.overlayCanvas} onClick={handleOverlayClick} onMouseMove={handleOverlayMouseMove} onMouseLeave={handleOverlayMouseLeave} />
+        <canvas
+          ref={overlayRef}
+          className={classes.overlayCanvas}
+          onClick={handleOverlayClick}
+          onMouseMove={handleOverlayMouseMove}
+          onMouseLeave={handleOverlayMouseLeave}
+        />
       </Paper>
       <Modal opened={intervalModalOpened} onClose={() => setIntervalModalOpened(false)} title="Set chart interval" centered>
         <Stack>
@@ -701,8 +703,7 @@ export const TradingChartPanel: FC = () => {
                 const normalized = normalizeIntervalToken(intervalDraft)
                 setIntervalToken(normalized)
                 setIntervalModalOpened(false)
-              }}
-            >
+              }}>
               Apply
             </Button>
           </Group>

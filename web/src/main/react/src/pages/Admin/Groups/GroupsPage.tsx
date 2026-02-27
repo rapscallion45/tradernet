@@ -75,7 +75,7 @@ const GroupsPage: FC = () => {
       <SideDrawer
         name={"group-details"}
         location={"right"}
-        title={selectedGroup ? selectedGroup.name ?? `Group ${selectedGroup.id}` : "Group"}
+        title={selectedGroup ? (selectedGroup.name ?? `Group ${selectedGroup.id}`) : "Group"}
         onClose={() => {
           setSelectedGroupId(undefined)
           close()

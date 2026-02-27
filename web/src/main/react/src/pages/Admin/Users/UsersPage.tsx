@@ -11,9 +11,7 @@ import { UserCard } from "components/UserCard/UserCard"
 import useGroups from "hooks/useGroups"
 import useUsers from "hooks/useUsers"
 
-const USER_CARD_GROUPS = new Set(["Super Users", "Administrators"])
-const FALLBACK_GROUP_NAME = "Unassigned"
-
+/** local helper type for defining a Group section on the page */
 type GroupSection = {
   key: string
   groupName: string
@@ -26,7 +24,7 @@ type GroupSection = {
 const UsersPage: FC = () => {
   const { data: users = [] } = useUsers()
   const { data: groups = [] } = useGroups()
-
+  const defaultUserCardGroups = new Set(["Super Users", "Administrators"])
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       { accessorKey: "username", header: "Username" },
@@ -39,15 +37,14 @@ const UsersPage: FC = () => {
     [],
   )
 
+  /** build the Group sections */
   const groupedUsers = useMemo(() => {
     const usersByUsername = new Map(users.map((user) => [user.username, user] as const))
 
     const sections: GroupSection[] = groups.map((group) => ({
       key: `group-${group.id}`,
       groupName: group.name ?? `Group ${group.id}`,
-      users: (group.usernames ?? [])
-        .map((username) => usersByUsername.get(username))
-        .filter((user): user is User => user !== undefined),
+      users: (group.usernames ?? []).map((username) => usersByUsername.get(username)).filter((user): user is User => user !== undefined),
     }))
 
     const assignedUsernames = new Set(groups.flatMap((group) => group.usernames ?? []))
@@ -56,7 +53,7 @@ const UsersPage: FC = () => {
     if (unassignedUsers.length > 0) {
       sections.push({
         key: "unassigned",
-        groupName: FALLBACK_GROUP_NAME,
+        groupName: "Unassigned Users",
         users: unassignedUsers,
       })
     }
@@ -82,13 +79,11 @@ const UsersPage: FC = () => {
 
   return (
     <Stack gap={"xl"}>
-      <PageHeader title={<Title>Users</Title>} description={"View all users and their role assignments."} />
-
+      <PageHeader title={<Title>Users</Title>} description={"View all users and their group/role assignments."} />
       {groupedUsers.map(({ key, groupName, users: usersInGroup }) => (
         <Stack key={key}>
           <SectionHeading>{groupName}</SectionHeading>
-
-          {USER_CARD_GROUPS.has(groupName) ? (
+          {defaultUserCardGroups.has(groupName) ? (
             <CardGrid>
               {usersInGroup.map((user) => (
                 <UserCard
@@ -96,9 +91,7 @@ const UsersPage: FC = () => {
                   username={user.username}
                   fullName={user.fullName}
                   groups={user.roleNames ?? []}
-                  isAdmin={(user.roleNames ?? []).some(
-                    (role) => role === "ALL Rights" || role === "Admin Rights",
-                  )}
+                  isAdmin={(user.roleNames ?? []).some((role) => role === "ALL Rights" || role === "Admin Rights")}
                 />
               ))}
             </CardGrid>
@@ -109,6 +102,7 @@ const UsersPage: FC = () => {
               sorting={{
                 state: [],
                 setSortingState: () => undefined,
+                manualSorting: true,
               }}
             />
           )}

@@ -72,12 +72,7 @@ const Layout: FC = () => {
         />
       }
       sidebar={
-        <Sidebar<ReactRouterLinkProps>
-          items={visibleSidebarItems}
-          activePath={location.pathname}
-          LinkComponent={ReactRouterLink}
-          linkPropName={"to"}
-        />
+        <Sidebar<ReactRouterLinkProps> items={visibleSidebarItems} activePath={location.pathname} LinkComponent={ReactRouterLink} linkPropName={"to"} />
       }>
       <Suspense fallback={<PageLoadingSkeleton />}>
         <QuickNavigation />

@@ -2,9 +2,9 @@ import { createBrowserRouter, isRouteErrorResponse, useRouteError } from "react-
 import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
-import GroupsPage from "pages/Admin/GroupsPage"
-import SecurityRolesPage from "pages/Admin/SecurityRolesPage"
-import UsersPage from "pages/Admin/UsersPage"
+import GroupsPage from "pages/Admin/Groups/GroupsPage"
+import SecurityRolesPage from "pages/Admin/SecurityRoles/SecurityRolesPage"
+import UsersPage from "pages/Admin/Users/UsersPage"
 import AuthGate from "components/auth/AuthGate"
 import Layout from "components/layout/Layout"
 

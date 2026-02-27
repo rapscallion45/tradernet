@@ -17842,6 +17842,7 @@ __metadata:
     tough-cookie: "npm:^6.0.0"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.2.2"
+    uplot: "npm:^1.6.31"
     vite: "npm:^5.2.0"
     vite-plugin-auto-alias: "npm:^1.0.9"
     vite-tsconfig-paths: "npm:^5.1.4"
@@ -18369,6 +18370,13 @@ __metadata:
   bin:
     update-browserslist-db: cli.js
   checksum: 10c0/682e8ecbf9de474a626f6462aa85927936cdd256fe584c6df2508b0df9f7362c44c957e9970df55dfe44d3623807d26316ea2c7d26b80bb76a16c56c37233c32
+  languageName: node
+  linkType: hard
+
+"uplot@npm:^1.6.31":
+  version: 1.6.32
+  resolution: "uplot@npm:1.6.32"
+  checksum: 10c0/4d9cdd5f53371656cfc178ea4ae0d8c9bdbe4c98c99df847926d7e5f5a5bcb8043561219da2979fee7616aabe3619d80fee093befdfe39aae65e6621284c39b1
   languageName: node
   linkType: hard
 
