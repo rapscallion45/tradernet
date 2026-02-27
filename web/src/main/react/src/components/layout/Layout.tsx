@@ -1,7 +1,7 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
 import { Group, Image } from "@mantine/core"
-import { IconHome, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
 import QuickNavigation from "components/QuickNavigation"
@@ -11,6 +11,7 @@ import AppLayout from "components/layout/AppLayout/AppLayout"
 import Header from "components/layout/Header/Header"
 import ColorSchemeToggle from "components/layout/ColorSchemeToggle/ColorSchemeToggle"
 import Sidebar from "components/layout/Sidebar/Sidebar"
+import useCurrentUser from "hooks/useCurrentUser"
 import { SidebarItem } from "global/types"
 import TradernetLogo from "assets/tradernet-logo.svg"
 
@@ -37,6 +38,11 @@ export const sidebarItems: SidebarItem[] = [
       },
     ],
   },
+  {
+    label: "Security Roles",
+    path: Routes.AdminSecurityRoles,
+    icon: <IconShield />,
+  },
 ]
 
 /**
@@ -44,6 +50,9 @@ export const sidebarItems: SidebarItem[] = [
  */
 const Layout: FC = () => {
   const location = useLocation()
+  const { data: currentUser } = useCurrentUser()
+  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "ALL Rights")
+  const visibleSidebarItems = isSuperUser ? sidebarItems : sidebarItems.filter((item) => item.label !== "Security Roles")
 
   return (
     <AppLayout
@@ -62,7 +71,14 @@ const Layout: FC = () => {
           rightSection={[<ColorSchemeToggle />, <AccountDrawer />]}
         />
       }
-      sidebar={<Sidebar<ReactRouterLinkProps> items={sidebarItems} activePath={location.pathname} LinkComponent={ReactRouterLink} linkPropName={"to"} />}>
+      sidebar={
+        <Sidebar<ReactRouterLinkProps>
+          items={visibleSidebarItems}
+          activePath={location.pathname}
+          LinkComponent={ReactRouterLink}
+          linkPropName={"to"}
+        />
+      }>
       <Suspense fallback={<PageLoadingSkeleton />}>
         <QuickNavigation />
         <Outlet />

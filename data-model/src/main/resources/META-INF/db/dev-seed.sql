@@ -1,11 +1,11 @@
 INSERT INTO tblRoles (name)
-SELECT 'SUPER USER'
-WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'SUPER USER');
+SELECT 'ALL Rights'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'ALL Rights');
 
 INSERT INTO tblRoles (name)
-SELECT 'ADMIN'
-WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'ADMIN');
+SELECT 'Admin Rights'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'Admin Rights');
 
 INSERT INTO tblRoles (name)
-SELECT 'STANDARD'
-WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'STANDARD');
+SELECT 'Standard Rights'
+WHERE NOT EXISTS (SELECT 1 FROM tblRoles WHERE name = 'Standard Rights');

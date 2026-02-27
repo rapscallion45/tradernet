@@ -8,8 +8,8 @@ DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-sa}"
 DB_PASSWORD="${DB_PASSWORD:-}"
-ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-superuser}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
 SCHEMA_AUTO_CREATE_DEV="${SCHEMA_AUTO_CREATE_DEV:-true}"
 
 log() {
@@ -62,7 +62,7 @@ configure_runtime_properties() {
     schema_action="drop-and-create"
   fi
 
-  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action} -Dtradernet.bootstrap.superuser.username=${ADMIN_USERNAME} -Dtradernet.bootstrap.superuser.password=${ADMIN_PASSWORD}"
+  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action}"
   log "Configured runtime properties: schema-generation=${schema_action}, datasource=java:/jdbc/TradernetDS"
 }
 

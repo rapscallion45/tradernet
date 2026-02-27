@@ -48,7 +48,13 @@ public class UserService {
      */
     public Optional<UserEntity> findByUsernameWithRoles(String username) {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles where lower(u.username) = :username",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
+                    "where lower(u.username) = :username",
                 UserEntity.class
             )
             .setParameter("username", username.toLowerCase())
@@ -63,7 +69,13 @@ public class UserService {
      */
     public List<UserEntity> findAllWithRoles() {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles order by u.username",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
+                    "order by u.username",
                 UserEntity.class
             )
             .getResultList();
@@ -77,7 +89,13 @@ public class UserService {
      */
     public Optional<UserEntity> findByIdWithRoles(long id) {
         return entityManager.createQuery(
-                "select distinct u from UserEntity u left join fetch u.roles where u.id = :id",
+                "select distinct u from UserEntity u " +
+                    "left join fetch u.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
+                    "left join fetch u.groups.parents " +
+                    "left join fetch u.groups.parents.roles " +
+                    "where u.id = :id",
                 UserEntity.class
             )
             .setParameter("id", id)
@@ -150,6 +168,7 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         user.setPasswordHash(hashedPassword);
+        user.setChangePasswordNextLogin(false);
         entityManager.merge(user);
     }
 }

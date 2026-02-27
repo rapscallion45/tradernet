@@ -25,6 +25,11 @@ public interface RoleDao {
     List<RoleEntity> findAll();
 
     /**
+     * Retrieves all roles with resources eagerly loaded.
+     */
+    List<RoleEntity> findAllWithResources();
+
+    /**
      * Retrieves a role by name.
      *
      * @param name role name

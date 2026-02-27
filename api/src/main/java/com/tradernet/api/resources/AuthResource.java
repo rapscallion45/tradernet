@@ -79,7 +79,7 @@ public class AuthResource {
             .httpOnly(true)
             .build();
 
-        LoginStatus status = "ChangeMe".equals(password)
+        LoginStatus status = user.get().isChangePasswordNextLogin()
             ? LoginStatus.ACCOUNT_PASSWORD_EXPIRED
             : LoginStatus.SUCCESS;
         LoginResponseDto response = new LoginResponseDto(status);

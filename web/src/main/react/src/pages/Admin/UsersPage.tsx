@@ -21,12 +21,15 @@ const UsersPage: FC = () => {
         <SectionHeading>USERS</SectionHeading>
         <CardGrid>
           {users.map((user) => (
+            // roleNames represent security role assignments on each user
             <UserCard
               key={user.id ?? user.username}
               username={user.username}
               fullName={user.fullName}
               groups={user.roleNames ?? []}
-              isAdmin={(user.roleNames ?? []).some((role) => role === "SUPER USER" || role === "ADMIN")}
+              isAdmin={(user.roleNames ?? []).some(
+                (role) => role === "ALL Rights" || role === "Admin Rights",
+              )}
             />
           ))}
         </CardGrid>

@@ -3,16 +3,21 @@ import { Outlet } from "react-router-dom"
 import AccessDenied from "components/AccessDenied"
 import useCurrentUser from "hooks/useCurrentUser"
 
-const allowedRoles = new Set(["SUPER USER", "ADMIN"])
+type AuthGateProps = {
+  requiredRoles?: string[]
+}
+
+const defaultRequiredRoles = ["ALL Rights", "Admin Rights"]
 
 /**
  * Route guard for Admin pages
  */
-const AuthGate: FC = () => {
+const AuthGate: FC<AuthGateProps> = ({ requiredRoles = defaultRequiredRoles }) => {
   const { data: currentUser } = useCurrentUser()
-  const hasAdminAccess = (currentUser.roleNames ?? []).some((role) => allowedRoles.has(role))
+  const allowedRoles = new Set(requiredRoles)
+  const hasRequiredAccess = (currentUser.roleNames ?? []).some((role) => allowedRoles.has(role))
 
-  if (!hasAdminAccess) {
+  if (!hasRequiredAccess) {
     return <AccessDenied height={"calc(100vh - 200px)"} />
   }
 

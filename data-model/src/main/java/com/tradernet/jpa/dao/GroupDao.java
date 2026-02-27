@@ -33,6 +33,11 @@ public interface GroupDao {
     Optional<GroupEntity> findById(long id);
 
     /**
+     * Retrieves a group by name.
+     */
+    Optional<GroupEntity> findByName(String name);
+
+    /**
      * Deletes all groups.
      */
     void deleteAll();
