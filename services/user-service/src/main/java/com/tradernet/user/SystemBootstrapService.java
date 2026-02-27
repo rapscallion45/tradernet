@@ -123,6 +123,7 @@ public class SystemBootstrapService {
         user.setPk(nextUserId());
         user.setFullName("Super User");
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        user.setChangePasswordNextLogin(true);
         userDao.save(user);
         LOG.info("Created bootstrap super user '{}'.", username);
         return user;
@@ -131,6 +132,7 @@ public class SystemBootstrapService {
     private void ensureBootstrapCredentials(UserEntity user, String password) {
         user.setFullName("Super User");
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        user.setChangePasswordNextLogin(true);
         userDao.save(user);
         LOG.info("Reset bootstrap credentials for user '{}'.", user.getUsername());
     }

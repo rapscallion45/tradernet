@@ -168,6 +168,7 @@ public class UserService {
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         user.setPasswordHash(hashedPassword);
+        user.setChangePasswordNextLogin(false);
         entityManager.merge(user);
     }
 }
