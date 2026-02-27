@@ -50,8 +50,8 @@ public class UserService {
         return entityManager.createQuery(
                 "select distinct u from UserEntity u " +
                     "left join fetch u.roles " +
-                    "left join fetch u.groups g " +
-                    "left join fetch g.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
                     "where lower(u.username) = :username",
                 UserEntity.class
             )
@@ -69,8 +69,8 @@ public class UserService {
         return entityManager.createQuery(
                 "select distinct u from UserEntity u " +
                     "left join fetch u.roles " +
-                    "left join fetch u.groups g " +
-                    "left join fetch g.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
                     "order by u.username",
                 UserEntity.class
             )
@@ -87,8 +87,8 @@ public class UserService {
         return entityManager.createQuery(
                 "select distinct u from UserEntity u " +
                     "left join fetch u.roles " +
-                    "left join fetch u.groups g " +
-                    "left join fetch g.roles " +
+                    "left join fetch u.groups " +
+                    "left join fetch u.groups.roles " +
                     "where u.id = :id",
                 UserEntity.class
             )
