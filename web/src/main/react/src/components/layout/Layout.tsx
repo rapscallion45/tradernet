@@ -51,8 +51,21 @@ export const sidebarItems: SidebarItem[] = [
 const Layout: FC = () => {
   const location = useLocation()
   const { data: currentUser } = useCurrentUser()
-  const isSuperUser = (currentUser.roleNames ?? []).some((role) => role === "ALL Rights")
-  const visibleSidebarItems = isSuperUser ? sidebarItems : sidebarItems.filter((item) => item.label !== "Security Roles")
+  const roleNames = currentUser?.roleNames ?? []
+  const canViewUserAndGroupNavigation = roleNames.some((role) => role === "ALL Rights" || role === "Admin Rights")
+  const canViewSecurityRolesNavigation = roleNames.some((role) => role === "ALL Rights")
+
+  const visibleSidebarItems = sidebarItems.filter((item) => {
+    if (item.label === "Users & Groups") {
+      return canViewUserAndGroupNavigation
+    }
+
+    if (item.label === "Security Roles") {
+      return canViewSecurityRolesNavigation
+    }
+
+    return true
+  })
 
   return (
     <AppLayout
