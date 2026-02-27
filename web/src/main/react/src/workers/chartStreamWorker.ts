@@ -40,10 +40,7 @@ type AiSignal = {
   notes: string[]
 }
 
-type WsEnvelope =
-  | { type: "bar"; payload: MarketBar }
-  | { type: "signal"; payload: AiSignal }
-  | { type: string; payload?: unknown }
+type WsEnvelope = { type: "bar"; payload: MarketBar } | { type: "signal"; payload: AiSignal } | { type: string; payload?: unknown }
 
 let emitTimer: number | undefined
 let socket: WebSocket | null = null
@@ -207,9 +204,7 @@ const preload = async (sessionId: number) => {
   }
 
   const barsPayload = (await barsResponse.json()) as MarketBar[]
-  rawBars = barsPayload
-    .filter((bar) => !bar.symbol || bar.symbol.toUpperCase() === symbol)
-    .sort((left, right) => left.bucketStart - right.bucketStart)
+  rawBars = barsPayload.filter((bar) => !bar.symbol || bar.symbol.toUpperCase() === symbol).sort((left, right) => left.bucketStart - right.bucketStart)
 
   rebuildDisplayCandles()
 
@@ -299,7 +294,12 @@ const stop = () => {
   streamStatus = "disconnected"
 }
 
-const start = async ({ symbol: selectedSymbol, intervalToken: selectedIntervalToken, intervalMs: selectedIntervalMs, historySize: nextHistorySize }: StreamConfig) => {
+const start = async ({
+  symbol: selectedSymbol,
+  intervalToken: selectedIntervalToken,
+  intervalMs: selectedIntervalMs,
+  historySize: nextHistorySize,
+}: StreamConfig) => {
   stop()
 
   const sessionId = streamSession

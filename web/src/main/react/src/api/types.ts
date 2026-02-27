@@ -145,6 +145,10 @@ export interface User {
   id?: number
   username: string
   fullName?: string
+  emailAddress?: string
+  accountExpiry?: string
+  lastLogin?: string
+  changePasswordNextLogin?: boolean
   roleNames?: string[]
 }
 

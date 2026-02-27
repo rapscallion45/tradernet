@@ -1,5 +1,5 @@
 import { FC, PropsWithChildren, ReactNode } from "react"
-import { AppShell, Box } from "@mantine/core"
+import { AppShell } from "@mantine/core"
 import { useGlobalStore } from "hooks/useGlobalStore"
 import { useDesktopSidebarExpandedStorage } from "hooks/useDesktopSidebarExpandedStorage"
 
@@ -31,7 +31,7 @@ const AppLayout: FC<AppLayoutProps> = ({ header, sidebar, footer, children }) =>
         collapsed: { mobile: !mobileSidebarExpanded, desktop: !sidebar },
       }}
       footer={{ height: 45, collapsed: !footer }}
-      padding={{ base: "xs", sm: "md" }}>
+      padding={{ base: "xs", sm: "lg" }}>
       <AppShell.Header>{header}</AppShell.Header>
       {/** Desktop sidebar styling */}
       {sidebar && (
@@ -46,11 +46,7 @@ const AppLayout: FC<AppLayoutProps> = ({ header, sidebar, footer, children }) =>
         </AppShell.Navbar>
       )}
       {footer && <AppShell.Footer>{footer}</AppShell.Footer>}
-      <AppShell.Main>
-        <Box pt={"md"} px={"md"}>
-          {children}
-        </Box>
-      </AppShell.Main>
+      <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
   )
 }
