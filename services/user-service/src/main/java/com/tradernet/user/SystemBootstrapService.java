@@ -54,7 +54,7 @@ public class SystemBootstrapService {
     private static final String DEFAULT_SUPER_USER_USERNAME = "superuser";
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     private static final String DEFAULT_STANDARD_USERNAME = "standard";
-    private static final String DEFAULT_SUPER_USER_PASSWORD = "changeme";
+    private static final String DEFAULT_PASSWORD = "changeme";
 
     @EJB
     private RoleDao roleDao;
@@ -97,9 +97,9 @@ public class SystemBootstrapService {
         assignRoleToGroup(standardUsersGroup, standardRightsRole);
 
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD));
+            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
 
-        ensureBootstrapCredentials(superUser, DEFAULT_SUPER_USER_PASSWORD);
+        ensureBootstrapCredentials(superUser, DEFAULT_PASSWORD);
 
         if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
             superUser.addGroup(superUsersGroup);
@@ -108,11 +108,11 @@ public class SystemBootstrapService {
         }
 
         UserEntity adminUser = userDao.findByUsername(DEFAULT_ADMIN_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_SUPER_USER_PASSWORD));
+            .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_PASSWORD));
         ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
 
         UserEntity standardUser = userDao.findByUsername(DEFAULT_STANDARD_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_SUPER_USER_PASSWORD));
+            .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_PASSWORD));
         ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
 
     }
