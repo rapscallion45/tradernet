@@ -51,10 +51,8 @@ public class SystemBootstrapService {
     private static final String ADMINISTRATORS_GROUP = "Administrators";
     private static final String STANDARD_USERS_GROUP = "Standard Users";
 
-    private static final String DEFAULT_SUPER_USER_USERNAME =
-        System.getProperty("tradernet.bootstrap.superuser.username", "superuser");
-    private static final String DEFAULT_SUPER_USER_PASSWORD =
-        System.getProperty("tradernet.bootstrap.superuser.password", "changeme");
+    private static final String DEFAULT_SUPER_USER_USERNAME = "superuser";
+    private static final String DEFAULT_SUPER_USER_PASSWORD = "changeme";
 
     @EJB
     private RoleDao roleDao;
