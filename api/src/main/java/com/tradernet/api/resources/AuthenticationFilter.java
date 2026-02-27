@@ -87,11 +87,31 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             .map(role -> role.getName())
             .collect(Collectors.toSet());
 
+        if (canReadOwnUserByUsername(path, effectiveAuthUser)) {
+            return;
+        }
+
         if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
         }
+    }
+
+    private boolean canReadOwnUserByUsername(String path, AuthUserDto authUser) {
+        String normalisedPath = normalisePath(path);
+        String byUsernamePrefix = "users/by-username/";
+        if (!normalisedPath.startsWith(byUsernamePrefix)) {
+            return false;
+        }
+
+        String requestedUsername = normalisedPath.substring(byUsernamePrefix.length());
+        if (requestedUsername.isBlank()) {
+            return false;
+        }
+
+        String currentUsername = authUser.getUsername();
+        return currentUsername != null && currentUsername.equalsIgnoreCase(requestedUsername);
     }
 
     private boolean pathMatchesResource(String path, ResourceEntity resource) {
