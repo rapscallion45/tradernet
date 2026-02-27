@@ -34,6 +34,7 @@ import java.util.UUID;
 public class AuthResource {
 
     public static final String SESSION_COOKIE_NAME = "tradernet_session";
+    private static final String DEFAULT_BOOTSTRAP_PASSWORD = "changeme";
     private static final Duration SESSION_DURATION = Duration.ofHours(8);
     private static final Map<String, AuthUserDto> SESSIONS = new ConcurrentHashMap<>();
 
@@ -79,7 +80,7 @@ public class AuthResource {
             .httpOnly(true)
             .build();
 
-        LoginStatus status = "ChangeMe".equals(password)
+        LoginStatus status = DEFAULT_BOOTSTRAP_PASSWORD.equalsIgnoreCase(password)
             ? LoginStatus.ACCOUNT_PASSWORD_EXPIRED
             : LoginStatus.SUCCESS;
         LoginResponseDto response = new LoginResponseDto(status);
