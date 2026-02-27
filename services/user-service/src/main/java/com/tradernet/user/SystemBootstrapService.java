@@ -52,7 +52,9 @@ public class SystemBootstrapService {
     private static final String STANDARD_USERS_GROUP = "Standard Users";
 
     private static final String DEFAULT_SUPER_USER_USERNAME = "superuser";
-    private static final String DEFAULT_SUPER_USER_PASSWORD = "changeme";
+    private static final String DEFAULT_ADMIN_USERNAME = "admin";
+    private static final String DEFAULT_STANDARD_USERNAME = "standard";
+    private static final String DEFAULT_PASSWORD = "changeme";
 
     @EJB
     private RoleDao roleDao;
@@ -95,15 +97,23 @@ public class SystemBootstrapService {
         assignRoleToGroup(standardUsersGroup, standardRightsRole);
 
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_SUPER_USER_PASSWORD));
+            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
 
-        ensureBootstrapCredentials(superUser, DEFAULT_SUPER_USER_PASSWORD);
+        ensureBootstrapCredentials(superUser, DEFAULT_PASSWORD);
 
         if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
             superUser.addGroup(superUsersGroup);
             userDao.save(superUser);
             LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", SUPER_USERS_GROUP, DEFAULT_SUPER_USER_USERNAME);
         }
+
+        UserEntity adminUser = userDao.findByUsername(DEFAULT_ADMIN_USERNAME)
+            .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_PASSWORD));
+        ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
+
+        UserEntity standardUser = userDao.findByUsername(DEFAULT_STANDARD_USERNAME)
+            .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_PASSWORD));
+        ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
 
     }
 
@@ -119,13 +129,17 @@ public class SystemBootstrapService {
     }
 
     private UserEntity createSuperUser(String username, String password) {
+        return createUser(username, "Super User", password);
+    }
+
+    private UserEntity createUser(String username, String fullName, String password) {
         UserEntity user = new UserEntity(username);
         user.setPk(nextUserId());
-        user.setFullName("Super User");
+        user.setFullName(fullName);
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setChangePasswordNextLogin(true);
         userDao.save(user);
-        LOG.info("Created bootstrap super user '{}'.", username);
+        LOG.info("Created bootstrap user '{}' ({})", username, fullName);
         return user;
     }
 
@@ -181,6 +195,14 @@ public class SystemBootstrapService {
         if (group.getRoles().stream().noneMatch(existing -> role.getName().equals(existing.getName()))) {
             group.addRole(role);
             groupDao.save(group);
+        }
+    }
+
+    private void ensureUserInGroup(UserEntity user, GroupEntity group, String groupName) {
+        if (user.getGroups().stream().noneMatch(existing -> groupName.equals(existing.getName()))) {
+            user.addGroup(group);
+            userDao.save(user);
+            LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", groupName, user.getUsername());
         }
     }
 

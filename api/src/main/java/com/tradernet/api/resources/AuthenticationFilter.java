@@ -31,12 +31,13 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     @Inject
     private ResourceDao resourceDao;
 
-    private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
+    private static final Set<String> PUBLIC_PATHS = Set.of(
         "auth",
         "auth/login",
         "auth/logout",
         "auth/session",
-        "auth/forgot-password"
+        "auth/forgot-password",
+        "health"
     );
     private String normalisePath(String path) {
         if (path == null) {
@@ -51,8 +52,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return normalisedPath;
     }
 
-    private boolean isPublicAuthPath(String path) {
-        return PUBLIC_AUTH_PATHS.contains(normalisePath(path));
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.contains(normalisePath(path));
     }
 
     private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
@@ -62,7 +63,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
-        if (isPublicAuthPath(path)) {
+        if (isPublicPath(path)) {
             return;
         }
 
@@ -87,11 +88,31 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             .map(role -> role.getName())
             .collect(Collectors.toSet());
 
+        if (canReadOwnUserByUsername(path, effectiveAuthUser)) {
+            return;
+        }
+
         if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
         }
+    }
+
+    private boolean canReadOwnUserByUsername(String path, AuthUserDto authUser) {
+        String normalisedPath = normalisePath(path);
+        String byUsernamePrefix = "users/by-username/";
+        if (!normalisedPath.startsWith(byUsernamePrefix)) {
+            return false;
+        }
+
+        String requestedUsername = normalisedPath.substring(byUsernamePrefix.length());
+        if (requestedUsername.isBlank()) {
+            return false;
+        }
+
+        String currentUsername = authUser.getUsername();
+        return currentUsername != null && currentUsername.equalsIgnoreCase(requestedUsername);
     }
 
     private boolean pathMatchesResource(String path, ResourceEntity resource) {
