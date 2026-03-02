@@ -7,9 +7,6 @@ import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
 
-/**
- * JPA implementation of OrderDao using Hibernate.
- */
 @Stateless
 public class OrderDaoJPA implements OrderDao {
 
@@ -23,7 +20,14 @@ public class OrderDaoJPA implements OrderDao {
 
     @Override
     public List<OrderEntity> findAll() {
-        return entityManager.createQuery("SELECT o FROM OrderEntity o", OrderEntity.class)
+        return entityManager.createQuery("SELECT o FROM OrderEntity o ORDER BY o.createdAt DESC", OrderEntity.class)
+            .getResultList();
+    }
+
+    @Override
+    public List<OrderEntity> findByUserId(long userId) {
+        return entityManager.createQuery("SELECT o FROM OrderEntity o WHERE o.userId = :userId ORDER BY o.createdAt DESC", OrderEntity.class)
+            .setParameter("userId", userId)
             .getResultList();
     }
 
