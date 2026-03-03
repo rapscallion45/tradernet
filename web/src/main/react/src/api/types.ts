@@ -167,6 +167,7 @@ export type OrderData = {
 }
 
 export type OrderSummary = {
+  id: number
   orderId: number
   userId: number
   symbol: string
@@ -175,8 +176,12 @@ export type OrderSummary = {
   price: number
   status: string
   createdAt: string
+  createdAtDisplay?: string
   currentPrice?: number
+  currentPriceDisplay?: string
   pnl?: number
+  pnlDisplay?: string
   pnlPercent?: number
+  pnlPercentDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL"
 }

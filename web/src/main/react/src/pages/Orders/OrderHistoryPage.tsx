@@ -1,6 +1,7 @@
 import { FC, Suspense, useMemo } from "react"
 import { Badge, Stack, Text } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
+import { OrderSummary } from "api/types"
 import { Table } from "components/Table/Table"
 import { Title } from "components/Title/Title"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
@@ -8,80 +9,49 @@ import PageHeader from "components/layout/PageHeader/PageHeader"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { useOrders } from "hooks/useOrders"
 
-type OrderHistoryRow = {
-  id: string
-  created: string
-  symbol: string
-  side: string
-  quantity: string
-  entry: string
-  current: string
-  pnl: number
-  pnlText: string
-  pnlPercent: number
-  pnlPercentText: string
-  timing: string
-  status: string
-}
-
 const OrderHistoryTable: FC = () => {
   const { data: orders = [] } = useOrders()
 
-  const rows = useMemo<OrderHistoryRow[]>(() => {
-    return orders.map((order) => {
-      const pnl = order.pnl ?? 0
-      const pnlPercent = order.pnlPercent ?? 0
-
-      return {
-        id: `${order.orderId}-${order.createdAt}`,
-        created: new Date(order.createdAt).toLocaleString(),
-        symbol: order.symbol,
-        side: order.side,
-        quantity: order.quantity.toFixed(4),
-        entry: order.price.toFixed(4),
-        current: (order.currentPrice ?? order.price).toFixed(4),
-        pnl,
-        pnlText: pnl.toFixed(4),
-        pnlPercent,
-        pnlPercentText: `${pnlPercent.toFixed(2)}%`,
-        timing: order.timing ?? "NEUTRAL",
-        status: order.status,
-      }
-    })
-  }, [orders])
-
-  const columns = useMemo<ColumnDef<OrderHistoryRow>[]>(
+  const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
-      { accessorKey: "created", header: "Created" },
+      {
+        accessorKey: "createdAtDisplay",
+        header: "Created",
+        cell: ({ row }) => row.original.createdAtDisplay ?? new Date(row.original.createdAt).toLocaleString(),
+      },
       { accessorKey: "symbol", header: "Symbol" },
       { accessorKey: "side", header: "Side" },
-      { accessorKey: "quantity", header: "Qty" },
-      { accessorKey: "entry", header: "Entry" },
-      { accessorKey: "current", header: "Current" },
       {
-        accessorKey: "pnlText",
+        accessorKey: "quantity",
+        header: "Qty",
+        cell: ({ row }) => row.original.quantity.toFixed(4),
+      },
+      {
+        accessorKey: "price",
+        header: "Entry",
+        cell: ({ row }) => row.original.price.toFixed(4),
+      },
+      {
+        accessorKey: "currentPriceDisplay",
+        header: "Current",
+        cell: ({ row }) => row.original.currentPriceDisplay ?? (row.original.currentPrice ?? row.original.price).toFixed(4),
+      },
+      {
+        accessorKey: "pnlDisplay",
         header: "P/L",
         cell: ({ row }) => {
-          const pnl = row.original.pnl
+          const pnl = row.original.pnl ?? 0
           const pnlColor = pnl > 0 ? "green" : pnl < 0 ? "red" : "gray"
-          return (
-            <Text c={pnlColor} fw={600}>
-              {row.original.pnlText}
-            </Text>
-          )
+          return <Text c={pnlColor} fw={600}>{row.original.pnlDisplay ?? pnl.toFixed(4)}</Text>
         },
       },
       {
-        accessorKey: "pnlPercentText",
+        accessorKey: "pnlPercentDisplay",
         header: "P/L %",
         cell: ({ row }) => {
-          const pnlPercent = row.original.pnlPercent
+          const pnlPercent = row.original.pnlPercent ?? 0
           const pnlColor = pnlPercent > 0 ? "green" : pnlPercent < 0 ? "red" : "gray"
-          return (
-            <Text c={pnlColor} fw={600}>
-              {row.original.pnlPercentText}
-            </Text>
-          )
+          return <Text c={pnlColor} fw={600}>{row.original.pnlPercentDisplay ?? `${pnlPercent.toFixed(2)}%`}</Text>
         },
       },
       {
@@ -89,7 +59,7 @@ const OrderHistoryTable: FC = () => {
         header: "Timing",
         cell: ({ row }) => (
           <Badge color={row.original.timing === "GOOD" ? "green" : row.original.timing === "BAD" ? "red" : "gray"} variant={"light"}>
-            {row.original.timing}
+            {row.original.timing ?? "NEUTRAL"}
           </Badge>
         ),
       },
@@ -102,7 +72,7 @@ const OrderHistoryTable: FC = () => {
     [],
   )
 
-  return <Table<OrderHistoryRow> columns={columns} data={rows} caption={rows.length === 0 ? "No orders yet." : undefined} />
+  return <Table<OrderSummary> columns={columns} data={orders} caption={orders.length === 0 ? "No orders yet." : undefined} />
 }
 
 const OrderHistoryPage: FC = () => {

@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -97,7 +98,7 @@ public class OrderResource {
                 .build();
         }
 
-        OrderEntity order = new OrderEntity(symbol.trim(), request.getQuantity().intValue(), request.getPrice(), side);
+        OrderEntity order = new OrderEntity(symbol.trim(), request.getQuantity(), request.getPrice(), side);
         OrderEntity savedOrder = orderService.createOrder(authUser.get().getId(), order);
 
         return Response.status(Response.Status.CREATED)
@@ -120,6 +121,11 @@ public class OrderResource {
         responseDto.setPnl(pnl);
         responseDto.setPnlPercent(pnlPercent);
         responseDto.setTiming(pnlPerUnit > 0 ? "GOOD" : (pnlPerUnit < 0 ? "BAD" : "NEUTRAL"));
+
+        responseDto.setCreatedAtDisplay(responseDto.getCreatedAt() == null ? "" : responseDto.getCreatedAt().toString());
+        responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.4f", currentPrice));
+        responseDto.setPnlDisplay(String.format(Locale.US, "%.4f", pnl));
+        responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", pnlPercent));
 
         return responseDto;
     }

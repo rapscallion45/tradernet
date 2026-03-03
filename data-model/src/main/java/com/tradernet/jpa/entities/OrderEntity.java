@@ -36,7 +36,7 @@ public class OrderEntity {
     public OrderEntity() {
     }
 
-    public OrderEntity(String symbol, int quantity, double price, Side side) {
+    public OrderEntity(String symbol, double quantity, double price, Side side) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
