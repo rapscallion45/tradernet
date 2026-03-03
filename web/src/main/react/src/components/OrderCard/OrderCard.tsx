@@ -4,7 +4,7 @@ import classes from "./OrderCard.module.css"
 import { BaseCard } from "../BaseCard/BaseCard"
 import OrderForm from "../../pages/Dashboard/forms/OrderForm"
 import { OrderData } from "api/types"
-import { useCreateOrder } from "hooks/useOrders"
+import { useCreateOrder } from "hooks/useCreateOrder"
 import { useToast } from "hooks/useToast"
 
 /**
