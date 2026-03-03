@@ -5,6 +5,26 @@ import { OrderSummary } from "api/types"
 import { Table } from "components/Table/Table"
 import { useOrders } from "hooks/useOrders"
 
+const formatOrderDate = (value?: string): string => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  const dd = String(date.getDate()).padStart(2, "0")
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const yyyy = date.getFullYear()
+  const hh = String(date.getHours()).padStart(2, "0")
+  const min = String(date.getMinutes()).padStart(2, "0")
+  const ss = String(date.getSeconds()).padStart(2, "0")
+
+  return `${hh}:${min}:${ss} ${dd}/${mm}/${yyyy}`
+}
+
 /**
  * Table section for displaying order history and performance metrics.
  */
@@ -14,9 +34,9 @@ const OderHistoryTable: FC = () => {
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
       {
-        accessorKey: "createdAtDisplay",
+        accessorKey: "createdAt",
         header: "Created",
-        cell: ({ row }) => row.original.createdAtDisplay ?? new Date(row.original.createdAt).toLocaleString(),
+        cell: ({ row }) => formatOrderDate(row.original.createdAt),
       },
       { accessorKey: "symbol", header: "Symbol" },
       { accessorKey: "side", header: "Side" },
