@@ -4,7 +4,7 @@ import { Spotlight, SpotlightActionData, SpotlightActionGroupData } from "@manti
 import Routes from "global/Routes"
 import useCurrentUser from "hooks/useCurrentUser"
 import classes from "./QuickNavigation.module.css"
-import { IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHistory, IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 
 /** default icon size */
 const iconSize = "lg"
@@ -25,6 +25,13 @@ const QuickNavigation: FC = () => {
       description: "Go to your dashboard",
       onClick: () => navigate(Routes.Dashboard),
       leftSection: <IconHome />,
+    },
+    {
+      id: "orders",
+      label: "Order History",
+      description: "View your orders with profit/loss",
+      onClick: () => navigate(Routes.Orders),
+      leftSection: <IconHistory />,
     },
     {
       id: "users",
