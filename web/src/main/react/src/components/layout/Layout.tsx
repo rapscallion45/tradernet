@@ -1,7 +1,7 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
 import { Group, Image } from "@mantine/core"
-import { IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconHistory, IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
 import QuickNavigation from "components/QuickNavigation"
@@ -21,6 +21,11 @@ export const sidebarItems: SidebarItem[] = [
     label: "Home",
     path: Routes.Dashboard,
     icon: <IconHome />,
+  },
+  {
+    label: "Order History",
+    path: Routes.Orders,
+    icon: <IconHistory />,
   },
   {
     label: "Users & Groups",

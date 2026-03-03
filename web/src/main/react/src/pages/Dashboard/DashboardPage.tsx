@@ -11,6 +11,7 @@ import { CardGrid } from "components/CardGrid/CardGrid"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import Routes from "global/Routes"
 import { IconArrowRight, IconReceipt } from "@tabler/icons-react"
+import { useOrders } from "hooks/useOrders"
 import { StatCard } from "components/StatCard/StatCard"
 import { OrderCard } from "components/OrderCard/OrderCard"
 import { TradingChartPanel } from "components/TradingChartPanel/TradingChartPanel"
@@ -22,6 +23,7 @@ const DashboardPage: FC = () => {
   const navigate = useNavigate()
   const { data: session } = useSession()
   const { data: health } = useHealthCheck()
+  const { data: orders = [] } = useOrders()
 
   return (
     <Stack gap={"xl"}>
@@ -59,12 +61,12 @@ const DashboardPage: FC = () => {
         <Stack>
           <SectionHeading>ORDER HISTORY</SectionHeading>
           <CardGrid>
-            <StatCard text={"5"} secondaryText={"Orders Placed"} icon={<IconReceipt />} />
+            <StatCard text={String(orders.length)} secondaryText={"Orders Placed"} icon={<IconReceipt />} />
             <ActionCard
               text={"View Orders"}
               icon={<IconArrowRight />}
               secondaryText={"View your order book history"}
-              onClick={() => navigate(Routes.Dashboard)}
+              onClick={() => navigate(Routes.Orders)}
             />
           </CardGrid>
         </Stack>

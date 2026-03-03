@@ -21,4 +21,7 @@ export enum QueryClientKeys {
 
   /** Groups */
   Groups = "Groups",
+
+  /** Orders */
+  Orders = "Orders",
 }

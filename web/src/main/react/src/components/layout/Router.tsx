@@ -5,6 +5,7 @@ import Dashboard from "pages/Dashboard/DashboardPage"
 import GroupsPage from "pages/Admin/Groups/GroupsPage"
 import SecurityRolesPage from "pages/Admin/SecurityRoles/SecurityRolesPage"
 import UsersPage from "pages/Admin/Users/UsersPage"
+import OrderHistoryPage from "pages/Orders/OrderHistoryPage"
 import AuthGate from "components/auth/AuthGate"
 import Layout from "components/layout/Layout"
 
@@ -48,6 +49,10 @@ export const router = createBrowserRouter([
       {
         path: Routes.Dashboard,
         element: <Dashboard />,
+      },
+      {
+        path: Routes.Orders,
+        element: <OrderHistoryPage />,
       },
       {
         path: "/admin",
