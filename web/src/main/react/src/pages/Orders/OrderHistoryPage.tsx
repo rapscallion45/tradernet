@@ -6,6 +6,9 @@ import PageHeader from "components/layout/PageHeader/PageHeader"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import OderHistoryTable from "pages/Oders/tables/OderHistoryTable"
 
+/**
+ * Page for viewing historical orders and their current performance.
+ */
 const OrderHistoryPage: FC = () => {
   return (
     <Stack gap={"xl"}>

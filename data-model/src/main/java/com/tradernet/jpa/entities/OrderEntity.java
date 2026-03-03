@@ -36,6 +36,14 @@ public class OrderEntity {
     public OrderEntity() {
     }
 
+    /**
+     * Constructs a new Order.
+     *
+     * @param symbol the trading symbol (e.g. BTCUSDT)
+     * @param quantity quantity in base asset units
+     * @param price entry price
+     * @param side BUY or SELL
+     */
     public OrderEntity(String symbol, double quantity, double price, Side side) {
         this.symbol = symbol;
         this.quantity = quantity;
@@ -99,5 +107,8 @@ public class OrderEntity {
         return side + " " + quantity + " " + symbol + " @ " + price;
     }
 
+    /**
+     * BUY for purchase orders, SELL for sell orders.
+     */
     public enum Side {BUY, SELL}
 }

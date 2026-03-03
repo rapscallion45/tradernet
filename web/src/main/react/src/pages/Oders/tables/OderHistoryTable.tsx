@@ -5,6 +5,9 @@ import { OrderSummary } from "api/types"
 import { Table } from "components/Table/Table"
 import { useOrders } from "hooks/useOrders"
 
+/**
+ * Table section for displaying order history and performance metrics.
+ */
 const OderHistoryTable: FC = () => {
   const { data: orders = [] } = useOrders()
 

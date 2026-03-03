@@ -7,6 +7,9 @@ import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
 
+/**
+ * JPA implementation of OrderDao using Hibernate.
+ */
 @Stateless
 public class OrderDaoJPA implements OrderDao {
 

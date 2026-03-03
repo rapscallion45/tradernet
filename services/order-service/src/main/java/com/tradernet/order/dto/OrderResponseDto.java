@@ -6,6 +6,9 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Response payload for order data and computed performance metrics.
+ */
 public class OrderResponseDto implements Serializable {
     private long id;
     private long orderId;
@@ -28,6 +31,9 @@ public class OrderResponseDto implements Serializable {
     public OrderResponseDto() {
     }
 
+    /**
+     * Maps an OrderEntity to API response shape.
+     */
     public static OrderResponseDto fromOrder(OrderEntity order) {
         OrderResponseDto dto = new OrderResponseDto();
         long resolvedId = order.getId() == null ? 0L : order.getId();
