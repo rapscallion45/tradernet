@@ -25,6 +25,14 @@ public interface OrderDao {
     List<OrderEntity> findAll();
 
     /**
+     * Retrieves orders for a specific user.
+     *
+     * @param userId user identifier
+     * @return list of user orders
+     */
+    List<OrderEntity> findByUserId(long userId);
+
+    /**
      * Retrieves orders for a specific symbol.
      *
      * @param symbol stock symbol

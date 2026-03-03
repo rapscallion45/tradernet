@@ -157,7 +157,31 @@ export interface User {
  */
 
 /** Order */
+export type OrderSide = "BUY" | "SELL"
+
 export type OrderData = {
   symbol: string
+  side: OrderSide
   quantity: number
+  price: number
+}
+
+export type OrderSummary = {
+  id: number
+  orderId: number
+  userId: number
+  symbol: string
+  side: OrderSide
+  quantity: number
+  price: number
+  status: string
+  createdAt: string
+  createdAtDisplay?: string
+  currentPrice?: number
+  currentPriceDisplay?: string
+  pnl?: number
+  pnlDisplay?: string
+  pnlPercent?: number
+  pnlPercentDisplay?: string
+  timing?: "GOOD" | "BAD" | "NEUTRAL"
 }

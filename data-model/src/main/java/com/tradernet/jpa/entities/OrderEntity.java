@@ -6,11 +6,13 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import java.time.Instant;
 
 /**
  * Represents a single order in the trading system.
- * An order can be BUY or SELL, and includes symbol, quantity, and price.
  */
 @Entity
 @Table(name = "tblOrders")
@@ -20,14 +22,16 @@ public class OrderEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long userId;
     private String symbol;
 
     @Enumerated(EnumType.STRING)
     private Side side;
 
     private double quantity;
-
     private double price;
+    private String status;
+    private Instant createdAt;
 
     public OrderEntity() {
     }
@@ -35,20 +39,35 @@ public class OrderEntity {
     /**
      * Constructs a new Order.
      *
-     * @param symbol   the stock symbol (e.g., "AAPL")
-     * @param side     BUY or SELL
-     * @param quantity number of shares
-     * @param price    price per share
+     * @param symbol the trading symbol (e.g. BTCUSDT)
+     * @param quantity quantity in base asset units
+     * @param price entry price
+     * @param side BUY or SELL
      */
-    public OrderEntity(String symbol, int quantity, double price, Side side) {
+    public OrderEntity(String symbol, double quantity, double price, Side side) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
         this.side = side;
     }
 
+    @PrePersist
+    void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getSymbol() {
@@ -65,6 +84,22 @@ public class OrderEntity {
 
     public double getPrice() {
         return price;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     @Override

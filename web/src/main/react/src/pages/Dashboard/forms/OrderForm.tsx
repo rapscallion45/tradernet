@@ -1,21 +1,21 @@
 import { FC } from "react"
 import { useForm, Controller } from "react-hook-form"
-import { TextInput, NumberInput, Button, Group, Stack } from "@mantine/core"
+import { TextInput, NumberInput, Button, Group, Stack, Select } from "@mantine/core"
 import { OrderData } from "api/types"
+import { ORDER_SIDES } from "api/Orders"
 
-/**
- * Order Form props
- * @param onSubmit - submission handler
- */
 type OrderFormProps = {
   onSubmit: (data: OrderData) => void
+  loading?: boolean
 }
 
-/**
- * Order Form component
- */
-const OrderForm: FC<OrderFormProps> = ({ onSubmit }) => {
-  const { register, handleSubmit, control } = useForm<OrderData>()
+const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
+  const { register, handleSubmit, control } = useForm<OrderData>({
+    defaultValues: {
+      side: "BUY",
+      quantity: 1,
+    },
+  })
 
   return (
     <Stack>
@@ -23,13 +23,35 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit }) => {
         <Group grow>
           <TextInput label={"Symbol"} {...register("symbol")} required />
           <Controller
-            name={"quantity"}
+            name={"side"}
             control={control}
-            rules={{ required: true, min: 1 }}
-            render={({ field }) => <NumberInput required label={"Quantity"} {...field} min={1} />}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <Select
+                required
+                label={"Side"}
+                data={ORDER_SIDES}
+                value={field.value}
+                onChange={(value) => field.onChange(value ?? "BUY")}
+              />
+            )}
           />
         </Group>
-        <Button type={"submit"} mt={"md"}>
+        <Group grow mt={"sm"}>
+          <Controller
+            name={"quantity"}
+            control={control}
+            rules={{ required: true, min: 0.000001 }}
+            render={({ field }) => <NumberInput required label={"Quantity"} {...field} min={0.000001} decimalScale={6} />}
+          />
+          <Controller
+            name={"price"}
+            control={control}
+            rules={{ required: true, min: 0.000001 }}
+            render={({ field }) => <NumberInput required label={"Price"} {...field} min={0.000001} decimalScale={6} />}
+          />
+        </Group>
+        <Button type={"submit"} mt={"md"} loading={loading}>
           Submit Order
         </Button>
       </form>
