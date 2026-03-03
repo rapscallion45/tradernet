@@ -6,8 +6,8 @@
     max-width: 50rem;
   }
 
-  height: 12rem;
-  max-height: 12rem;
+  height: 20rem;
+  min-height: 20rem;
 }
 
 .topSection,
