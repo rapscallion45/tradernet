@@ -81,6 +81,16 @@ export type HealthResponse = {
   status: string
 }
 
+export type MarketBar = {
+  symbol: string
+  bucketStart: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
 /**
  * Auth
  */

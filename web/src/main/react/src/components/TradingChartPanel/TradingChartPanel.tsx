@@ -4,6 +4,7 @@ import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
 import { useToast } from "hooks/useToast"
+import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL } from "global/constants"
 
 type Candle = {
   time: number
@@ -200,7 +201,7 @@ export const TradingChartPanel: FC = () => {
   const { toast } = useToast()
   const isDark = colorScheme === "dark"
 
-  const [symbol, setSymbol] = useState("BTCUSDT")
+  const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
@@ -609,7 +610,7 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select value={symbol} onChange={(value) => setSymbol(value || "BTCUSDT")} data={["BTCUSDT"]} w={130} size="xs" aria-label="Chart symbol" />
+          <Select value={symbol} onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)} data={[...CHART_SYMBOL_OPTIONS]} w={130} size="xs" aria-label="Chart symbol" />
           <Button
             size="xs"
             variant="light"
