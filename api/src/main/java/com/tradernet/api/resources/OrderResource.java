@@ -2,6 +2,7 @@ package com.tradernet.api.resources;
 
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.marketai.MarketAiService;
+import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.order.OrderService;
 import com.tradernet.order.dto.OrderRequestDto;
@@ -99,6 +100,7 @@ public class OrderResource {
         }
 
         OrderEntity order = new OrderEntity(symbol.trim(), request.getQuantity(), request.getPrice(), side);
+        order.setAiPrediction(resolveAiPrediction(symbol));
         OrderEntity savedOrder = orderService.createOrder(authUser.get().getId(), order);
 
         return Response.status(Response.Status.CREATED)
@@ -128,6 +130,23 @@ public class OrderResource {
         responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", pnlPercent));
 
         return responseDto;
+    }
+
+
+    private String resolveAiPrediction(String symbol) {
+        List<AiSignal> signals = marketAiService.getSignals(200);
+        if (signals == null || signals.isEmpty()) {
+            return "HOLD";
+        }
+
+        String normalizedSymbol = symbol == null ? "" : symbol.trim().toUpperCase(Locale.ROOT);
+
+        return signals.stream()
+            .filter(signal -> signal != null && signal.getSide() != null)
+            .filter(signal -> normalizedSymbol.isEmpty() || (signal.getSymbol() != null && signal.getSymbol().equalsIgnoreCase(normalizedSymbol)))
+            .max(java.util.Comparator.comparingLong(AiSignal::getEventTime))
+            .map(signal -> signal.getSide().name())
+            .orElse("HOLD");
     }
 
     private double resolveCurrentPrice(String symbol, double fallbackPrice) {

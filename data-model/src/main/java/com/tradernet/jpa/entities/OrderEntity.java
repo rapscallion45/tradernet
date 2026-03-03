@@ -32,6 +32,7 @@ public class OrderEntity {
     private double price;
     private String status;
     private Instant createdAt;
+    private String aiPrediction;
 
     public OrderEntity() {
     }
@@ -100,6 +101,14 @@ public class OrderEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getAiPrediction() {
+        return aiPrediction;
+    }
+
+    public void setAiPrediction(String aiPrediction) {
+        this.aiPrediction = aiPrediction;
     }
 
     @Override

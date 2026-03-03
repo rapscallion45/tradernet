@@ -27,6 +27,7 @@ public class OrderResponseDto implements Serializable {
     private Double pnlPercent;
     private String pnlPercentDisplay;
     private String timing;
+    private String aiPrediction;
 
     public OrderResponseDto() {
     }
@@ -46,6 +47,7 @@ public class OrderResponseDto implements Serializable {
         dto.price = order.getPrice();
         dto.status = order.getStatus();
         dto.createdAt = order.getCreatedAt();
+        dto.aiPrediction = order.getAiPrediction();
         return dto;
     }
 
@@ -83,6 +85,8 @@ public class OrderResponseDto implements Serializable {
     public void setPnlPercentDisplay(String pnlPercentDisplay) { this.pnlPercentDisplay = pnlPercentDisplay; }
     public String getTiming() { return timing; }
     public void setTiming(String timing) { this.timing = timing; }
+    public String getAiPrediction() { return aiPrediction; }
+    public void setAiPrediction(String aiPrediction) { this.aiPrediction = aiPrediction; }
 
     @Override
     public boolean equals(Object o) {
@@ -96,12 +100,13 @@ public class OrderResponseDto implements Serializable {
             && Objects.equals(currentPrice, that.currentPrice) && Objects.equals(currentPriceDisplay, that.currentPriceDisplay)
             && Objects.equals(pnl, that.pnl) && Objects.equals(pnlDisplay, that.pnlDisplay)
             && Objects.equals(pnlPercent, that.pnlPercent) && Objects.equals(pnlPercentDisplay, that.pnlPercentDisplay)
-            && Objects.equals(timing, that.timing);
+            && Objects.equals(timing, that.timing)
+            && Objects.equals(aiPrediction, that.aiPrediction);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, orderId, userId, symbol, side, quantity, price, status, createdAt, createdAtDisplay, currentPrice, currentPriceDisplay,
-            pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing);
+            pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction);
     }
 }
