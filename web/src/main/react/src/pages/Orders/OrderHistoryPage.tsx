@@ -4,7 +4,7 @@ import { Title } from "components/Title/Title"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
 import PageHeader from "components/layout/PageHeader/PageHeader"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
-import OderHistoryTable from "pages/Oders/tables/OderHistoryTable"
+import OderHistoryTable from "pages/Orders/tables/OderHistoryTable"
 
 /**
  * Page for viewing historical orders and their current performance.
