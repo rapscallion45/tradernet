@@ -14,6 +14,10 @@ export class OrdersResource extends RestResource<OrderSummary, OrderData> {
   createOrder(payload: OrderData): Promise<OrderSummary> {
     return this._create({ data: payload })
   }
+
+  closeOrder(orderId: number): Promise<OrderSummary> {
+    return this.subPath(String(orderId), "close")._update({})
+  }
 }
 
 export const ORDER_SIDES: OrderSide[] = ["BUY", "SELL"]

@@ -186,6 +186,8 @@ export type OrderSummary = {
   price: number
   status: string
   createdAt: string
+  closedAt?: string
+  closePrice?: number
   createdAtDisplay?: string
   currentPrice?: number
   currentPriceDisplay?: string
@@ -193,6 +195,6 @@ export type OrderSummary = {
   pnlDisplay?: string
   pnlPercent?: number
   pnlPercentDisplay?: string
-  timing?: "GOOD" | "BAD" | "NEUTRAL"
+  timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
 }

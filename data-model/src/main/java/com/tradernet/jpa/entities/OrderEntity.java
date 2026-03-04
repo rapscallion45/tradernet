@@ -32,6 +32,8 @@ public class OrderEntity {
     private double price;
     private String status;
     private Instant createdAt;
+    private Instant closedAt;
+    private Double closePrice;
     private String aiPrediction;
 
     public OrderEntity() {
@@ -101,6 +103,22 @@ public class OrderEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(Instant closedAt) {
+        this.closedAt = closedAt;
+    }
+
+    public Double getClosePrice() {
+        return closePrice;
+    }
+
+    public void setClosePrice(Double closePrice) {
+        this.closePrice = closePrice;
     }
 
     public String getAiPrediction() {

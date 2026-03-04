@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * JPA implementation of OrderDao using Hibernate.
@@ -39,6 +40,11 @@ public class OrderDaoJPA implements OrderDao {
         return entityManager.createQuery("SELECT o FROM OrderEntity o WHERE o.symbol = :symbol", OrderEntity.class)
             .setParameter("symbol", symbol)
             .getResultList();
+    }
+
+    @Override
+    public Optional<OrderEntity> findById(long orderId) {
+        return Optional.ofNullable(entityManager.find(OrderEntity.class, orderId));
     }
 
     @Override

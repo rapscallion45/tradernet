@@ -19,6 +19,7 @@ public class OrderResponseDto implements Serializable {
     private Double price;
     private String status;
     private Instant createdAt;
+    private Instant closedAt;
     private String createdAtDisplay;
     private Double currentPrice;
     private String currentPriceDisplay;
@@ -28,6 +29,7 @@ public class OrderResponseDto implements Serializable {
     private String pnlPercentDisplay;
     private String timing;
     private String aiPrediction;
+    private Double closePrice;
 
     public OrderResponseDto() {
     }
@@ -47,7 +49,9 @@ public class OrderResponseDto implements Serializable {
         dto.price = order.getPrice();
         dto.status = order.getStatus();
         dto.createdAt = order.getCreatedAt();
+        dto.closedAt = order.getClosedAt();
         dto.aiPrediction = order.getAiPrediction();
+        dto.closePrice = order.getClosePrice();
         return dto;
     }
 
@@ -69,6 +73,8 @@ public class OrderResponseDto implements Serializable {
     public void setStatus(String status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getClosedAt() { return closedAt; }
+    public void setClosedAt(Instant closedAt) { this.closedAt = closedAt; }
     public String getCreatedAtDisplay() { return createdAtDisplay; }
     public void setCreatedAtDisplay(String createdAtDisplay) { this.createdAtDisplay = createdAtDisplay; }
     public Double getCurrentPrice() { return currentPrice; }
@@ -87,6 +93,8 @@ public class OrderResponseDto implements Serializable {
     public void setTiming(String timing) { this.timing = timing; }
     public String getAiPrediction() { return aiPrediction; }
     public void setAiPrediction(String aiPrediction) { this.aiPrediction = aiPrediction; }
+    public Double getClosePrice() { return closePrice; }
+    public void setClosePrice(Double closePrice) { this.closePrice = closePrice; }
 
     @Override
     public boolean equals(Object o) {
@@ -96,17 +104,19 @@ public class OrderResponseDto implements Serializable {
         return id == that.id && orderId == that.orderId && userId == that.userId && Objects.equals(symbol, that.symbol)
             && Objects.equals(side, that.side) && Objects.equals(quantity, that.quantity) && Objects.equals(price, that.price)
             && Objects.equals(status, that.status) && Objects.equals(createdAt, that.createdAt)
+            && Objects.equals(closedAt, that.closedAt)
             && Objects.equals(createdAtDisplay, that.createdAtDisplay)
             && Objects.equals(currentPrice, that.currentPrice) && Objects.equals(currentPriceDisplay, that.currentPriceDisplay)
             && Objects.equals(pnl, that.pnl) && Objects.equals(pnlDisplay, that.pnlDisplay)
             && Objects.equals(pnlPercent, that.pnlPercent) && Objects.equals(pnlPercentDisplay, that.pnlPercentDisplay)
             && Objects.equals(timing, that.timing)
-            && Objects.equals(aiPrediction, that.aiPrediction);
+            && Objects.equals(aiPrediction, that.aiPrediction)
+            && Objects.equals(closePrice, that.closePrice);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, orderId, userId, symbol, side, quantity, price, status, createdAt, createdAtDisplay, currentPrice, currentPriceDisplay,
-            pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction);
+        return Objects.hash(id, orderId, userId, symbol, side, quantity, price, status, createdAt, closedAt, createdAtDisplay, currentPrice,
+            currentPriceDisplay, pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction, closePrice);
     }
 }
