@@ -690,7 +690,7 @@ export const TradingChartPanel: FC = () => {
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Position ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
+            {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />

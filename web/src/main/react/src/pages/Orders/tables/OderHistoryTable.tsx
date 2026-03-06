@@ -102,7 +102,7 @@ const OderHistoryTable: FC = () => {
       },
       {
         accessorKey: "aiPrediction",
-        header: "AI Position",
+        header: "AI Signal",
         cell: ({ row }) => {
           const aiPrediction = row.original.aiPrediction ?? "HOLD"
           const aiColor = aiPrediction === "BUY" ? "green" : aiPrediction === "SELL" ? "red" : "gray"
