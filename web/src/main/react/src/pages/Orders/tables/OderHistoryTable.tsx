@@ -124,7 +124,13 @@ const OderHistoryTable: FC = () => {
 
   return (
     <>
-      <Table<OrderSummary> columns={columns} data={orders} caption={orders.length === 0 ? "No orders yet." : undefined} />
+      <Table<OrderSummary>
+        columns={columns}
+        data={orders}
+        caption={orders.length === 0 ? "No orders yet." : undefined}
+        verticalSpacing={"sm"}
+        horizontalSpacing={"sm"}
+      />
       <ConfirmationModal
         title={"Close Trade"}
         opened={pendingCloseOrder !== null}
