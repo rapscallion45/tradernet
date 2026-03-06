@@ -142,7 +142,7 @@ const OderHistoryTable: FC = () => {
       {
         accessorKey: "netValue",
         header: "Net Value",
-        cell: ({ row }) => formatCurrency(row.original.netValue ?? ((row.original.price * row.original.quantity) + (row.original.pnl ?? 0)), currency),
+        cell: ({ row }) => formatCurrency(row.original.netValue ?? row.original.price * row.original.quantity + (row.original.pnl ?? 0), currency),
       },
       {
         accessorKey: "aiPrediction",
@@ -199,12 +199,7 @@ const OderHistoryTable: FC = () => {
             value={createdDateFromFilter}
             onChange={(event) => setCreatedDateFromFilter(event.currentTarget.value)}
           />
-          <TextInput
-            label={"Created to"}
-            type={"date"}
-            value={createdDateToFilter}
-            onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)}
-          />
+          <TextInput label={"Created to"} type={"date"} value={createdDateToFilter} onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)} />
         </Group>
         <Group justify={"space-between"}>
           <Text size={"xs"} c={"dimmed"}>{`${filteredOrders.length} of ${orders.length} orders`}</Text>
@@ -255,7 +250,9 @@ const OderHistoryTable: FC = () => {
                   {selectedOrder.symbol}
                 </Text>
                 <Group gap={8} align={"center"} wrap={"nowrap"}>
-                  <Text size={"md"} c={"dimmed"}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+                  <Text size={"md"} c={"dimmed"}>
+                    {formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}
+                  </Text>
                   <Text size={"xs"} fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
                     {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
                   </Text>
@@ -280,12 +277,16 @@ const OderHistoryTable: FC = () => {
             </Group>
             <Group justify={"space-between"}>
               <Text c={"dimmed"}>P/L</Text>
-              <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>{formatCurrency(selectedOrder.pnl ?? 0, currency)}</Text>
+              <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
+                {formatCurrency(selectedOrder.pnl ?? 0, currency)}
+              </Text>
             </Group>
             <Divider my={4} />
             <Group justify={"space-between"}>
               <Text c={"dimmed"}>Net Value</Text>
-              <Text fw={700}>{formatCurrency(selectedOrder.netValue ?? ((selectedOrder.price * selectedOrder.quantity) + (selectedOrder.pnl ?? 0)), currency)}</Text>
+              <Text fw={700}>
+                {formatCurrency(selectedOrder.netValue ?? selectedOrder.price * selectedOrder.quantity + (selectedOrder.pnl ?? 0), currency)}
+              </Text>
             </Group>
           </Stack>
         )}

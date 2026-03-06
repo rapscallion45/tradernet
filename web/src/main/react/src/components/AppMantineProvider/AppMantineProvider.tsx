@@ -41,10 +41,10 @@ import { DatePickerInput, DateTimePicker, TimeInput } from "@mantine/dates"
 import { Notifications } from "@mantine/notifications"
 import stepperClasses from "./Stepper.module.css"
 import {
-  IconArrowDown,
   IconArrowLeft,
   IconArrowRight,
   IconCalendar,
+  IconCaretDownFilled,
   IconCheck,
   IconClock,
   IconFolderOpen,
@@ -195,14 +195,14 @@ const formpipeTheme: MantineThemeOverride = {
     Select: Select.extend({
       classNames: selectClasses,
       defaultProps: {
-        rightSection: <IconArrowDown />,
+        rightSection: <IconCaretDownFilled size={15} />,
         checkIconPosition: "right",
       },
     }),
     MultiSelect: MultiSelect.extend({
       classNames: selectClasses,
       defaultProps: {
-        rightSection: <IconArrowDown />,
+        rightSection: <IconCaretDownFilled size={15} />,
         checkIconPosition: "right",
       },
     }),
