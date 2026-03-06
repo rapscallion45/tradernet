@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Coordinates market data ingestion, feature generation and signal publishing.
@@ -104,7 +105,7 @@ public class MarketAiService {
         final String normalizedQuoteCurrency = normalizeQuoteCurrency(quoteCurrency);
         final List<String> filtered = cachedSymbols.stream()
                 .filter(symbol -> symbol.endsWith(normalizedQuoteCurrency))
-                .toList();
+                .collect(Collectors.toList());
 
         if (!filtered.isEmpty()) {
             return filtered;
@@ -112,7 +113,7 @@ public class MarketAiService {
 
         final List<String> usdTFallback = cachedSymbols.stream()
                 .filter(symbol -> symbol.endsWith("USDT"))
-                .toList();
+                .collect(Collectors.toList());
         return usdTFallback.isEmpty() ? List.of("BTCUSDT") : usdTFallback;
     }
 
