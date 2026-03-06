@@ -1,9 +1,11 @@
-import { FC, useMemo } from "react"
-import { Badge, Text } from "@mantine/core"
+import { FC, useMemo, useState } from "react"
+import { Badge, Button, Text } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
+import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Table } from "components/Table/Table"
 import { useOrders } from "hooks/useOrders"
+import { useCloseOrder } from "hooks/useCloseOrder"
 
 const formatOrderDate = (value?: string): string => {
   if (!value) {
@@ -30,6 +32,8 @@ const formatOrderDate = (value?: string): string => {
  */
 const OderHistoryTable: FC = () => {
   const { data: orders = [] } = useOrders()
+  const closeOrder = useCloseOrder()
+  const [pendingCloseOrder, setPendingCloseOrder] = useState<OrderSummary | null>(null)
 
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
@@ -96,11 +100,59 @@ const OderHistoryTable: FC = () => {
         header: "Status",
         cell: ({ row }) => <Badge variant={"outline"}>{row.original.status}</Badge>,
       },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const isClosed = row.original.status === "CLOSED"
+          return (
+            <Button
+              size={"xs"}
+              variant={"light"}
+              disabled={isClosed}
+              loading={closeOrder.isPending && closeOrder.variables === row.original.id}
+              onClick={() => setPendingCloseOrder(row.original)}
+            >
+              {isClosed ? "Closed" : "Close"}
+            </Button>
+          )
+        },
+      },
     ],
-    [],
+    [closeOrder],
   )
 
-  return <Table<OrderSummary> columns={columns} data={orders} caption={orders.length === 0 ? "No orders yet." : undefined} />
+  return (
+    <>
+      <Table<OrderSummary>
+        columns={columns}
+        data={orders}
+        caption={orders.length === 0 ? "No orders yet." : undefined}
+        verticalSpacing={"sm"}
+        horizontalSpacing={"sm"}
+      />
+      <ConfirmationModal
+        title={"Close Trade"}
+        opened={pendingCloseOrder !== null}
+        onCancel={() => setPendingCloseOrder(null)}
+        onConfirm={() => {
+          if (!pendingCloseOrder) {
+            return
+          }
+          closeOrder.mutate(pendingCloseOrder.id, {
+            onSettled: () => setPendingCloseOrder(null),
+          })
+        }}
+        loading={closeOrder.isPending}
+        message={
+          pendingCloseOrder
+            ? `Are you sure you want to close ${pendingCloseOrder.side} ${pendingCloseOrder.quantity.toFixed(4)} ${pendingCloseOrder.symbol}?`
+            : ""
+        }
+        confirmTextOverride={"Close Trade"}
+      />
+    </>
+  )
 }
 
 export default OderHistoryTable

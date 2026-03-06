@@ -13,6 +13,8 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -108,10 +110,46 @@ public class OrderResource {
             .build();
     }
 
+    @PUT
+    @Path("/{orderId}/close")
+    public Response closeOrder(
+        @CookieParam(AuthResource.SESSION_COOKIE_NAME) String sessionId,
+        @PathParam("orderId") Long orderId
+    ) {
+        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        if (authUser.isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity("Not authenticated")
+                .build();
+        }
+
+        if (orderId == null || orderId <= 0) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("orderId must be greater than 0")
+                .build();
+        }
+
+        Optional<OrderEntity> targetOrder = orderService.getOrderForUser(authUser.get().getId(), orderId);
+        if (targetOrder.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity("Order not found")
+                .build();
+        }
+
+        OrderEntity order = targetOrder.get();
+        double closePrice = resolveCurrentPrice(order.getSymbol(), order.getPrice());
+        OrderEntity closedOrder = orderService.closeOrder(authUser.get().getId(), orderId, closePrice).orElse(order);
+
+        return Response.ok(toResponse(closedOrder)).build();
+    }
+
     private OrderResponseDto toResponse(OrderEntity order) {
         OrderResponseDto responseDto = OrderResponseDto.fromOrder(order);
 
-        double currentPrice = resolveCurrentPrice(order.getSymbol(), order.getPrice());
+        boolean closed = OrderService.CLOSED_STATUS.equals(order.getStatus()) && order.getClosePrice() != null;
+        double currentPrice = closed
+            ? order.getClosePrice()
+            : resolveCurrentPrice(order.getSymbol(), order.getPrice());
         double entry = order.getPrice();
         double quantity = order.getQuantity();
 
@@ -122,7 +160,9 @@ public class OrderResource {
         responseDto.setCurrentPrice(currentPrice);
         responseDto.setPnl(pnl);
         responseDto.setPnlPercent(pnlPercent);
-        responseDto.setTiming(pnlPerUnit > 0 ? "GOOD" : (pnlPerUnit < 0 ? "BAD" : "NEUTRAL"));
+        responseDto.setTiming(closed ? "CLOSED" : (pnlPerUnit > 0 ? "GOOD" : (pnlPerUnit < 0 ? "BAD" : "NEUTRAL")));
+        responseDto.setClosedAt(order.getClosedAt());
+        responseDto.setClosePrice(order.getClosePrice());
 
         responseDto.setCreatedAtDisplay(responseDto.getCreatedAt() == null ? "" : responseDto.getCreatedAt().toString());
         responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.4f", currentPrice));
