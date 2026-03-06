@@ -85,7 +85,7 @@ public class OrderResource {
         OrderEntity.Side side = request.getSide();
         if (side == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity("side is required")
+                .entity("position is required")
                 .build();
         }
 

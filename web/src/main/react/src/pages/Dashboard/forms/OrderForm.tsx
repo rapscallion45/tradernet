@@ -114,7 +114,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
             control={control}
             rules={{ required: true }}
             render={({ field }) => (
-              <Select required label={"Side"} data={ORDER_SIDES} value={field.value} onChange={(value) => field.onChange(value ?? "BUY")} />
+              <Select required label={"Position"} data={ORDER_SIDES} value={field.value} onChange={(value) => field.onChange(value ?? "BUY")} />
             )}
           />
         </Group>
