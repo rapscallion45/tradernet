@@ -20,7 +20,11 @@ export class MarketResource extends RestResource<MarketBar> {
     })
   }
 
-  getSymbols(): List<string> {
-    return this.typedSubPath<string>("symbols")._list()
+  getSymbols(currency: string): List<string> {
+    return this.typedSubPath<string>("symbols")._list({
+      queryParams: {
+        currency,
+      },
+    })
   }
 }

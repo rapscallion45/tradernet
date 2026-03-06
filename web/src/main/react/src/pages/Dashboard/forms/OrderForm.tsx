@@ -8,6 +8,7 @@ import { getRestClient } from "api/RestClient"
 import { DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
 import { formatCurrency } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
+import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 
 type OrderFormProps = {
   onSubmit: (data: OrderData) => void
@@ -75,7 +76,14 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
+  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
+
+  useEffect(() => {
+    if (!symbolOptions.includes(symbol)) {
+      setValue("symbol", symbolOptions[0] ?? DEFAULT_CHART_SYMBOL, { shouldDirty: true })
+    }
+  }, [setValue, symbol, symbolOptions])
 
   const handleOrderSubmit = (data: OrderData) => {
     const resolvedUnitPrice = currentUnitPrice > 0 ? currentUnitPrice : data.quantity > 0 ? data.price / data.quantity : 0
@@ -92,6 +100,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     <Stack>
       <form onSubmit={handleSubmit(handleOrderSubmit)}>
         <Group grow>
+          <Select label={"Currency"} data={currencyOptions} value={currency} onChange={(value) => setCurrency(value ?? currency)} />
           <Controller
             name={"symbol"}
             control={control}
@@ -148,7 +157,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
           />
         </Group>
         <Text size={"xs"} c={"dimmed"} mt={"xs"}>
-          Current unit price: {currentUnitPrice > 0 ? formatCurrency(currentUnitPrice) : "Loading..."}
+          Current unit price: {currentUnitPrice > 0 ? formatCurrency(currentUnitPrice, currency) : "Loading..."}
         </Text>
         <Button type={"submit"} mt={"md"} loading={loading}>
           Submit Order

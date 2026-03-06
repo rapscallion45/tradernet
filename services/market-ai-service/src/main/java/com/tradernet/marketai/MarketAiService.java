@@ -87,7 +87,7 @@ public class MarketAiService {
         return takeLast(signals, limit);
     }
 
-    public List<String> getSupportedSymbols() {
+    public List<String> getSupportedSymbols(String quoteCurrency) {
         final long now = System.currentTimeMillis();
         if (now - cachedSymbolsAtMs > Duration.ofMinutes(15).toMillis()) {
             synchronized (this) {
@@ -101,7 +101,19 @@ public class MarketAiService {
             }
         }
 
-        return cachedSymbols;
+        final String normalizedQuoteCurrency = normalizeQuoteCurrency(quoteCurrency);
+        final List<String> filtered = cachedSymbols.stream()
+                .filter(symbol -> symbol.endsWith(normalizedQuoteCurrency))
+                .toList();
+
+        if (!filtered.isEmpty()) {
+            return filtered;
+        }
+
+        final List<String> usdTFallback = cachedSymbols.stream()
+                .filter(symbol -> symbol.endsWith("USDT"))
+                .toList();
+        return usdTFallback.isEmpty() ? List.of("BTCUSDT") : usdTFallback;
     }
 
     public AutoCloseable subscribeBars(Consumer<MarketBar> consumer) {
@@ -225,6 +237,20 @@ public class MarketAiService {
         } catch (IOException ex) {
             return List.of();
         }
+    }
+
+
+    private String normalizeQuoteCurrency(String rawCurrency) {
+        if (rawCurrency == null || rawCurrency.isBlank()) {
+            return "USDT";
+        }
+
+        final String upper = rawCurrency.trim().toUpperCase();
+        if ("USD".equals(upper)) {
+            return "USDT";
+        }
+
+        return upper;
     }
 
     private String normalizeSymbol(String rawSymbol) {
