@@ -8,6 +8,7 @@ import { SideDrawer } from "../SideDrawer/SideDrawer"
 import { iconVariant } from "hooks/useToast"
 import { useNotificationStorage } from "../../hooks/useNotificationStorage"
 import { useSideDrawer } from "../../hooks/useSideDrawer"
+import { formatDateTime } from "utils/intl"
 
 export const NotificationDrawer: FC = () => {
   const { opened, toggle } = useSideDrawer("notifications", "header")
@@ -63,8 +64,7 @@ const CustomNotification: FC<AppNotification> = ({ id, variant, message, title, 
   const [notificationStorage, setNotificationStorage] = useNotificationStorage()
   // Remove the notification from the storage
   const clearNotification = () => setNotificationStorage(notificationStorage.filter((value) => value.id !== id))
-  // TODO timestamp rendering can be improved. This is just a quick and dirty implementation.
-  const timestampLabel = `${new Date(timestamp).toLocaleDateString()} ${new Date(timestamp).toLocaleTimeString()}`
+  const timestampLabel = formatDateTime(timestamp)
 
   return (
     <Card padding="md" withBorder={false} className={classes.notification}>

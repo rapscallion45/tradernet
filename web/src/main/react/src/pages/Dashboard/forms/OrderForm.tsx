@@ -1,11 +1,14 @@
-import { FC, useEffect, useMemo, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { Text, NumberInput, Button, Group, Stack, Select } from "@mantine/core"
 import { useQuery } from "@tanstack/react-query"
 import { OrderData } from "api/types"
 import { ORDER_SIDES } from "api/Orders"
 import { getRestClient } from "api/RestClient"
-import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
+import { DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
+import { formatCurrency } from "utils/intl"
+import { useMarketSymbols } from "hooks/useMarketSymbols"
+import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 
 type OrderFormProps = {
   onSubmit: (data: OrderData) => void
@@ -73,7 +76,14 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const symbolOptions = useMemo(() => [...CHART_SYMBOL_OPTIONS], [])
+  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
+
+  useEffect(() => {
+    if (!symbolOptions.includes(symbol)) {
+      setValue("symbol", symbolOptions[0] ?? DEFAULT_CHART_SYMBOL, { shouldDirty: true })
+    }
+  }, [setValue, symbol, symbolOptions])
 
   const handleOrderSubmit = (data: OrderData) => {
     const resolvedUnitPrice = currentUnitPrice > 0 ? currentUnitPrice : data.quantity > 0 ? data.price / data.quantity : 0
@@ -90,6 +100,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     <Stack>
       <form onSubmit={handleSubmit(handleOrderSubmit)}>
         <Group grow>
+          <Select label={"Currency"} data={currencyOptions} value={currency} onChange={(value) => setCurrency(value ?? currency)} />
           <Controller
             name={"symbol"}
             control={control}
@@ -103,7 +114,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
             control={control}
             rules={{ required: true }}
             render={({ field }) => (
-              <Select required label={"Side"} data={ORDER_SIDES} value={field.value} onChange={(value) => field.onChange(value ?? "BUY")} />
+              <Select required label={"Position"} data={ORDER_SIDES} value={field.value} onChange={(value) => field.onChange(value ?? "BUY")} />
             )}
           />
         </Group>
@@ -146,7 +157,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
           />
         </Group>
         <Text size={"xs"} c={"dimmed"} mt={"xs"}>
-          Current unit price: {currentUnitPrice > 0 ? currentUnitPrice.toFixed(6) : "Loading..."}
+          Current unit price: {currentUnitPrice > 0 ? formatCurrency(currentUnitPrice, currency) : "Loading..."}
         </Text>
         <Button type={"submit"} mt={"md"} loading={loading}>
           Submit Order

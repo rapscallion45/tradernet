@@ -4,7 +4,10 @@ import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
 import { useToast } from "hooks/useToast"
-import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL } from "global/constants"
+import { DEFAULT_CHART_SYMBOL } from "global/constants"
+import { formatCurrency, formatDateTime } from "utils/intl"
+import { useMarketSymbols } from "hooks/useMarketSymbols"
+import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 
 type Candle = {
   time: number
@@ -202,6 +205,8 @@ export const TradingChartPanel: FC = () => {
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
+  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
@@ -215,13 +220,19 @@ export const TradingChartPanel: FC = () => {
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
 
+  useEffect(() => {
+    if (!symbolOptions.includes(symbol)) {
+      setSymbol(symbolOptions[0] ?? DEFAULT_CHART_SYMBOL)
+    }
+  }, [symbol, symbolOptions])
+
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
     const enabled = [indicators.ema ? "EMA14" : null, indicators.sma ? "SMA20" : null, indicators.bb ? "BB(20,2)" : null].filter(Boolean).join(", ")
     return candle
-      ? `O ${candle.open.toFixed(2)} H ${candle.high.toFixed(2)} L ${candle.low.toFixed(2)} C ${candle.close.toFixed(2)} · ${enabled || "No indicators"}`
+      ? `O ${formatCurrency(candle.open, currency)} H ${formatCurrency(candle.high, currency)} L ${formatCurrency(candle.low, currency)} C ${formatCurrency(candle.close, currency)} · ${enabled || "No indicators"}`
       : "Waiting for stream…"
-  }, [lastPrice, indicators])
+  }, [lastPrice, indicators, currency])
 
   const drawOverlay = () => {
     const plot = chartRef.current
@@ -325,8 +336,8 @@ export const TradingChartPanel: FC = () => {
       ctx.stroke()
       ctx.setLineDash([])
 
-      const yLabel = hover.price.toFixed(2)
-      const xLabel = new Date(hover.time * 1000).toLocaleString()
+      const yLabel = formatCurrency(hover.price, currency)
+      const xLabel = formatDateTime(hover.time * 1000)
 
       ctx.font = "11px sans-serif"
       const yLabelWidth = Math.ceil(ctx.measureText(yLabel).width) + 10
@@ -611,9 +622,17 @@ export const TradingChartPanel: FC = () => {
       <Group className={classes.toolbar} justify="space-between">
         <Group>
           <Select
+            value={currency}
+            onChange={(value) => setCurrency(value ?? currency)}
+            data={currencyOptions}
+            w={95}
+            size="xs"
+            aria-label="Quote currency"
+          />
+          <Select
             value={symbol}
             onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)}
-            data={[...CHART_SYMBOL_OPTIONS]}
+            data={symbolOptions}
             w={130}
             size="xs"
             aria-label="Chart symbol"
@@ -661,7 +680,7 @@ export const TradingChartPanel: FC = () => {
           <Badge color={streamStatus === "connected" ? "green" : streamStatus === "error" ? "red" : "gray"} variant="light">
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
-          <Badge color="blue" variant="light">{`${symbol} ${lastPrice.toFixed(2)}`}</Badge>
+          <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice, currency)}`}</Badge>
           <Badge color={signal?.side === "BUY" ? "green" : signal?.side === "SELL" ? "red" : "gray"} variant="filled">
             {signal ? `${signal.side} ${(signal.confidence * 100).toFixed(0)}%` : "HOLD"}
           </Badge>

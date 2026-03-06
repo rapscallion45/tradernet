@@ -33,6 +33,12 @@ public class MarketResource {
     }
 
     @GET
+    @Path("/symbols")
+    public List<String> getSymbols(@DefaultValue("USD") @QueryParam("currency") String currency) {
+        return marketAiService.getSupportedSymbols(currency);
+    }
+
+    @GET
     @Path("/signals")
     public List<AiSignal> getSignals(@DefaultValue("200") @QueryParam("limit") int limit) {
         return marketAiService.getSignals(limit);

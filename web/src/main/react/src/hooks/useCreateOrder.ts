@@ -6,6 +6,7 @@ import { getErrorMessage } from "api/util"
 import { QueryClientKeys } from "global/constants"
 import useCrudHandling, { PartialHandlers } from "hooks/useCrudHandling"
 import { useToast } from "hooks/useToast"
+import { formatCurrency } from "utils/intl"
 
 /**
  * Hook for creating a new order and refreshing the orders cache.
@@ -22,7 +23,7 @@ export const useCreateOrder = () => {
         id: toastId,
         variant: "success",
         title: "Order submitted",
-        message: `Submitted ${payload.side} ${payload.quantity} ${payload.symbol.toUpperCase()} @ ${payload.price}`,
+        message: `Submitted ${payload.side} ${payload.quantity} ${payload.symbol.toUpperCase()} @ ${formatCurrency(payload.price)}`,
         timestamp: Date.now(),
       }),
     apiModel: (error) =>

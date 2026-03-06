@@ -1,30 +1,41 @@
 import { FC, useMemo, useState } from "react"
-import { Badge, Button, Text } from "@mantine/core"
+import { Avatar, Badge, Button, Divider, Group, Select, Stack, Text, TextInput } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Table } from "components/Table/Table"
-import { useOrders } from "hooks/useOrders"
 import { useCloseOrder } from "hooks/useCloseOrder"
+import { useCurrencyPreference } from "hooks/useCurrencyPreference"
+import { useOrders } from "hooks/useOrders"
+import { formatCurrency, formatDateTime, formatNumber } from "utils/intl"
 
-const formatOrderDate = (value?: string): string => {
+const QUOTE_SUFFIXES = ["USDT", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "BRL", "TRY", "BTC", "ETH", "BNB"]
+
+const getBaseAsset = (symbol: string): string => {
+  const upper = symbol.toUpperCase()
+  const matchedQuote = QUOTE_SUFFIXES.find((quote) => upper.endsWith(quote))
+  return matchedQuote ? upper.slice(0, upper.length - matchedQuote.length) : upper
+}
+
+const getAssetLogoUrl = (symbol: string): string => {
+  const baseAsset = getBaseAsset(symbol).toLowerCase()
+  return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${baseAsset}.png`
+}
+
+const toDateInputValue = (value?: string): string => {
   if (!value) {
     return ""
   }
 
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
-    return value
+    return ""
   }
 
-  const dd = String(date.getDate()).padStart(2, "0")
+  const yyyy = String(date.getFullYear())
   const mm = String(date.getMonth() + 1).padStart(2, "0")
-  const yyyy = date.getFullYear()
-  const hh = String(date.getHours()).padStart(2, "0")
-  const min = String(date.getMinutes()).padStart(2, "0")
-  const ss = String(date.getSeconds()).padStart(2, "0")
-
-  return `${hh}:${min}:${ss} ${dd}/${mm}/${yyyy}`
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
 }
 
 /**
@@ -33,32 +44,75 @@ const formatOrderDate = (value?: string): string => {
 const OderHistoryTable: FC = () => {
   const { data: orders = [] } = useOrders()
   const closeOrder = useCloseOrder()
+  const { currency } = useCurrencyPreference()
   const [pendingCloseOrder, setPendingCloseOrder] = useState<OrderSummary | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null)
+
+  const [assetFilter, setAssetFilter] = useState("")
+  const [positionFilter, setPositionFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
+  const [createdDateToFilter, setCreatedDateToFilter] = useState("")
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      if (assetFilter && !order.symbol.toLowerCase().includes(assetFilter.toLowerCase().trim())) {
+        return false
+      }
+
+      if (positionFilter && order.side !== positionFilter) {
+        return false
+      }
+
+      if (statusFilter && order.status !== statusFilter) {
+        return false
+      }
+
+      const createdDate = toDateInputValue(order.createdAt)
+      if (createdDateFromFilter && createdDate < createdDateFromFilter) {
+        return false
+      }
+
+      if (createdDateToFilter && createdDate > createdDateToFilter) {
+        return false
+      }
+
+      return true
+    })
+  }, [assetFilter, createdDateFromFilter, createdDateToFilter, orders, positionFilter, statusFilter])
+
+  const statusOptions = useMemo(() => [...new Set(orders.map((order) => order.status))], [orders])
+
+  const orderById = useMemo(() => new Map(orders.map((order) => [order.id, order])), [orders])
 
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
       {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) => formatOrderDate(row.original.createdAt),
+        accessorKey: "symbol",
+        header: "Asset",
+        cell: ({ row }) => {
+          const symbol = row.original.symbol
+          const baseAsset = getBaseAsset(symbol)
+          const currentValue = row.original.currentPrice ?? row.original.price
+
+          return (
+            <Group gap={8} wrap={"nowrap"}>
+              <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius={"xl"} size={24}>
+                {baseAsset.slice(0, 1)}
+              </Avatar>
+              <Stack gap={0}>
+                <Text size={"sm"} fw={600}>
+                  {symbol}
+                </Text>
+                <Text size={"xs"} c={"dimmed"}>
+                  {formatCurrency(currentValue, currency)}
+                </Text>
+              </Stack>
+            </Group>
+          )
+        },
       },
-      { accessorKey: "symbol", header: "Symbol" },
-      { accessorKey: "side", header: "Side" },
-      {
-        accessorKey: "quantity",
-        header: "Qty",
-        cell: ({ row }) => row.original.quantity.toFixed(4),
-      },
-      {
-        accessorKey: "price",
-        header: "Entry",
-        cell: ({ row }) => row.original.price.toFixed(4),
-      },
-      {
-        accessorKey: "currentPriceDisplay",
-        header: "Current",
-        cell: ({ row }) => row.original.currentPriceDisplay ?? (row.original.currentPrice ?? row.original.price).toFixed(4),
-      },
+      { accessorKey: "side", header: "Position" },
       {
         accessorKey: "pnlDisplay",
         header: "P/L",
@@ -67,23 +121,28 @@ const OderHistoryTable: FC = () => {
           const pnlColor = pnl > 0 ? "green" : pnl < 0 ? "red" : "gray"
           return (
             <Text c={pnlColor} fw={600}>
-              {row.original.pnlDisplay ?? pnl.toFixed(4)}
+              {formatCurrency(pnl, currency)}
             </Text>
           )
         },
       },
       {
         accessorKey: "pnlPercentDisplay",
-        header: "P/L %",
+        header: "Change",
         cell: ({ row }) => {
           const pnlPercent = row.original.pnlPercent ?? 0
           const pnlColor = pnlPercent > 0 ? "green" : pnlPercent < 0 ? "red" : "gray"
           return (
             <Text c={pnlColor} fw={600}>
-              {row.original.pnlPercentDisplay ?? `${pnlPercent.toFixed(2)}%`}
+              {`${pnlPercent.toFixed(2)}%`}
             </Text>
           )
         },
+      },
+      {
+        accessorKey: "netValue",
+        header: "Net Value",
+        cell: ({ row }) => formatCurrency(row.original.netValue ?? ((row.original.price * row.original.quantity) + (row.original.pnl ?? 0)), currency),
       },
       {
         accessorKey: "aiPrediction",
@@ -114,25 +173,123 @@ const OderHistoryTable: FC = () => {
               variant={"light"}
               disabled={isClosed}
               loading={closeOrder.isPending && closeOrder.variables === row.original.id}
-              onClick={() => setPendingCloseOrder(row.original)}>
+              onClick={(event) => {
+                event.stopPropagation()
+                setPendingCloseOrder(row.original)
+              }}>
               {isClosed ? "Closed" : "Close"}
             </Button>
           )
         },
       },
     ],
-    [closeOrder],
+    [closeOrder, currency],
   )
 
   return (
     <>
+      <Stack gap={"xs"} mb={"sm"}>
+        <Group grow>
+          <TextInput label={"Asset"} placeholder={"e.g. BTC"} value={assetFilter} onChange={(event) => setAssetFilter(event.currentTarget.value)} />
+          <Select label={"Position"} placeholder={"All"} clearable data={["BUY", "SELL"]} value={positionFilter} onChange={setPositionFilter} />
+          <Select label={"Status"} placeholder={"All"} clearable data={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+          <TextInput
+            label={"Created from"}
+            type={"date"}
+            value={createdDateFromFilter}
+            onChange={(event) => setCreatedDateFromFilter(event.currentTarget.value)}
+          />
+          <TextInput
+            label={"Created to"}
+            type={"date"}
+            value={createdDateToFilter}
+            onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)}
+          />
+        </Group>
+        <Group justify={"space-between"}>
+          <Text size={"xs"} c={"dimmed"}>{`${filteredOrders.length} of ${orders.length} orders`}</Text>
+          <Button
+            size={"xs"}
+            variant={"subtle"}
+            onClick={() => {
+              setAssetFilter("")
+              setPositionFilter(null)
+              setStatusFilter(null)
+              setCreatedDateFromFilter("")
+              setCreatedDateToFilter("")
+            }}>
+            Clear filters
+          </Button>
+        </Group>
+      </Stack>
+
       <Table<OrderSummary>
         columns={columns}
-        data={orders}
-        caption={orders.length === 0 ? "No orders yet." : undefined}
+        data={filteredOrders}
+        onRowClick={(id) => setSelectedOrder(orderById.get(id) ?? null)}
+        caption={filteredOrders.length === 0 ? (orders.length === 0 ? "No orders yet." : "No orders match current filters.") : undefined}
         verticalSpacing={"xs"}
         horizontalSpacing={"xs"}
       />
+      <ConfirmationModal
+        opened={selectedOrder !== null}
+        onCancel={() => setSelectedOrder(null)}
+        onConfirm={() => {
+          if (!selectedOrder) {
+            return
+          }
+          setPendingCloseOrder(selectedOrder)
+          setSelectedOrder(null)
+        }}
+        disableConfirm={selectedOrder?.status === "CLOSED"}
+        title={selectedOrder ? `${selectedOrder.side === "SELL" ? "Sell" : "Buy"} Position` : "Position"}
+        confirmTextOverride={"Close Trade"}>
+        {selectedOrder && (
+          <Stack gap={8}>
+            <Group gap={8} wrap={"nowrap"}>
+              <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={63}>
+                {getBaseAsset(selectedOrder.symbol).slice(0, 1)}
+              </Avatar>
+              <Stack gap={0}>
+                <Text size={"lg"} fw={700}>
+                  {selectedOrder.symbol}
+                </Text>
+                <Group gap={8} align={"center"} wrap={"nowrap"}>
+                  <Text size={"md"} c={"dimmed"}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+                  <Text size={"xs"} fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
+                    {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
+                  </Text>
+                </Group>
+              </Stack>
+            </Group>
+
+            <Text fz={"0.66rem"} c={"dimmed"}>{`Trade opened on: ${formatDateTime(selectedOrder.createdAt)}`}</Text>
+
+            <Divider my={4} />
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Quantity</Text>
+              <Text fw={600}>{formatNumber(selectedOrder.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Entry Price</Text>
+              <Text fw={600}>{formatCurrency(selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Current Price</Text>
+              <Text fw={600}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>P/L</Text>
+              <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>{formatCurrency(selectedOrder.pnl ?? 0, currency)}</Text>
+            </Group>
+            <Divider my={4} />
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Net Value</Text>
+              <Text fw={700}>{formatCurrency(selectedOrder.netValue ?? ((selectedOrder.price * selectedOrder.quantity) + (selectedOrder.pnl ?? 0)), currency)}</Text>
+            </Group>
+          </Stack>
+        )}
+      </ConfirmationModal>
       <ConfirmationModal
         title={"Close Trade"}
         opened={pendingCloseOrder !== null}
@@ -148,7 +305,7 @@ const OderHistoryTable: FC = () => {
         loading={closeOrder.isPending}
         message={
           pendingCloseOrder
-            ? `Are you sure you want to close ${pendingCloseOrder.side} ${pendingCloseOrder.quantity.toFixed(4)} ${pendingCloseOrder.symbol}?`
+            ? `Are you sure you want to close ${pendingCloseOrder.side} ${formatNumber(pendingCloseOrder.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${pendingCloseOrder.symbol}?`
             : ""
         }
         confirmTextOverride={"Close Trade"}
