@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from "react"
-import { Avatar, Badge, Button, Divider, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/core"
+import { Avatar, Badge, Button, Divider, Group, Select, Stack, Text, TextInput } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -218,11 +218,19 @@ const OderHistoryTable: FC = () => {
         verticalSpacing={"xs"}
         horizontalSpacing={"xs"}
       />
-      <Modal
+      <ConfirmationModal
         opened={selectedOrder !== null}
-        onClose={() => setSelectedOrder(null)}
+        onCancel={() => setSelectedOrder(null)}
+        onConfirm={() => {
+          if (!selectedOrder) {
+            return
+          }
+          setPendingCloseOrder(selectedOrder)
+          setSelectedOrder(null)
+        }}
+        disableConfirm={selectedOrder?.status === "CLOSED"}
         title={selectedOrder ? `${selectedOrder.side === "SELL" ? "Sell" : "Buy"} Position` : "Position"}
-        centered>
+        confirmTextOverride={"Close Trade"}>
         {selectedOrder && (
           <Stack gap={8}>
             <Group gap={8} wrap={"nowrap"}>
@@ -268,7 +276,7 @@ const OderHistoryTable: FC = () => {
             </Group>
           </Stack>
         )}
-      </Modal>
+      </ConfirmationModal>
       <ConfirmationModal
         title={"Close Trade"}
         opened={pendingCloseOrder !== null}
