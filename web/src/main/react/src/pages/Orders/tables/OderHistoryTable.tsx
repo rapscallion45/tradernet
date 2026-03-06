@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from "react"
-import { Avatar, Badge, Button, Group, Select, Stack, Text, TextInput } from "@mantine/core"
+import { Avatar, Badge, Button, Divider, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -46,6 +46,7 @@ const OderHistoryTable: FC = () => {
   const closeOrder = useCloseOrder()
   const { currency } = useCurrencyPreference()
   const [pendingCloseOrder, setPendingCloseOrder] = useState<OrderSummary | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null)
 
   const [assetFilter, setAssetFilter] = useState("")
   const [positionFilter, setPositionFilter] = useState<string | null>(null)
@@ -76,13 +77,10 @@ const OderHistoryTable: FC = () => {
 
   const statusOptions = useMemo(() => [...new Set(orders.map((order) => order.status))], [orders])
 
+  const orderById = useMemo(() => new Map(orders.map((order) => [order.id, order])), [orders])
+
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
-      {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) => formatDateTime(row.original.createdAt),
-      },
       {
         accessorKey: "symbol",
         header: "Asset",
@@ -109,16 +107,6 @@ const OderHistoryTable: FC = () => {
         },
       },
       { accessorKey: "side", header: "Position" },
-      {
-        accessorKey: "quantity",
-        header: "Qty",
-        cell: ({ row }) => formatNumber(row.original.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
-      },
-      {
-        accessorKey: "price",
-        header: "Entry",
-        cell: ({ row }) => formatCurrency(row.original.price, currency),
-      },
       {
         accessorKey: "pnlDisplay",
         header: "P/L",
@@ -174,7 +162,10 @@ const OderHistoryTable: FC = () => {
               variant={"light"}
               disabled={isClosed}
               loading={closeOrder.isPending && closeOrder.variables === row.original.id}
-              onClick={() => setPendingCloseOrder(row.original)}>
+              onClick={(event) => {
+                event.stopPropagation()
+                setPendingCloseOrder(row.original)
+              }}>
               {isClosed ? "Closed" : "Close"}
             </Button>
           )
@@ -217,10 +208,56 @@ const OderHistoryTable: FC = () => {
       <Table<OrderSummary>
         columns={columns}
         data={filteredOrders}
+        onRowClick={(id) => setSelectedOrder(orderById.get(id) ?? null)}
         caption={filteredOrders.length === 0 ? (orders.length === 0 ? "No orders yet." : "No orders match current filters.") : undefined}
         verticalSpacing={"xs"}
         horizontalSpacing={"xs"}
       />
+      <Modal opened={selectedOrder !== null} onClose={() => setSelectedOrder(null)} title={"Trade details"} centered>
+        {selectedOrder && (
+          <Stack gap={6}>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Asset</Text>
+              <Text fw={600}>{selectedOrder.symbol}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Position</Text>
+              <Text fw={600}>{selectedOrder.side}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Status</Text>
+              <Text fw={600}>{selectedOrder.status}</Text>
+            </Group>
+            <Divider my={4} />
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Created</Text>
+              <Text fw={600}>{formatDateTime(selectedOrder.createdAt)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Quantity</Text>
+              <Text fw={600}>{formatNumber(selectedOrder.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Entry</Text>
+              <Text fw={600}>{formatCurrency(selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Current</Text>
+              <Text fw={600}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>P/L</Text>
+              <Text fw={700} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
+                {formatCurrency(selectedOrder.pnl ?? 0, currency)}
+              </Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Change</Text>
+              <Text fw={600}>{`${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%`}</Text>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
       <ConfirmationModal
         title={"Close Trade"}
         opened={pendingCloseOrder !== null}
