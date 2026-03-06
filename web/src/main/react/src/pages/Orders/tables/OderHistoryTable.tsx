@@ -17,9 +17,9 @@ const getBaseAsset = (symbol: string): string => {
   return matchedQuote ? upper.slice(0, upper.length - matchedQuote.length) : upper
 }
 
-const getBinanceSymbolLogoUrl = (symbol: string): string => {
-  const baseAsset = getBaseAsset(symbol)
-  return `https://bin.bnbstatic.com/static/assets/logos/${baseAsset}.png`
+const getAssetLogoUrl = (symbol: string): string => {
+  const baseAsset = getBaseAsset(symbol).toLowerCase()
+  return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${baseAsset}.png`
 }
 
 /**
@@ -48,7 +48,7 @@ const OderHistoryTable: FC = () => {
 
           return (
             <Group gap={8} wrap={"nowrap"}>
-              <Avatar src={getBinanceSymbolLogoUrl(symbol)} alt={symbol} radius={"xl"} size={24}>
+              <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius={"xl"} size={24}>
                 {baseAsset.slice(0, 1)}
               </Avatar>
               <Stack gap={0}>
