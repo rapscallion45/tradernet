@@ -242,7 +242,7 @@ const OderHistoryTable: FC = () => {
               </Stack>
             </Group>
 
-            <Text fz={"0.6rem"} c={"dimmed"} ml={71}>{formatDateTime(selectedOrder.createdAt)}</Text>
+            <Text fz={"0.66rem"} c={"dimmed"}>{`Trade opened on: ${formatDateTime(selectedOrder.createdAt)}`}</Text>
 
             <Divider my={4} />
             <Group justify={"space-between"}>
