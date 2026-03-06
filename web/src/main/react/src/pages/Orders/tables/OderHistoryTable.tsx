@@ -87,15 +87,6 @@ const OderHistoryTable: FC = () => {
         },
       },
       {
-        accessorKey: "timing",
-        header: "Timing",
-        cell: ({ row }) => (
-          <Badge color={row.original.timing === "GOOD" ? "green" : row.original.timing === "BAD" ? "red" : "gray"} variant={"light"}>
-            {row.original.timing ?? "NEUTRAL"}
-          </Badge>
-        ),
-      },
-      {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => <Badge variant={"outline"}>{row.original.status}</Badge>,
