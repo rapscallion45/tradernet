@@ -51,7 +51,8 @@ const OderHistoryTable: FC = () => {
   const [assetFilter, setAssetFilter] = useState("")
   const [positionFilter, setPositionFilter] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
-  const [createdDateFilter, setCreatedDateFilter] = useState("")
+  const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
+  const [createdDateToFilter, setCreatedDateToFilter] = useState("")
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -67,13 +68,18 @@ const OderHistoryTable: FC = () => {
         return false
       }
 
-      if (createdDateFilter && toDateInputValue(order.createdAt) !== createdDateFilter) {
+      const createdDate = toDateInputValue(order.createdAt)
+      if (createdDateFromFilter && createdDate < createdDateFromFilter) {
+        return false
+      }
+
+      if (createdDateToFilter && createdDate > createdDateToFilter) {
         return false
       }
 
       return true
     })
-  }, [assetFilter, createdDateFilter, orders, positionFilter, statusFilter])
+  }, [assetFilter, createdDateFromFilter, createdDateToFilter, orders, positionFilter, statusFilter])
 
   const statusOptions = useMemo(() => [...new Set(orders.map((order) => order.status))], [orders])
 
@@ -188,10 +194,16 @@ const OderHistoryTable: FC = () => {
           <Select label={"Position"} placeholder={"All"} clearable data={["BUY", "SELL"]} value={positionFilter} onChange={setPositionFilter} />
           <Select label={"Status"} placeholder={"All"} clearable data={statusOptions} value={statusFilter} onChange={setStatusFilter} />
           <TextInput
-            label={"Created date"}
+            label={"Created from"}
             type={"date"}
-            value={createdDateFilter}
-            onChange={(event) => setCreatedDateFilter(event.currentTarget.value)}
+            value={createdDateFromFilter}
+            onChange={(event) => setCreatedDateFromFilter(event.currentTarget.value)}
+          />
+          <TextInput
+            label={"Created to"}
+            type={"date"}
+            value={createdDateToFilter}
+            onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)}
           />
         </Group>
         <Group justify={"space-between"}>
@@ -203,7 +215,8 @@ const OderHistoryTable: FC = () => {
               setAssetFilter("")
               setPositionFilter(null)
               setStatusFilter(null)
-              setCreatedDateFilter("")
+              setCreatedDateFromFilter("")
+              setCreatedDateToFilter("")
             }}>
             Clear filters
           </Button>
