@@ -6,26 +6,7 @@ import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModa
 import { Table } from "components/Table/Table"
 import { useOrders } from "hooks/useOrders"
 import { useCloseOrder } from "hooks/useCloseOrder"
-
-const formatOrderDate = (value?: string): string => {
-  if (!value) {
-    return ""
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  const dd = String(date.getDate()).padStart(2, "0")
-  const mm = String(date.getMonth() + 1).padStart(2, "0")
-  const yyyy = date.getFullYear()
-  const hh = String(date.getHours()).padStart(2, "0")
-  const min = String(date.getMinutes()).padStart(2, "0")
-  const ss = String(date.getSeconds()).padStart(2, "0")
-
-  return `${hh}:${min}:${ss} ${dd}/${mm}/${yyyy}`
-}
+import { formatCurrency, formatDateTime, formatNumber } from "utils/intl"
 
 /**
  * Table section for displaying order history and performance metrics.
@@ -40,24 +21,24 @@ const OderHistoryTable: FC = () => {
       {
         accessorKey: "createdAt",
         header: "Created",
-        cell: ({ row }) => formatOrderDate(row.original.createdAt),
+        cell: ({ row }) => formatDateTime(row.original.createdAt),
       },
       { accessorKey: "symbol", header: "Symbol" },
       { accessorKey: "side", header: "Side" },
       {
         accessorKey: "quantity",
         header: "Qty",
-        cell: ({ row }) => row.original.quantity.toFixed(4),
+        cell: ({ row }) => formatNumber(row.original.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 }),
       },
       {
         accessorKey: "price",
         header: "Entry",
-        cell: ({ row }) => row.original.price.toFixed(4),
+        cell: ({ row }) => formatCurrency(row.original.price),
       },
       {
         accessorKey: "currentPriceDisplay",
         header: "Current",
-        cell: ({ row }) => row.original.currentPriceDisplay ?? (row.original.currentPrice ?? row.original.price).toFixed(4),
+        cell: ({ row }) => row.original.currentPriceDisplay ?? formatCurrency(row.original.currentPrice ?? row.original.price),
       },
       {
         accessorKey: "pnlDisplay",
@@ -67,7 +48,7 @@ const OderHistoryTable: FC = () => {
           const pnlColor = pnl > 0 ? "green" : pnl < 0 ? "red" : "gray"
           return (
             <Text c={pnlColor} fw={600}>
-              {row.original.pnlDisplay ?? pnl.toFixed(4)}
+              {row.original.pnlDisplay ?? formatCurrency(pnl)}
             </Text>
           )
         },
@@ -148,7 +129,7 @@ const OderHistoryTable: FC = () => {
         loading={closeOrder.isPending}
         message={
           pendingCloseOrder
-            ? `Are you sure you want to close ${pendingCloseOrder.side} ${pendingCloseOrder.quantity.toFixed(4)} ${pendingCloseOrder.symbol}?`
+            ? `Are you sure you want to close ${pendingCloseOrder.side} ${formatNumber(pendingCloseOrder.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${pendingCloseOrder.symbol}?`
             : ""
         }
         confirmTextOverride={"Close Trade"}

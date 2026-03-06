@@ -5,6 +5,7 @@ import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
 import { useToast } from "hooks/useToast"
 import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL } from "global/constants"
+import { formatCurrency, formatDateTime } from "utils/intl"
 
 type Candle = {
   time: number
@@ -325,8 +326,8 @@ export const TradingChartPanel: FC = () => {
       ctx.stroke()
       ctx.setLineDash([])
 
-      const yLabel = hover.price.toFixed(2)
-      const xLabel = new Date(hover.time * 1000).toLocaleString()
+      const yLabel = formatCurrency(hover.price)
+      const xLabel = formatDateTime(hover.time * 1000)
 
       ctx.font = "11px sans-serif"
       const yLabelWidth = Math.ceil(ctx.measureText(yLabel).width) + 10
@@ -661,7 +662,7 @@ export const TradingChartPanel: FC = () => {
           <Badge color={streamStatus === "connected" ? "green" : streamStatus === "error" ? "red" : "gray"} variant="light">
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
-          <Badge color="blue" variant="light">{`${symbol} ${lastPrice.toFixed(2)}`}</Badge>
+          <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice)}`}</Badge>
           <Badge color={signal?.side === "BUY" ? "green" : signal?.side === "SELL" ? "red" : "gray"} variant="filled">
             {signal ? `${signal.side} ${(signal.confidence * 100).toFixed(0)}%` : "HOLD"}
           </Badge>

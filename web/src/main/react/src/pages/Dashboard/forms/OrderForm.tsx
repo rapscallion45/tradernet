@@ -6,6 +6,7 @@ import { OrderData } from "api/types"
 import { ORDER_SIDES } from "api/Orders"
 import { getRestClient } from "api/RestClient"
 import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
+import { formatCurrency } from "utils/intl"
 
 type OrderFormProps = {
   onSubmit: (data: OrderData) => void
@@ -146,7 +147,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
           />
         </Group>
         <Text size={"xs"} c={"dimmed"} mt={"xs"}>
-          Current unit price: {currentUnitPrice > 0 ? currentUnitPrice.toFixed(6) : "Loading..."}
+          Current unit price: {currentUnitPrice > 0 ? formatCurrency(currentUnitPrice) : "Loading..."}
         </Text>
         <Button type={"submit"} mt={"md"} loading={loading}>
           Submit Order
