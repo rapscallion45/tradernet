@@ -205,7 +205,7 @@ export const TradingChartPanel: FC = () => {
   const isDark = colorScheme === "dark"
 
   const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
-  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
+  const { currency } = useCurrencyPreference()
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
@@ -621,7 +621,6 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select value={currency} onChange={(value) => setCurrency(value ?? currency)} data={currencyOptions} w={95} size="xs" aria-label="Quote currency" />
           <Select
             value={symbol}
             onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)}

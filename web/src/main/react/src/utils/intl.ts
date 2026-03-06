@@ -23,6 +23,18 @@ const REGION_CURRENCY_MAP: Record<string, string> = {
   AE: "AED",
 }
 
+const isSupportedCurrency = (currency: string, locale = DEFAULT_LOCALE): boolean => {
+  try {
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(0)
+    return true
+  } catch {
+    return false
+  }
+}
+
 const getNavigatorLocale = (): string | undefined => {
   if (typeof navigator === "undefined") {
     return undefined
@@ -42,22 +54,9 @@ export const inferCurrencyFromLocale = (locale = getUserLocale()): string => {
   return REGION_CURRENCY_MAP[region] || DEFAULT_CURRENCY
 }
 
-export const getUserCurrency = (): string => {
-  if (typeof window === "undefined") {
-    return inferCurrencyFromLocale(DEFAULT_LOCALE)
-  }
+export const getUserCurrency = (): string => DEFAULT_CURRENCY
 
-  const storedCurrency = window.localStorage.getItem("tradernet.currency")
-  return storedCurrency || inferCurrencyFromLocale(getUserLocale())
-}
-
-export const setUserCurrency = (currency: string) => {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  window.localStorage.setItem("tradernet.currency", currency)
-}
+export const setUserCurrency = (_currency: string) => undefined
 
 export const formatDateTime = (value?: string | number | Date, locale = getUserLocale()): string => {
   if (value === undefined || value === null || value === "") {
@@ -80,9 +79,11 @@ export const formatNumber = (value: number, options?: Intl.NumberFormatOptions, 
 }
 
 export const formatCurrency = (value: number, currency = getUserCurrency(), locale = getUserLocale()): string => {
+  const resolvedCurrency = isSupportedCurrency(currency, locale) ? currency : DEFAULT_CURRENCY
+
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency,
+    currency: resolvedCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
   }).format(value)

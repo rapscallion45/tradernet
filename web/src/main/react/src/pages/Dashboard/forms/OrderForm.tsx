@@ -76,7 +76,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
+  const { currency } = useCurrencyPreference()
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
 
   useEffect(() => {
@@ -100,7 +100,6 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     <Stack>
       <form onSubmit={handleSubmit(handleOrderSubmit)}>
         <Group grow>
-          <Select label={"Currency"} data={currencyOptions} value={currency} onChange={(value) => setCurrency(value ?? currency)} />
           <Controller
             name={"symbol"}
             control={control}
