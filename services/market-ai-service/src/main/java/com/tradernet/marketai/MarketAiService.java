@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -51,6 +52,9 @@ public class MarketAiService {
 
     private final Deque<MarketBar> bars = new ArrayDeque<>();
     private final Deque<AiSignal> signals = new ArrayDeque<>();
+
+    private volatile List<String> cachedSymbols = List.of("BTCUSDT");
+    private volatile long cachedSymbolsAtMs = 0L;
 
     @PostConstruct
     public void start() {
@@ -81,6 +85,23 @@ public class MarketAiService {
 
     public synchronized List<AiSignal> getSignals(int limit) {
         return takeLast(signals, limit);
+    }
+
+    public List<String> getSupportedSymbols() {
+        final long now = System.currentTimeMillis();
+        if (now - cachedSymbolsAtMs > Duration.ofMinutes(15).toMillis()) {
+            synchronized (this) {
+                if (now - cachedSymbolsAtMs > Duration.ofMinutes(15).toMillis()) {
+                    final List<String> remoteSymbols = fetchExchangeSymbols();
+                    if (!remoteSymbols.isEmpty()) {
+                        cachedSymbols = remoteSymbols;
+                    }
+                    cachedSymbolsAtMs = now;
+                }
+            }
+        }
+
+        return cachedSymbols;
     }
 
     public AutoCloseable subscribeBars(Consumer<MarketBar> consumer) {
@@ -116,6 +137,46 @@ public class MarketAiService {
             appendBounded(signals, signal, DEFAULT_HISTORY_SIZE);
         }
         publisher.publishSignal(signal);
+    }
+
+    private List<String> fetchExchangeSymbols() {
+        final HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.binance.com/api/v3/exchangeInfo"))
+                .timeout(Duration.ofSeconds(8))
+                .GET()
+                .build();
+
+        try {
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() > 299) {
+                return List.of();
+            }
+
+            final JsonNode payload = OBJECT_MAPPER.readTree(response.body());
+            final JsonNode symbolsNode = payload.get("symbols");
+            if (symbolsNode == null || !symbolsNode.isArray()) {
+                return List.of();
+            }
+
+            final List<String> result = new ArrayList<>(symbolsNode.size());
+            for (JsonNode node : symbolsNode) {
+                if (!"TRADING".equals(node.path("status").asText())) {
+                    continue;
+                }
+
+                final String symbol = node.path("symbol").asText("").trim().toUpperCase();
+                if (!symbol.isEmpty()) {
+                    result.add(symbol);
+                }
+            }
+
+            result.sort(Comparator.naturalOrder());
+            return result;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return List.of();
+        } catch (IOException ex) {
+            return List.of();
+        }
     }
 
     private List<MarketBar> fetchKlines(String symbol, ChartInterval interval, int limit) {

@@ -33,6 +33,12 @@ public class MarketResource {
     }
 
     @GET
+    @Path("/symbols")
+    public List<String> getSymbols() {
+        return marketAiService.getSupportedSymbols();
+    }
+
+    @GET
     @Path("/signals")
     public List<AiSignal> getSignals(@DefaultValue("200") @QueryParam("limit") int limit) {
         return marketAiService.getSignals(limit);

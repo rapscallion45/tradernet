@@ -1,12 +1,13 @@
-import { FC, useEffect, useMemo, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { Text, NumberInput, Button, Group, Stack, Select } from "@mantine/core"
 import { useQuery } from "@tanstack/react-query"
 import { OrderData } from "api/types"
 import { ORDER_SIDES } from "api/Orders"
 import { getRestClient } from "api/RestClient"
-import { CHART_SYMBOL_OPTIONS, DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
+import { DEFAULT_CHART_SYMBOL, QueryClientKeys } from "global/constants"
 import { formatCurrency } from "utils/intl"
+import { useMarketSymbols } from "hooks/useMarketSymbols"
 
 type OrderFormProps = {
   onSubmit: (data: OrderData) => void
@@ -74,7 +75,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const symbolOptions = useMemo(() => [...CHART_SYMBOL_OPTIONS], [])
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
 
   const handleOrderSubmit = (data: OrderData) => {
     const resolvedUnitPrice = currentUnitPrice > 0 ? currentUnitPrice : data.quantity > 0 ? data.price / data.quantity : 0

@@ -27,10 +27,10 @@ export enum QueryClientKeys {
 
   /** Market Bars */
   MarketBars = "MarketBars",
+
+  /** Market symbols */
+  MarketSymbols = "MarketSymbols",
 }
 
-/** Available chart/order symbols */
-export const CHART_SYMBOL_OPTIONS = ["BTCUSDT"] as const
-
 /** Default chart/order symbol */
-export const DEFAULT_CHART_SYMBOL = CHART_SYMBOL_OPTIONS[0]
+export const DEFAULT_CHART_SYMBOL = "BTCUSDT"
