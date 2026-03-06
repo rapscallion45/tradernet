@@ -30,6 +30,8 @@ public class OrderResponseDto implements Serializable {
     private String timing;
     private String aiPrediction;
     private Double closePrice;
+    private Double netValue;
+    private String netValueDisplay;
 
     public OrderResponseDto() {
     }
@@ -95,6 +97,10 @@ public class OrderResponseDto implements Serializable {
     public void setAiPrediction(String aiPrediction) { this.aiPrediction = aiPrediction; }
     public Double getClosePrice() { return closePrice; }
     public void setClosePrice(Double closePrice) { this.closePrice = closePrice; }
+    public Double getNetValue() { return netValue; }
+    public void setNetValue(Double netValue) { this.netValue = netValue; }
+    public String getNetValueDisplay() { return netValueDisplay; }
+    public void setNetValueDisplay(String netValueDisplay) { this.netValueDisplay = netValueDisplay; }
 
     @Override
     public boolean equals(Object o) {
@@ -111,12 +117,14 @@ public class OrderResponseDto implements Serializable {
             && Objects.equals(pnlPercent, that.pnlPercent) && Objects.equals(pnlPercentDisplay, that.pnlPercentDisplay)
             && Objects.equals(timing, that.timing)
             && Objects.equals(aiPrediction, that.aiPrediction)
-            && Objects.equals(closePrice, that.closePrice);
+            && Objects.equals(closePrice, that.closePrice)
+            && Objects.equals(netValue, that.netValue)
+            && Objects.equals(netValueDisplay, that.netValueDisplay);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, orderId, userId, symbol, side, quantity, price, status, createdAt, closedAt, createdAtDisplay, currentPrice,
-            currentPriceDisplay, pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction, closePrice);
+            currentPriceDisplay, pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction, closePrice, netValue, netValueDisplay);
     }
 }

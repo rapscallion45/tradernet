@@ -156,10 +156,12 @@ public class OrderResource {
         double pnlPerUnit = order.getSide() == OrderEntity.Side.BUY ? (currentPrice - entry) : (entry - currentPrice);
         double pnl = pnlPerUnit * quantity;
         double pnlPercent = entry == 0 ? 0 : (pnlPerUnit / entry) * 100.0;
+        double netValue = (entry * quantity) + pnl;
 
         responseDto.setCurrentPrice(currentPrice);
         responseDto.setPnl(pnl);
         responseDto.setPnlPercent(pnlPercent);
+        responseDto.setNetValue(netValue);
         responseDto.setTiming(closed ? "CLOSED" : (pnlPerUnit > 0 ? "GOOD" : (pnlPerUnit < 0 ? "BAD" : "NEUTRAL")));
         responseDto.setClosedAt(order.getClosedAt());
         responseDto.setClosePrice(order.getClosePrice());
@@ -168,6 +170,7 @@ public class OrderResource {
         responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.4f", currentPrice));
         responseDto.setPnlDisplay(String.format(Locale.US, "%.4f", pnl));
         responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", pnlPercent));
+        responseDto.setNetValueDisplay(String.format(Locale.US, "%.4f", netValue));
 
         return responseDto;
     }

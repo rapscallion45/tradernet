@@ -134,6 +134,11 @@ const OderHistoryTable: FC = () => {
         },
       },
       {
+        accessorKey: "netValue",
+        header: "Net Value",
+        cell: ({ row }) => formatCurrency(row.original.netValue ?? ((row.original.price * row.original.quantity) + (row.original.pnl ?? 0)), currency),
+      },
+      {
         accessorKey: "aiPrediction",
         header: "AI Signal",
         cell: ({ row }) => {
@@ -221,15 +226,15 @@ const OderHistoryTable: FC = () => {
         {selectedOrder && (
           <Stack gap={8}>
             <Group gap={8} wrap={"nowrap"}>
-              <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={42}>
+              <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={63}>
                 {getBaseAsset(selectedOrder.symbol).slice(0, 1)}
               </Avatar>
               <Stack gap={0}>
-                <Text size={"md"} fw={700}>
+                <Text size={"lg"} fw={700}>
                   {selectedOrder.symbol}
                 </Text>
                 <Group gap={8} align={"center"} wrap={"nowrap"}>
-                  <Text size={"sm"} c={"dimmed"}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+                  <Text size={"md"} c={"dimmed"}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
                   <Text size={"xs"} fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
                     {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
                   </Text>
@@ -237,18 +242,29 @@ const OderHistoryTable: FC = () => {
               </Stack>
             </Group>
 
+            <Text fz={"0.6rem"} c={"dimmed"} ml={71}>{formatDateTime(selectedOrder.createdAt)}</Text>
+
             <Divider my={4} />
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Created</Text>
-              <Text fw={600}>{formatDateTime(selectedOrder.createdAt)}</Text>
-            </Group>
             <Group justify={"space-between"}>
               <Text c={"dimmed"}>Quantity</Text>
               <Text fw={600}>{formatNumber(selectedOrder.quantity, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</Text>
             </Group>
             <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Entry</Text>
+              <Text c={"dimmed"}>Entry Price</Text>
               <Text fw={600}>{formatCurrency(selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Current Price</Text>
+              <Text fw={600}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+            </Group>
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>P/L</Text>
+              <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>{formatCurrency(selectedOrder.pnl ?? 0, currency)}</Text>
+            </Group>
+            <Divider my={4} />
+            <Group justify={"space-between"}>
+              <Text c={"dimmed"}>Net Value</Text>
+              <Text fw={700}>{formatCurrency(selectedOrder.netValue ?? ((selectedOrder.price * selectedOrder.quantity) + (selectedOrder.pnl ?? 0)), currency)}</Text>
             </Group>
           </Stack>
         )}

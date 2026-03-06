@@ -195,6 +195,8 @@ export type OrderSummary = {
   pnlDisplay?: string
   pnlPercent?: number
   pnlPercentDisplay?: string
+  netValue?: number
+  netValueDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
 }
