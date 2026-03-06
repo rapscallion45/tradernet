@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from "react"
-import { Avatar, Badge, Button, Group, Stack, Text } from "@mantine/core"
+import { Avatar, Badge, Button, Group, Select, Stack, Text, TextInput } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -22,6 +22,22 @@ const getAssetLogoUrl = (symbol: string): string => {
   return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${baseAsset}.png`
 }
 
+const toDateInputValue = (value?: string): string => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  const yyyy = String(date.getFullYear())
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
+}
+
 /**
  * Table section for displaying order history and performance metrics.
  */
@@ -30,6 +46,35 @@ const OderHistoryTable: FC = () => {
   const closeOrder = useCloseOrder()
   const { currency } = useCurrencyPreference()
   const [pendingCloseOrder, setPendingCloseOrder] = useState<OrderSummary | null>(null)
+
+  const [assetFilter, setAssetFilter] = useState("")
+  const [positionFilter, setPositionFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [createdDateFilter, setCreatedDateFilter] = useState("")
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      if (assetFilter && !order.symbol.toLowerCase().includes(assetFilter.toLowerCase().trim())) {
+        return false
+      }
+
+      if (positionFilter && order.side !== positionFilter) {
+        return false
+      }
+
+      if (statusFilter && order.status !== statusFilter) {
+        return false
+      }
+
+      if (createdDateFilter && toDateInputValue(order.createdAt) !== createdDateFilter) {
+        return false
+      }
+
+      return true
+    })
+  }, [assetFilter, createdDateFilter, orders, positionFilter, statusFilter])
+
+  const statusOptions = useMemo(() => [...new Set(orders.map((order) => order.status))], [orders])
 
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
@@ -141,10 +186,38 @@ const OderHistoryTable: FC = () => {
 
   return (
     <>
+      <Stack gap={"xs"} mb={"sm"}>
+        <Group grow>
+          <TextInput label={"Asset"} placeholder={"e.g. BTC"} value={assetFilter} onChange={(event) => setAssetFilter(event.currentTarget.value)} />
+          <Select label={"Position"} placeholder={"All"} clearable data={["BUY", "SELL"]} value={positionFilter} onChange={setPositionFilter} />
+          <Select label={"Status"} placeholder={"All"} clearable data={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+          <TextInput
+            label={"Created date"}
+            type={"date"}
+            value={createdDateFilter}
+            onChange={(event) => setCreatedDateFilter(event.currentTarget.value)}
+          />
+        </Group>
+        <Group justify={"space-between"}>
+          <Text size={"xs"} c={"dimmed"}>{`${filteredOrders.length} of ${orders.length} orders`}</Text>
+          <Button
+            size={"xs"}
+            variant={"subtle"}
+            onClick={() => {
+              setAssetFilter("")
+              setPositionFilter(null)
+              setStatusFilter(null)
+              setCreatedDateFilter("")
+            }}>
+            Clear filters
+          </Button>
+        </Group>
+      </Stack>
+
       <Table<OrderSummary>
         columns={columns}
-        data={orders}
-        caption={orders.length === 0 ? "No orders yet." : undefined}
+        data={filteredOrders}
+        caption={filteredOrders.length === 0 ? (orders.length === 0 ? "No orders yet." : "No orders match current filters.") : undefined}
         verticalSpacing={"xs"}
         horizontalSpacing={"xs"}
       />
