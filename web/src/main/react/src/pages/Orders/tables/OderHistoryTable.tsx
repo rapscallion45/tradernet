@@ -213,21 +213,33 @@ const OderHistoryTable: FC = () => {
         verticalSpacing={"xs"}
         horizontalSpacing={"xs"}
       />
-      <Modal opened={selectedOrder !== null} onClose={() => setSelectedOrder(null)} title={"Trade details"} centered>
+      <Modal
+        opened={selectedOrder !== null}
+        onClose={() => setSelectedOrder(null)}
+        title={selectedOrder ? `${selectedOrder.side === "SELL" ? "Sell" : "Buy"} Position` : "Position"}
+        centered>
         {selectedOrder && (
-          <Stack gap={6}>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Asset</Text>
-              <Text fw={600}>{selectedOrder.symbol}</Text>
+          <Stack gap={8}>
+            <Group justify={"space-between"} align={"center"} wrap={"nowrap"}>
+              <Group gap={8} wrap={"nowrap"}>
+                <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={28}>
+                  {getBaseAsset(selectedOrder.symbol).slice(0, 1)}
+                </Avatar>
+                <Stack gap={0}>
+                  <Text size={"sm"} fw={700}>
+                    {selectedOrder.symbol}
+                  </Text>
+                  <Text size={"xs"} c={"dimmed"}>{`${selectedOrder.side} · ${selectedOrder.status}`}</Text>
+                </Stack>
+              </Group>
+              <Stack gap={0} align={"flex-end"}>
+                <Text fw={700}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+                <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
+                  {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
+                </Text>
+              </Stack>
             </Group>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Position</Text>
-              <Text fw={600}>{selectedOrder.side}</Text>
-            </Group>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Status</Text>
-              <Text fw={600}>{selectedOrder.status}</Text>
-            </Group>
+
             <Divider my={4} />
             <Group justify={"space-between"}>
               <Text c={"dimmed"}>Created</Text>
@@ -240,20 +252,6 @@ const OderHistoryTable: FC = () => {
             <Group justify={"space-between"}>
               <Text c={"dimmed"}>Entry</Text>
               <Text fw={600}>{formatCurrency(selectedOrder.price, currency)}</Text>
-            </Group>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Current</Text>
-              <Text fw={600}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
-            </Group>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>P/L</Text>
-              <Text fw={700} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
-                {formatCurrency(selectedOrder.pnl ?? 0, currency)}
-              </Text>
-            </Group>
-            <Group justify={"space-between"}>
-              <Text c={"dimmed"}>Change</Text>
-              <Text fw={600}>{`${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%`}</Text>
             </Group>
           </Stack>
         )}
