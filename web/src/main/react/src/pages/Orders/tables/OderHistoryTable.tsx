@@ -220,23 +220,20 @@ const OderHistoryTable: FC = () => {
         centered>
         {selectedOrder && (
           <Stack gap={8}>
-            <Group justify={"space-between"} align={"center"} wrap={"nowrap"}>
-              <Group gap={8} wrap={"nowrap"}>
-                <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={28}>
-                  {getBaseAsset(selectedOrder.symbol).slice(0, 1)}
-                </Avatar>
-                <Stack gap={0}>
-                  <Text size={"sm"} fw={700}>
-                    {selectedOrder.symbol}
-                  </Text>
-                  <Text size={"xs"} c={"dimmed"}>{`${selectedOrder.side} · ${selectedOrder.status}`}</Text>
-                </Stack>
-              </Group>
-              <Stack gap={0} align={"flex-end"}>
-                <Text fw={700}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
-                <Text fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
-                  {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
+            <Group gap={8} wrap={"nowrap"}>
+              <Avatar src={getAssetLogoUrl(selectedOrder.symbol)} alt={selectedOrder.symbol} radius={"xl"} size={28}>
+                {getBaseAsset(selectedOrder.symbol).slice(0, 1)}
+              </Avatar>
+              <Stack gap={0}>
+                <Text size={"sm"} fw={700}>
+                  {selectedOrder.symbol}
                 </Text>
+                <Group gap={8} align={"center"} wrap={"nowrap"}>
+                  <Text size={"xs"} c={"dimmed"}>{formatCurrency(selectedOrder.currentPrice ?? selectedOrder.price, currency)}</Text>
+                  <Text size={"xs"} fw={600} c={(selectedOrder.pnl ?? 0) > 0 ? "green" : (selectedOrder.pnl ?? 0) < 0 ? "red" : "gray"}>
+                    {`${formatCurrency(selectedOrder.pnl ?? 0, currency)} (${(selectedOrder.pnlPercent ?? 0).toFixed(2)}%)`}
+                  </Text>
+                </Group>
               </Stack>
             </Group>
 
