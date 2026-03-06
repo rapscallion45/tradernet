@@ -62,12 +62,7 @@ const DashboardPage: FC = () => {
           <SectionHeading>ORDER HISTORY</SectionHeading>
           <CardGrid>
             <StatCard text={String(orders.length)} secondaryText={"Orders Placed"} icon={<IconReceipt />} />
-            <ActionCard
-              text={"View Orders"}
-              icon={<IconArrowRight />}
-              secondaryText={"View your order book history"}
-              onClick={() => navigate(Routes.Orders)}
-            />
+            <ActionCard text={"View Orders"} icon={<IconArrowRight />} secondaryText={"View your order book history"} onClick={() => navigate(Routes.Orders)} />
           </CardGrid>
         </Stack>
       </Stack>

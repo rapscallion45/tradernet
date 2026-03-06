@@ -65,7 +65,11 @@ const OderHistoryTable: FC = () => {
         cell: ({ row }) => {
           const pnl = row.original.pnl ?? 0
           const pnlColor = pnl > 0 ? "green" : pnl < 0 ? "red" : "gray"
-          return <Text c={pnlColor} fw={600}>{row.original.pnlDisplay ?? pnl.toFixed(4)}</Text>
+          return (
+            <Text c={pnlColor} fw={600}>
+              {row.original.pnlDisplay ?? pnl.toFixed(4)}
+            </Text>
+          )
         },
       },
       {
@@ -74,7 +78,11 @@ const OderHistoryTable: FC = () => {
         cell: ({ row }) => {
           const pnlPercent = row.original.pnlPercent ?? 0
           const pnlColor = pnlPercent > 0 ? "green" : pnlPercent < 0 ? "red" : "gray"
-          return <Text c={pnlColor} fw={600}>{row.original.pnlPercentDisplay ?? `${pnlPercent.toFixed(2)}%`}</Text>
+          return (
+            <Text c={pnlColor} fw={600}>
+              {row.original.pnlPercentDisplay ?? `${pnlPercent.toFixed(2)}%`}
+            </Text>
+          )
         },
       },
       {
@@ -83,7 +91,11 @@ const OderHistoryTable: FC = () => {
         cell: ({ row }) => {
           const aiPrediction = row.original.aiPrediction ?? "HOLD"
           const aiColor = aiPrediction === "BUY" ? "green" : aiPrediction === "SELL" ? "red" : "gray"
-          return <Badge color={aiColor} variant={"filled"}>{aiPrediction}</Badge>
+          return (
+            <Badge color={aiColor} variant={"filled"}>
+              {aiPrediction}
+            </Badge>
+          )
         },
       },
       {
@@ -111,8 +123,7 @@ const OderHistoryTable: FC = () => {
               variant={"light"}
               disabled={isClosed}
               loading={closeOrder.isPending && closeOrder.variables === row.original.id}
-              onClick={() => setPendingCloseOrder(row.original)}
-            >
+              onClick={() => setPendingCloseOrder(row.original)}>
               {isClosed ? "Closed" : "Close"}
             </Button>
           )
@@ -128,8 +139,8 @@ const OderHistoryTable: FC = () => {
         columns={columns}
         data={orders}
         caption={orders.length === 0 ? "No orders yet." : undefined}
-        verticalSpacing={"sm"}
-        horizontalSpacing={"sm"}
+        verticalSpacing={"xs"}
+        horizontalSpacing={"xs"}
       />
       <ConfirmationModal
         title={"Close Trade"}

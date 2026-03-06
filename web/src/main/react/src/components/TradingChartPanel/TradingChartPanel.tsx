@@ -610,7 +610,14 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select value={symbol} onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)} data={[...CHART_SYMBOL_OPTIONS]} w={130} size="xs" aria-label="Chart symbol" />
+          <Select
+            value={symbol}
+            onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)}
+            data={[...CHART_SYMBOL_OPTIONS]}
+            w={130}
+            size="xs"
+            aria-label="Chart symbol"
+          />
           <Button
             size="xs"
             variant="light"
