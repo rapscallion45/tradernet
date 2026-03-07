@@ -54,9 +54,22 @@ export const inferCurrencyFromLocale = (locale = getUserLocale()): string => {
   return REGION_CURRENCY_MAP[region] || DEFAULT_CURRENCY
 }
 
-export const getUserCurrency = (): string => DEFAULT_CURRENCY
+export const getUserCurrency = (): string => {
+  if (typeof window === "undefined") {
+    return DEFAULT_CURRENCY
+  }
 
-export const setUserCurrency = (_currency: string) => undefined
+  const storedCurrency = window.localStorage.getItem("tradernet.currency")
+  return storedCurrency || DEFAULT_CURRENCY
+}
+
+export const setUserCurrency = (currency: string) => {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  window.localStorage.setItem("tradernet.currency", currency)
+}
 
 export const formatDateTime = (value?: string | number | Date, locale = getUserLocale()): string => {
   if (value === undefined || value === null || value === "") {

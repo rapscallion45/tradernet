@@ -10,12 +10,13 @@ export class MarketResource extends RestResource<MarketBar> {
     super(apiInterface, "market")
   }
 
-  getBars(symbol: string, interval = "1S", limit = 1): List<MarketBar> {
+  getBars(symbol: string, interval = "1S", limit = 1, currency = "USD"): List<MarketBar> {
     return this.typedSubPath<MarketBar>("bars")._list({
       queryParams: {
         symbol,
         interval,
         limit,
+        currency,
       },
     })
   }

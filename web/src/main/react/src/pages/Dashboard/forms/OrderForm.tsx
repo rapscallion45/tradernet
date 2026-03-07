@@ -40,9 +40,9 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
   const [lastEdited, setLastEdited] = useState<"quantity" | "price">("quantity")
 
   const { data: currentUnitPrice = 0 } = useQuery({
-    queryKey: [QueryClientKeys.MarketBars, symbol],
+    queryKey: [QueryClientKeys.MarketBars, symbol, currency],
     queryFn: async () => {
-      const bars = await getRestClient().marketResource.getBars(symbol, "1S", 1)
+      const bars = await getRestClient().marketResource.getBars(symbol, "1S", 1, currency)
       return bars[0]?.close ?? 0
     },
     refetchInterval: 3000,
@@ -76,7 +76,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const { currency } = useCurrencyPreference()
+  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
 
   useEffect(() => {
@@ -100,6 +100,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     <Stack>
       <form onSubmit={handleSubmit(handleOrderSubmit)}>
         <Group grow>
+          <Select label={"Currency"} data={currencyOptions} value={currency} onChange={(value) => setCurrency(value ?? currency)} />
           <Controller
             name={"symbol"}
             control={control}
