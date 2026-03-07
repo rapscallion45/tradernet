@@ -14,6 +14,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST API for chart bars and generated AI signals.
@@ -38,7 +39,7 @@ public class MarketResource {
         CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
         return marketAiService.getBars(symbol, interval, limit).stream()
                 .map(bar -> currencyConversionService.convertBar(bar, targetCurrency))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @GET
