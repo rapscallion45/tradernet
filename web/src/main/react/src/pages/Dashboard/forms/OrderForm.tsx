@@ -38,6 +38,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
   const quantityValue = watch("quantity")
   const priceValue = watch("price")
   const [lastEdited, setLastEdited] = useState<"quantity" | "price">("quantity")
+  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
 
   const { data: currentUnitPrice = 0 } = useQuery({
     queryKey: [QueryClientKeys.MarketBars, symbol, currency],
@@ -76,7 +77,6 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
 
   useEffect(() => {
