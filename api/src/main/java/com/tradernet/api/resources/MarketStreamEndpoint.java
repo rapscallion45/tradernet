@@ -2,6 +2,8 @@ package com.tradernet.api.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.currencyconversion.CurrencyCode;
+import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;

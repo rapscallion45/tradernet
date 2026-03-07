@@ -1,4 +1,4 @@
-package com.tradernet.api.resources;
+package com.tradernet.currencyconversion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

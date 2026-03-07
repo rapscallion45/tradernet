@@ -1,6 +1,8 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.jpa.entities.OrderEntity;
+import com.tradernet.currencyconversion.CurrencyCode;
+import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
