@@ -485,9 +485,10 @@ export const TradingChartPanel: FC = () => {
         intervalToken,
         intervalMs: intervalTokenToMs(intervalToken),
         historySize: 500,
+        currency,
       },
     })
-  }, [intervalToken, symbol])
+  }, [currency, intervalToken, symbol])
 
   useEffect(() => {
     drawOverlay()

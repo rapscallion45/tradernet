@@ -7,8 +7,12 @@ export class OrdersResource extends RestResource<OrderSummary, OrderData> {
     super(apiInterface, "orders")
   }
 
-  getOrders(userId?: number): List<OrderSummary> {
-    return this._list(userId ? { queryParams: { userId } } : undefined)
+  getOrders(userId?: number, currency?: string): List<OrderSummary> {
+    const queryParams: Record<string, string | number> = {}
+    if (userId) queryParams.userId = userId
+    if (currency) queryParams.currency = currency
+
+    return this._list(Object.keys(queryParams).length > 0 ? { queryParams } : undefined)
   }
 
   createOrder(payload: OrderData): Promise<OrderSummary> {

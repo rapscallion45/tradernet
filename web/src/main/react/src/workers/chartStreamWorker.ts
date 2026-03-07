@@ -13,6 +13,7 @@ type StreamConfig = {
   intervalToken: string
   intervalMs: number | null
   historySize: number
+  currency: string
 }
 
 type WorkerMessage = { type: "start"; payload: StreamConfig } | { type: "stop" }
@@ -50,6 +51,7 @@ let historySize = 500
 let intervalToken = "1S"
 let intervalMs: number | null = 1_000
 let symbol = "BTCUSDT"
+let currency = "USD"
 let tickCount = 0
 let streamSession = 0
 let lastDataAt = 0
@@ -179,19 +181,20 @@ const resolveWebsocketUrl = () => {
   if (wsPath.startsWith("http://") || wsPath.startsWith("https://")) {
     const url = new URL(wsPath)
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
+    url.searchParams.set("currency", currency)
     return url.toString()
   }
 
   const origin = self.location.origin
   const wsProtocol = origin.startsWith("https") ? "wss" : "ws"
-  return `${wsProtocol}://${self.location.host}${wsPath}`
+  return `${wsProtocol}://${self.location.host}${wsPath}?currency=${encodeURIComponent(currency)}`
 }
 
 const preload = async (sessionId: number) => {
   const apiBase = resolveApiBase()
   const barsFetchLimit = Math.max(historySize * 4, 2_000)
   const [barsResponse, signalResponse] = await Promise.all([
-    fetch(`${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}`),
+    fetch(`${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}&currency=${encodeURIComponent(currency)}`),
     fetch(`${apiBase}/market/signals?limit=1`),
   ])
 
@@ -299,6 +302,7 @@ const start = async ({
   intervalToken: selectedIntervalToken,
   intervalMs: selectedIntervalMs,
   historySize: nextHistorySize,
+  currency: selectedCurrency,
 }: StreamConfig) => {
   stop()
 
@@ -306,6 +310,7 @@ const start = async ({
   symbol = normalizeSymbol(selectedSymbol)
   intervalToken = selectedIntervalToken
   intervalMs = selectedIntervalMs
+  currency = (selectedCurrency || "USD").toUpperCase()
   historySize = nextHistorySize
   rawBars = []
   candles = []
