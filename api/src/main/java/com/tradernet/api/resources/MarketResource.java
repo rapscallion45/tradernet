@@ -37,9 +37,15 @@ public class MarketResource {
             @DefaultValue("500") @QueryParam("limit") int limit,
             @DefaultValue("USD") @QueryParam("currency") String currency) {
         CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
-        return marketAiService.getBars(symbol, interval, limit).stream()
-                .map(bar -> currencyConversionService.convertBar(bar, targetCurrency))
-                .collect(Collectors.toList());
+        List<MarketBar> rawBars = marketAiService.getBars(symbol, interval, limit);
+
+        try {
+            return rawBars.stream()
+                    .map(bar -> currencyConversionService.convertBar(bar, targetCurrency))
+                    .collect(Collectors.toList());
+        } catch (RuntimeException ex) {
+            return rawBars;
+        }
     }
 
     @GET
