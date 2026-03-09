@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Modal, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { Badge, Button, Group, Loader, Modal, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -206,7 +206,7 @@ export const TradingChartPanel: FC = () => {
 
   const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
   const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
-  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
@@ -215,6 +215,7 @@ export const TradingChartPanel: FC = () => {
   const [drawings, setDrawings] = useState<Drawing[]>([])
   const [pendingStart, setPendingStart] = useState<ChartPoint | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
+  const [candleCount, setCandleCount] = useState(0)
   const [ticksPerSecond, setTicksPerSecond] = useState(0)
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
@@ -225,6 +226,8 @@ export const TradingChartPanel: FC = () => {
       setSymbol(symbolOptions[0] ?? DEFAULT_CHART_SYMBOL)
     }
   }, [symbol, symbolOptions])
+
+  const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -437,6 +440,7 @@ export const TradingChartPanel: FC = () => {
       seriesRef.current = toCandleArrays(event.data.payload.candles)
       setLastPrice(event.data.payload.lastPrice)
       setTicksPerSecond(event.data.payload.ticksPerSecond)
+      setCandleCount(event.data.payload.candles.length)
       setStreamStatus(event.data.payload.status)
       setStreamError(event.data.payload.error || null)
       setSignal(event.data.payload.signal || null)
@@ -478,6 +482,8 @@ export const TradingChartPanel: FC = () => {
   }, [indicators])
 
   useEffect(() => {
+    setCandleCount(0)
+
     workerRef.current?.postMessage({
       type: "start",
       payload: {
@@ -485,9 +491,10 @@ export const TradingChartPanel: FC = () => {
         intervalToken,
         intervalMs: intervalTokenToMs(intervalToken),
         historySize: 500,
+        currency,
       },
     })
-  }, [intervalToken, symbol])
+  }, [currency, intervalToken, symbol])
 
   useEffect(() => {
     drawOverlay()
@@ -687,6 +694,11 @@ export const TradingChartPanel: FC = () => {
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} />
+        {showStreamSpinner && (
+          <div className={classes.centeredSpinner} aria-live="polite" aria-label="Waiting for market stream">
+            <Loader size="md" />
+          </div>
+        )}
         <canvas
           ref={overlayRef}
           className={classes.overlayCanvas}

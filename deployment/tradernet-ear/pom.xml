@@ -82,6 +82,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>currency-conversion-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>facade-service</artifactId>
             <version>${project.version}</version>
             <type>ejb</type>
@@ -147,6 +153,10 @@
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>market-ai-service</artifactId>
+                        </ejbModule>
+                        <ejbModule>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>currency-conversion-service</artifactId>
                         </ejbModule>
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>

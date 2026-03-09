@@ -14,6 +14,8 @@ import com.tradernet.marketai.model.MarketTrade;
 import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.ejb.Lock;
+import jakarta.ejb.LockType;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 
@@ -68,10 +70,12 @@ public class MarketAiService {
         binanceClient.stop();
     }
 
+    @Lock(LockType.READ)
     public synchronized List<MarketBar> getBars(int limit) {
         return takeLast(bars, limit);
     }
 
+    @Lock(LockType.READ)
     public List<MarketBar> getBars(String symbol, String intervalToken, int limit) {
         final ChartInterval interval = ChartInterval.parse(intervalToken);
         final List<MarketBar> remoteBars = fetchKlines(symbol, interval, limit);
@@ -84,10 +88,12 @@ public class MarketAiService {
         }
     }
 
+    @Lock(LockType.READ)
     public synchronized List<AiSignal> getSignals(int limit) {
         return takeLast(signals, limit);
     }
 
+    @Lock(LockType.READ)
     public List<String> getSupportedSymbols(String quoteCurrency) {
         final long now = System.currentTimeMillis();
         if (now - cachedSymbolsAtMs > Duration.ofMinutes(15).toMillis()) {
@@ -117,10 +123,12 @@ public class MarketAiService {
         return usdTFallback.isEmpty() ? List.of("BTCUSDT") : usdTFallback;
     }
 
+    @Lock(LockType.READ)
     public AutoCloseable subscribeBars(Consumer<MarketBar> consumer) {
         return publisher.onBar(consumer);
     }
 
+    @Lock(LockType.READ)
     public AutoCloseable subscribeSignals(Consumer<AiSignal> consumer) {
         return publisher.onSignal(consumer);
     }

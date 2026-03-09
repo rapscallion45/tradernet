@@ -23,6 +23,18 @@ const REGION_CURRENCY_MAP: Record<string, string> = {
   AE: "AED",
 }
 
+const isSupportedCurrency = (currency: string, locale = DEFAULT_LOCALE): boolean => {
+  try {
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(0)
+    return true
+  } catch {
+    return false
+  }
+}
+
 const getNavigatorLocale = (): string | undefined => {
   if (typeof navigator === "undefined") {
     return undefined
@@ -44,11 +56,11 @@ export const inferCurrencyFromLocale = (locale = getUserLocale()): string => {
 
 export const getUserCurrency = (): string => {
   if (typeof window === "undefined") {
-    return inferCurrencyFromLocale(DEFAULT_LOCALE)
+    return DEFAULT_CURRENCY
   }
 
   const storedCurrency = window.localStorage.getItem("tradernet.currency")
-  return storedCurrency || inferCurrencyFromLocale(getUserLocale())
+  return storedCurrency || DEFAULT_CURRENCY
 }
 
 export const setUserCurrency = (currency: string) => {
@@ -80,9 +92,11 @@ export const formatNumber = (value: number, options?: Intl.NumberFormatOptions, 
 }
 
 export const formatCurrency = (value: number, currency = getUserCurrency(), locale = getUserLocale()): string => {
+  const resolvedCurrency = isSupportedCurrency(currency, locale) ? currency : DEFAULT_CURRENCY
+
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency,
+    currency: resolvedCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
   }).format(value)
