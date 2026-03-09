@@ -1,5 +1,5 @@
-import { FC, MouseEvent, MutableRefObject, ReactNode, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button as MantineButton, ButtonGroup, Group, Loader, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
+import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -10,6 +10,7 @@ import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
+import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
 import { IconCaretDownFilled, IconSearch, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
@@ -23,35 +24,6 @@ type Candle = {
 }
 
 type DrawTool = "none" | "trendline" | "ray" | "hline" | "vline"
-
-type ToggleButtonOption<T> = {
-  value: T
-  label: string
-  icon: ReactNode
-}
-
-type ToggleButtonsProps<T> = {
-  current: T
-  options: ToggleButtonOption<T>[]
-  setCurrent: (value: T) => void
-}
-
-const ToggleButtons = <T = string,>({ current, options, setCurrent }: ToggleButtonsProps<T>) => (
-  <ButtonGroup>
-    {options.map((option) => (
-      <Button
-        key={option.label}
-        size="xs"
-        variant={current === option.value ? "filled" : "outline"}
-        leftIcon={option.icon}
-        onClick={() => setCurrent(option.value)}
-        disabled={current === option.value}
-        aria-label={`Toggle ${option.label} Option`}>
-        {option.label}
-      </Button>
-    ))}
-  </ButtonGroup>
-)
 
 type ChartPoint = {
   time: number
@@ -705,11 +677,11 @@ export const TradingChartPanel: FC = () => {
 
   const toolOptions = useMemo<ToggleButtonOption<DrawTool>[]>(
     () => [
-      { value: "none", label: "Pan", icon: <Text size="xs">↔</Text> },
-      { value: "trendline", label: "Trendline", icon: <Text size="xs">／</Text> },
-      { value: "ray", label: "Ray", icon: <Text size="xs">↗</Text> },
-      { value: "hline", label: "H-Line", icon: <Text size="xs">―</Text> },
-      { value: "vline", label: "V-Line", icon: <Text size="xs">|</Text> },
+      { value: "none", label: undefined, icon: <Text size="xs">↔</Text>, tooltip: "Pan" },
+      { value: "trendline", label: undefined, icon: <Text size="xs">／</Text>, tooltip: "Trendline" },
+      { value: "ray", label: undefined, icon: <Text size="xs">↗</Text>, tooltip: "Ray" },
+      { value: "hline", label: undefined, icon: <Text size="xs">―</Text>, tooltip: "Horizontal line" },
+      { value: "vline", label: undefined, icon: <Text size="xs">|</Text>, tooltip: "Vertical line" },
     ],
     [],
   )
