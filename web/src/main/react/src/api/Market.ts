@@ -28,4 +28,8 @@ export class MarketResource extends RestResource<MarketBar> {
       },
     })
   }
+
+  getCurrencies(): List<string> {
+    return this.typedSubPath<string>("currencies")._list()
+  }
 }

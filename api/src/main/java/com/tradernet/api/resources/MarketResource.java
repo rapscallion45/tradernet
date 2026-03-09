@@ -55,6 +55,12 @@ public class MarketResource {
     }
 
     @GET
+    @Path("/currencies")
+    public List<String> getSupportedCurrencies() {
+        return currencyConversionService.getSupportedCurrencies();
+    }
+
+    @GET
     @Path("/signals")
     public List<AiSignal> getSignals(@DefaultValue("200") @QueryParam("limit") int limit) {
         return marketAiService.getSignals(limit);

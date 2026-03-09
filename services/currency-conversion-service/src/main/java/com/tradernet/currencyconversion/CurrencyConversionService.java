@@ -18,6 +18,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.EnumMap;
@@ -51,6 +54,45 @@ public class CurrencyConversionService {
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     private final Map<String, BigDecimal> rateCache = new ConcurrentHashMap<>();
+
+    public List<String> getSupportedCurrencies() {
+        final HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.frankfurter.app/currencies"))
+            .timeout(Duration.ofSeconds(4))
+            .GET()
+            .build();
+
+        try {
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() <= 299) {
+                final JsonNode root = OBJECT_MAPPER.readTree(response.body());
+                if (root.isObject()) {
+                    final List<String> supported = new ArrayList<>();
+                    root.fieldNames().forEachRemaining(code -> {
+                        CurrencyCode parsed = CurrencyCode.parseOrDefault(code, null);
+                        if (parsed != null) {
+                            supported.add(parsed.name());
+                        }
+                    });
+
+                    supported.sort(Comparator.naturalOrder());
+                    if (!supported.isEmpty()) {
+                        return supported;
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            // fallback below
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+
+        List<String> fallback = new ArrayList<>();
+        for (CurrencyCode currencyCode : CurrencyCode.values()) {
+            fallback.add(currencyCode.name());
+        }
+        fallback.sort(Comparator.naturalOrder());
+        return fallback;
+    }
 
     public CurrencyCode resolveQuoteCurrency(String symbol) {
         if (symbol == null) {
