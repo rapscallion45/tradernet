@@ -206,7 +206,7 @@ export const TradingChartPanel: FC = () => {
 
   const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
   const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
-  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")

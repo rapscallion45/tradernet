@@ -77,7 +77,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     }
   }, [currentUnitPrice, lastEdited, priceValue, quantityValue, setValue])
 
-  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols(currency)
+  const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
 
   useEffect(() => {
     if (!symbolOptions.includes(symbol)) {
