@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { Avatar, Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTime } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
+import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
   time: number
@@ -117,22 +118,8 @@ const currencyFlagMap: Record<string, string> = {
   INR: "🇮🇳",
 }
 
-const symbolLogoMap: Record<string, string> = {
-  BTC: "₿",
-  ETH: "◆",
-  SOL: "◎",
-  BNB: "🟡",
-  XRP: "✕",
-  ADA: "◉",
-}
-
 const getCurrencyFlag = (code: string): string => currencyFlagMap[code.toUpperCase()] ?? "🏳️"
 
-const getSymbolLogo = (symbolToken: string): string => {
-  const token = symbolToken.toUpperCase()
-  const base = token.endsWith("USDT") ? token.slice(0, -4) : token
-  return symbolLogoMap[base] ?? "◌"
-}
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
 const toCandleArrays = (candles: Candle[]): CandleArrays => {
@@ -669,16 +656,20 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Button
+          <Select
             size="xs"
-            variant="light"
+            className={classes.currencySelectTrigger}
             aria-label="Quote currency"
+            value={currency}
+            data={[currency]}
+            readOnly
+            searchable={false}
+            checkIconPosition="right"
             onClick={() => {
               setCurrencyDraft(currency)
               setCurrencyModalOpened(true)
-            }}>
-            {getCurrencyFlag(currency)} {currency}
-          </Button>
+            }}
+          />
           <Button
             size="xs"
             variant="light"
@@ -687,7 +678,10 @@ export const TradingChartPanel: FC = () => {
               setSymbolDraft(symbol)
               setSymbolModalOpened(true)
             }}>
-            {getSymbolLogo(symbol)} {symbol}
+            <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
+              {getBaseAsset(symbol).slice(0, 1)}
+            </Avatar>
+            {symbol}
           </Button>
           <Button
             size="xs"
@@ -825,7 +819,9 @@ export const TradingChartPanel: FC = () => {
                     onClick={() => setSymbolDraft(item)}>
                     <Group justify="space-between">
                       <Group gap="xs">
-                        <Text size="lg">{getSymbolLogo(item)}</Text>
+                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius="xl" size={22}>
+                          {getBaseAsset(item).slice(0, 1)}
+                        </Avatar>
                         <Text fw={600}>{item}</Text>
                       </Group>
                       {selected && <Badge variant="light">Selected</Badge>}

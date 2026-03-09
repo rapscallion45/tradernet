@@ -66,3 +66,12 @@
   border-color: light-dark(var(--mantine-color-blue-4), var(--mantine-color-blue-6));
   background: light-dark(var(--mantine-color-blue-0), rgba(37, 99, 235, 0.2));
 }
+
+
+.currencySelectTrigger {
+  min-width: 110px;
+}
+
+.currencySelectTrigger :global(input) {
+  cursor: pointer;
+}

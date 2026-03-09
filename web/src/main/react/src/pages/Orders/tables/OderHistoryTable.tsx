@@ -8,19 +8,7 @@ import { useCloseOrder } from "hooks/useCloseOrder"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { useOrders } from "hooks/useOrders"
 import { formatCurrency, formatDateTime, formatNumber } from "utils/intl"
-
-const QUOTE_SUFFIXES = ["USDT", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "BRL", "TRY", "BTC", "ETH", "BNB"]
-
-const getBaseAsset = (symbol: string): string => {
-  const upper = symbol.toUpperCase()
-  const matchedQuote = QUOTE_SUFFIXES.find((quote) => upper.endsWith(quote))
-  return matchedQuote ? upper.slice(0, upper.length - matchedQuote.length) : upper
-}
-
-const getAssetLogoUrl = (symbol: string): string => {
-  const baseAsset = getBaseAsset(symbol).toLowerCase()
-  return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${baseAsset}.png`
-}
+import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 const toDateInputValue = (value?: string): string => {
   if (!value) {
