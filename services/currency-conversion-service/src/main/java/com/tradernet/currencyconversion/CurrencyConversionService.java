@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -26,7 +27,7 @@ public class CurrencyConversionService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final MathContext MC = MathContext.DECIMAL64;
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     private final Map<String, BigDecimal> rateCache = new ConcurrentHashMap<>();
 
     public CurrencyCode resolveQuoteCurrency(String symbol) {
@@ -106,13 +107,17 @@ public class CurrencyConversionService {
             return cross;
         }
 
+        rateCache.put(cacheKey, BigDecimal.ONE);
         return BigDecimal.ONE;
     }
 
     private BigDecimal fetchRate(CurrencyCode from, CurrencyCode to, Instant timestamp) {
         LocalDate date = LocalDate.ofInstant(timestamp, ZoneOffset.UTC);
-        String uri = "https://api.exchangerate.host/" + date + "?base=" + encode(from.name()) + "&symbols=" + encode(to.name());
-        HttpRequest request = HttpRequest.newBuilder(URI.create(uri)).GET().build();
+        String uri = "https://api.frankfurter.app/" + date + "?from=" + encode(from.name()) + "&to=" + encode(to.name());
+        HttpRequest request = HttpRequest.newBuilder(URI.create(uri))
+            .timeout(Duration.ofSeconds(4))
+            .GET()
+            .build();
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
