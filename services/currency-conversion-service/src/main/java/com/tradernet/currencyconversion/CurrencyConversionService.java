@@ -20,12 +20,34 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.EnumMap;
 
 @Singleton
 public class CurrencyConversionService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final MathContext MC = MathContext.DECIMAL64;
+
+    private static final Map<CurrencyCode, BigDecimal> USD_BASED_FALLBACK_RATES = new EnumMap<>(CurrencyCode.class);
+
+    static {
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.USD, BigDecimal.ONE);
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.EUR, new BigDecimal("0.92"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.GBP, new BigDecimal("0.79"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.JPY, new BigDecimal("148.00"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.CAD, new BigDecimal("1.35"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.AUD, new BigDecimal("1.53"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.CHF, new BigDecimal("0.89"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.INR, new BigDecimal("83.00"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.BRL, new BigDecimal("5.00"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.MXN, new BigDecimal("16.80"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.CNY, new BigDecimal("7.20"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.KRW, new BigDecimal("1330.00"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.SGD, new BigDecimal("1.34"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.HKD, new BigDecimal("7.80"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.ZAR, new BigDecimal("18.50"));
+        USD_BASED_FALLBACK_RATES.put(CurrencyCode.AED, new BigDecimal("3.67"));
+    }
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     private final Map<String, BigDecimal> rateCache = new ConcurrentHashMap<>();
@@ -107,8 +129,24 @@ public class CurrencyConversionService {
             return cross;
         }
 
-        rateCache.put(cacheKey, BigDecimal.ONE);
-        return BigDecimal.ONE;
+        BigDecimal fallback = getFallbackRate(from, to);
+        rateCache.put(cacheKey, fallback);
+        return fallback;
+    }
+
+    private BigDecimal getFallbackRate(CurrencyCode from, CurrencyCode to) {
+        if (from == to) {
+            return BigDecimal.ONE;
+        }
+
+        BigDecimal fromPerUsd = USD_BASED_FALLBACK_RATES.get(from);
+        BigDecimal toPerUsd = USD_BASED_FALLBACK_RATES.get(to);
+
+        if (fromPerUsd == null || toPerUsd == null || fromPerUsd.signum() <= 0) {
+            return BigDecimal.ONE;
+        }
+
+        return toPerUsd.divide(fromPerUsd, MC);
     }
 
     private BigDecimal fetchRate(CurrencyCode from, CurrencyCode to, Instant timestamp) {
