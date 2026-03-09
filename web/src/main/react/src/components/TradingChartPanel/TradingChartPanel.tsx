@@ -230,6 +230,8 @@ export const TradingChartPanel: FC = () => {
   const [intervalDraft, setIntervalDraft] = useState("1S")
   const [currencyDraft, setCurrencyDraft] = useState(currency)
   const [symbolDraft, setSymbolDraft] = useState(symbol)
+  const [currencySearch, setCurrencySearch] = useState("")
+  const [symbolSearch, setSymbolSearch] = useState("")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -256,6 +258,24 @@ export const TradingChartPanel: FC = () => {
   }, [symbol])
 
   const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
+
+  const filteredCurrencyOptions = useMemo(() => {
+    const normalizedSearch = currencySearch.trim().toLowerCase()
+    if (!normalizedSearch) {
+      return currencyOptions
+    }
+
+    return currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch))
+  }, [currencyOptions, currencySearch])
+
+  const filteredSymbolOptions = useMemo(() => {
+    const normalizedSearch = symbolSearch.trim().toLowerCase()
+    if (!normalizedSearch) {
+      return symbolOptions
+    }
+
+    return symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch))
+  }, [symbolOptions, symbolSearch])
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -665,8 +685,13 @@ export const TradingChartPanel: FC = () => {
             readOnly
             searchable={false}
             checkIconPosition="right"
+            styles={{
+              wrapper: { width: "auto" },
+              input: { width: `${Math.max(currency.length + 4, 8)}ch` },
+            }}
             onClick={() => {
               setCurrencyDraft(currency)
+              setCurrencySearch("")
               setCurrencyModalOpened(true)
             }}
           />
@@ -676,6 +701,7 @@ export const TradingChartPanel: FC = () => {
             aria-label="Chart symbol"
             onClick={() => {
               setSymbolDraft(symbol)
+              setSymbolSearch("")
               setSymbolModalOpened(true)
             }}>
             <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
@@ -766,9 +792,15 @@ export const TradingChartPanel: FC = () => {
           <Text size="sm" c="dimmed">
             Choose a quote currency.
           </Text>
+          <TextInput
+            value={currencySearch}
+            onChange={(event) => setCurrencySearch(event.currentTarget.value)}
+            placeholder="Search currencies"
+            aria-label="Search currencies"
+          />
           <ScrollArea h={260} type="auto">
             <Stack gap="xs">
-              {currencyOptions.map((item) => {
+              {filteredCurrencyOptions.map((item) => {
                 const selected = item === currencyDraft
                 return (
                   <Paper
@@ -805,9 +837,15 @@ export const TradingChartPanel: FC = () => {
           <Text size="sm" c="dimmed">
             Select a market symbol.
           </Text>
+          <TextInput
+            value={symbolSearch}
+            onChange={(event) => setSymbolSearch(event.currentTarget.value)}
+            placeholder="Search symbols"
+            aria-label="Search symbols"
+          />
           <ScrollArea h={300} type="auto">
             <Stack gap="xs">
-              {symbolOptions.map((item) => {
+              {filteredSymbolOptions.map((item) => {
                 const selected = item === symbolDraft
                 return (
                   <Paper

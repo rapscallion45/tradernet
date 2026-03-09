@@ -69,9 +69,10 @@
 
 
 .currencySelectTrigger {
-  min-width: 110px;
+  width: auto;
 }
 
 .currencySelectTrigger :global(input) {
   cursor: pointer;
+  min-width: 0;
 }
