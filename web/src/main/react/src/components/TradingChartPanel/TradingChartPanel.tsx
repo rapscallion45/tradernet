@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Avatar, Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { ActionIcon, Avatar, Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTime } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
+import { IconSearch, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -789,14 +790,23 @@ export const TradingChartPanel: FC = () => {
         title="Select quote currency"
         confirmTextOverride="Apply">
         <Stack gap="xs">
-          <Text size="sm" c="dimmed">
-            Choose a quote currency.
-          </Text>
           <TextInput
             value={currencySearch}
             onChange={(event) => setCurrencySearch(event.currentTarget.value)}
             placeholder="Search currencies"
             aria-label="Search currencies"
+            leftSection={<IconSearch size={15} />}
+            rightSection={
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label="Clear currency search"
+                disabled={!currencySearch}
+                onClick={() => setCurrencySearch("")}>
+                <IconX size={15} />
+              </ActionIcon>
+            }
           />
           <ScrollArea h={260} type="auto">
             <Stack gap="xs">
@@ -834,14 +844,23 @@ export const TradingChartPanel: FC = () => {
         title="Select trading symbol"
         confirmTextOverride="Apply">
         <Stack gap="xs">
-          <Text size="sm" c="dimmed">
-            Select a market symbol.
-          </Text>
           <TextInput
             value={symbolSearch}
             onChange={(event) => setSymbolSearch(event.currentTarget.value)}
             placeholder="Search symbols"
             aria-label="Search symbols"
+            leftSection={<IconSearch size={15} />}
+            rightSection={
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label="Clear symbol search"
+                disabled={!symbolSearch}
+                onClick={() => setSymbolSearch("")}>
+                <IconX size={15} />
+              </ActionIcon>
+            }
           />
           <ScrollArea h={300} type="auto">
             <Stack gap="xs">
