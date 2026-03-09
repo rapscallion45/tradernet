@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Loader, Modal, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { Badge, Button, Group, Loader, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -8,6 +8,7 @@ import { DEFAULT_CHART_SYMBOL } from "global/constants"
 import { formatCurrency, formatDateTime } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
+import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 
 type Candle = {
   time: number
@@ -707,7 +708,16 @@ export const TradingChartPanel: FC = () => {
           onMouseLeave={handleOverlayMouseLeave}
         />
       </Paper>
-      <Modal opened={intervalModalOpened} onClose={() => setIntervalModalOpened(false)} title="Set chart interval" centered>
+      <ConfirmationModal
+        opened={intervalModalOpened}
+        onCancel={() => setIntervalModalOpened(false)}
+        onConfirm={() => {
+          const normalized = normalizeIntervalToken(intervalDraft)
+          setIntervalToken(normalized)
+          setIntervalModalOpened(false)
+        }}
+        title="Set chart interval"
+        confirmTextOverride="Apply">
         <Stack>
           <Text size="sm" c="dimmed">
             Use format number + unit: S (seconds), M (minutes), H (hours), D (days), MO (months), Y (years). Example: 15D.
@@ -725,22 +735,8 @@ export const TradingChartPanel: FC = () => {
               </Button>
             ))}
           </Group>
-          <Group justify="flex-end">
-            <Button size="xs" variant="subtle" onClick={() => setIntervalModalOpened(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="xs"
-              onClick={() => {
-                const normalized = normalizeIntervalToken(intervalDraft)
-                setIntervalToken(normalized)
-                setIntervalModalOpened(false)
-              }}>
-              Apply
-            </Button>
-          </Group>
         </Stack>
-      </Modal>
+      </ConfirmationModal>
     </Stack>
   )
 }
