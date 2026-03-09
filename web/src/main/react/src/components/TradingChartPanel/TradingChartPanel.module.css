@@ -48,6 +48,6 @@
   justify-content: center;
   z-index: 4;
   pointer-events: none;
-  background: light-dark(rgba(148, 163, 184, 0.35), rgba(55, 65, 81, 0.45));
-  backdrop-filter: grayscale(0.3);
+  background: light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.22));
+  backdrop-filter: saturate(0.85);
 }
