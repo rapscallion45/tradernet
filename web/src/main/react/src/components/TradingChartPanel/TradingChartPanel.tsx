@@ -1,5 +1,5 @@
-import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { FC, MouseEvent, MutableRefObject, ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { ActionIcon, Avatar, Badge, Button as MantineButton, ButtonGroup, Group, Loader, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -23,6 +23,35 @@ type Candle = {
 }
 
 type DrawTool = "none" | "trendline" | "ray" | "hline" | "vline"
+
+type ToggleButtonOption<T> = {
+  value: T
+  label: string
+  icon: ReactNode
+}
+
+type ToggleButtonsProps<T> = {
+  current: T
+  options: ToggleButtonOption<T>[]
+  setCurrent: (value: T) => void
+}
+
+const ToggleButtons = <T = string,>({ current, options, setCurrent }: ToggleButtonsProps<T>) => (
+  <ButtonGroup>
+    {options.map((option) => (
+      <Button
+        key={option.label}
+        size="xs"
+        variant={current === option.value ? "filled" : "outline"}
+        leftIcon={option.icon}
+        onClick={() => setCurrent(option.value)}
+        disabled={current === option.value}
+        aria-label={`Toggle ${option.label} Option`}>
+        {option.label}
+      </Button>
+    ))}
+  </ButtonGroup>
+)
 
 type ChartPoint = {
   time: number
@@ -674,10 +703,21 @@ export const TradingChartPanel: FC = () => {
     setIndicators((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const toolOptions = useMemo<ToggleButtonOption<DrawTool>[]>(
+    () => [
+      { value: "none", label: "Pan", icon: <Text size="xs">↔</Text> },
+      { value: "trendline", label: "Trendline", icon: <Text size="xs">／</Text> },
+      { value: "ray", label: "Ray", icon: <Text size="xs">↗</Text> },
+      { value: "hline", label: "H-Line", icon: <Text size="xs">―</Text> },
+      { value: "vline", label: "V-Line", icon: <Text size="xs">|</Text> },
+    ],
+    [],
+  )
+
   return (
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
-        <Group>
+        <Group gap="sm">
           <Select
             size="xs"
             className={classes.currencySelectTrigger}
@@ -724,20 +764,13 @@ export const TradingChartPanel: FC = () => {
             }}>
             Interval {intervalToken}
           </MantineButton>
-          <SegmentedControl
-            size="xs"
-            value={tool}
-            onChange={(value) => {
-              setTool(value as DrawTool)
+          <ToggleButtons
+            current={tool}
+            options={toolOptions}
+            setCurrent={(value) => {
+              setTool(value)
               setPendingStart(null)
             }}
-            data={[
-              { value: "none", label: "Pan" },
-              { value: "trendline", label: "Trendline" },
-              { value: "ray", label: "Ray" },
-              { value: "hline", label: "H-Line" },
-              { value: "vline", label: "V-Line" },
-            ]}
           />
           <MantineButton size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
             EMA
