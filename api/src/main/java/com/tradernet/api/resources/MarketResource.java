@@ -50,8 +50,8 @@ public class MarketResource {
 
     @GET
     @Path("/symbols")
-    public List<String> getSymbols(@DefaultValue("USD") @QueryParam("currency") String currency) {
-        return marketAiService.getSupportedSymbols(currency);
+    public List<String> getSymbols() {
+        return marketAiService.getSupportedSymbols("USD");
     }
 
     @GET
