@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Paper, ScrollArea, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTime } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
+import { Button } from "components/Button/Button"
 import { IconSearch, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
@@ -698,19 +699,21 @@ export const TradingChartPanel: FC = () => {
           />
           <Button
             size="xs"
-            variant="light"
+            variant="outline"
             aria-label="Chart symbol"
+            leftIcon={(
+              <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
+                {getBaseAsset(symbol).slice(0, 1)}
+              </Avatar>
+            )}
             onClick={() => {
               setSymbolDraft(symbol)
               setSymbolSearch("")
               setSymbolModalOpened(true)
             }}>
-            <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
-              {getBaseAsset(symbol).slice(0, 1)}
-            </Avatar>
             {symbol}
           </Button>
-          <Button
+          <MantineButton
             size="xs"
             variant="light"
             aria-label="Chart frequency"
@@ -719,7 +722,7 @@ export const TradingChartPanel: FC = () => {
               setIntervalModalOpened(true)
             }}>
             Interval {intervalToken}
-          </Button>
+          </MantineButton>
           <SegmentedControl
             size="xs"
             value={tool}
@@ -735,18 +738,18 @@ export const TradingChartPanel: FC = () => {
               { value: "vline", label: "V-Line" },
             ]}
           />
-          <Button size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
+          <MantineButton size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
             EMA
-          </Button>
-          <Button size="xs" variant={indicators.sma ? "filled" : "light"} onClick={() => toggleIndicator("sma")}>
+          </MantineButton>
+          <MantineButton size="xs" variant={indicators.sma ? "filled" : "light"} onClick={() => toggleIndicator("sma")}>
             SMA
-          </Button>
-          <Button size="xs" variant={indicators.bb ? "filled" : "light"} onClick={() => toggleIndicator("bb")}>
+          </MantineButton>
+          <MantineButton size="xs" variant={indicators.bb ? "filled" : "light"} onClick={() => toggleIndicator("bb")}>
             BB
-          </Button>
-          <Button size="xs" variant="light" onClick={() => setDrawings([])}>
+          </MantineButton>
+          <MantineButton size="xs" variant="light" onClick={() => setDrawings([])}>
             Clear drawings
-          </Button>
+          </MantineButton>
         </Group>
 
         <Group gap="xs">
@@ -875,11 +878,18 @@ export const TradingChartPanel: FC = () => {
                     data-selected={selected}
                     onClick={() => setSymbolDraft(item)}>
                     <Group justify="space-between">
-                      <Group gap="xs">
-                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius="xl" size={22}>
+                      <Group gap={8} wrap={"nowrap"}>
+                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
                           {getBaseAsset(item).slice(0, 1)}
                         </Avatar>
-                        <Text fw={600}>{item}</Text>
+                        <Stack gap={0}>
+                          <Text size={"sm"} fw={600}>
+                            {item}
+                          </Text>
+                          <Text size={"xs"} c={"dimmed"}>
+                            {getBaseAsset(item)}
+                          </Text>
+                        </Stack>
                       </Group>
                       {selected && <Badge variant="light">Selected</Badge>}
                     </Group>
@@ -912,9 +922,9 @@ export const TradingChartPanel: FC = () => {
           />
           <Group gap="xs">
             {intervalPresets.map((preset) => (
-              <Button key={preset} size="xs" variant="subtle" onClick={() => setIntervalDraft(preset)}>
+              <MantineButton key={preset} size="xs" variant="subtle" onClick={() => setIntervalDraft(preset)}>
                 {preset}
-              </Button>
+              </MantineButton>
             ))}
           </Group>
         </Stack>
