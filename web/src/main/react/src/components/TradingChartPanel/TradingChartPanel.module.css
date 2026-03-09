@@ -39,3 +39,14 @@
   gap: var(--mantine-spacing-sm);
   flex-wrap: wrap;
 }
+
+.centeredSpinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+  background: light-dark(rgba(255, 255, 255, 0.35), rgba(0, 0, 0, 0.2));
+}
