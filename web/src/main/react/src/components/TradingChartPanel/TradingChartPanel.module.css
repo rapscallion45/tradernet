@@ -51,3 +51,18 @@
   background: light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.22));
   backdrop-filter: saturate(0.85);
 }
+
+
+.selectorRow {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.selectorRow:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.selectorRow[data-selected="true"] {
+  border-color: light-dark(var(--mantine-color-blue-4), var(--mantine-color-blue-6));
+  background: light-dark(var(--mantine-color-blue-0), rgba(37, 99, 235, 0.2));
+}

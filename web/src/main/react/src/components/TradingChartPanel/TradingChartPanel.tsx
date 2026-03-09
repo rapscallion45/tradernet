@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Loader, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { Badge, Button, Group, Loader, Paper, ScrollArea, SegmentedControl, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -104,6 +104,34 @@ const intervalTokenToMs = (token: string): number => {
   const unit = parsed[2]
   const multiplier = intervalUnitMs[unit] || 1_000
   return Math.max(1_000, amount * multiplier)
+}
+
+const currencyFlagMap: Record<string, string> = {
+  USD: "🇺🇸",
+  EUR: "🇪🇺",
+  GBP: "🇬🇧",
+  JPY: "🇯🇵",
+  CAD: "🇨🇦",
+  AUD: "🇦🇺",
+  CHF: "🇨🇭",
+  INR: "🇮🇳",
+}
+
+const symbolLogoMap: Record<string, string> = {
+  BTC: "₿",
+  ETH: "◆",
+  SOL: "◎",
+  BNB: "🟡",
+  XRP: "✕",
+  ADA: "◉",
+}
+
+const getCurrencyFlag = (code: string): string => currencyFlagMap[code.toUpperCase()] ?? "🏳️"
+
+const getSymbolLogo = (symbolToken: string): string => {
+  const token = symbolToken.toUpperCase()
+  const base = token.endsWith("USDT") ? token.slice(0, -4) : token
+  return symbolLogoMap[base] ?? "◌"
 }
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
@@ -210,7 +238,11 @@ export const TradingChartPanel: FC = () => {
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
+  const [currencyModalOpened, setCurrencyModalOpened] = useState(false)
+  const [symbolModalOpened, setSymbolModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
+  const [currencyDraft, setCurrencyDraft] = useState(currency)
+  const [symbolDraft, setSymbolDraft] = useState(symbol)
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [drawings, setDrawings] = useState<Drawing[]>([])
@@ -227,6 +259,14 @@ export const TradingChartPanel: FC = () => {
       setSymbol(symbolOptions[0] ?? DEFAULT_CHART_SYMBOL)
     }
   }, [symbol, symbolOptions])
+
+  useEffect(() => {
+    setCurrencyDraft(currency)
+  }, [currency])
+
+  useEffect(() => {
+    setSymbolDraft(symbol)
+  }, [symbol])
 
   const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
 
@@ -629,15 +669,26 @@ export const TradingChartPanel: FC = () => {
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
         <Group>
-          <Select value={currency} onChange={(value) => setCurrency(value ?? currency)} data={currencyOptions} w={95} size="xs" aria-label="Quote currency" />
-          <Select
-            value={symbol}
-            onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)}
-            data={symbolOptions}
-            w={130}
+          <Button
             size="xs"
+            variant="light"
+            aria-label="Quote currency"
+            onClick={() => {
+              setCurrencyDraft(currency)
+              setCurrencyModalOpened(true)
+            }}>
+            {getCurrencyFlag(currency)} {currency}
+          </Button>
+          <Button
+            size="xs"
+            variant="light"
             aria-label="Chart symbol"
-          />
+            onClick={() => {
+              setSymbolDraft(symbol)
+              setSymbolModalOpened(true)
+            }}>
+            {getSymbolLogo(symbol)} {symbol}
+          </Button>
           <Button
             size="xs"
             variant="light"
@@ -708,6 +759,84 @@ export const TradingChartPanel: FC = () => {
           onMouseLeave={handleOverlayMouseLeave}
         />
       </Paper>
+      <ConfirmationModal
+        opened={currencyModalOpened}
+        onCancel={() => setCurrencyModalOpened(false)}
+        onConfirm={() => {
+          setCurrency(currencyDraft)
+          setCurrencyModalOpened(false)
+        }}
+        title="Select quote currency"
+        confirmTextOverride="Apply">
+        <Stack gap="xs">
+          <Text size="sm" c="dimmed">
+            Choose a quote currency.
+          </Text>
+          <ScrollArea h={260} type="auto">
+            <Stack gap="xs">
+              {currencyOptions.map((item) => {
+                const selected = item === currencyDraft
+                return (
+                  <Paper
+                    key={item}
+                    withBorder
+                    p="xs"
+                    className={classes.selectorRow}
+                    data-selected={selected}
+                    onClick={() => setCurrencyDraft(item)}>
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="lg">{getCurrencyFlag(item)}</Text>
+                        <Text fw={600}>{item}</Text>
+                      </Group>
+                      {selected && <Badge variant="light">Selected</Badge>}
+                    </Group>
+                  </Paper>
+                )
+              })}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={symbolModalOpened}
+        onCancel={() => setSymbolModalOpened(false)}
+        onConfirm={() => {
+          setSymbol(symbolDraft || DEFAULT_CHART_SYMBOL)
+          setSymbolModalOpened(false)
+        }}
+        title="Select trading symbol"
+        confirmTextOverride="Apply">
+        <Stack gap="xs">
+          <Text size="sm" c="dimmed">
+            Select a market symbol.
+          </Text>
+          <ScrollArea h={300} type="auto">
+            <Stack gap="xs">
+              {symbolOptions.map((item) => {
+                const selected = item === symbolDraft
+                return (
+                  <Paper
+                    key={item}
+                    withBorder
+                    p="xs"
+                    className={classes.selectorRow}
+                    data-selected={selected}
+                    onClick={() => setSymbolDraft(item)}>
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="lg">{getSymbolLogo(item)}</Text>
+                        <Text fw={600}>{item}</Text>
+                      </Group>
+                      {selected && <Badge variant="light">Selected</Badge>}
+                    </Group>
+                  </Paper>
+                )
+              })}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
       <ConfirmationModal
         opened={intervalModalOpened}
         onCancel={() => setIntervalModalOpened(false)}
