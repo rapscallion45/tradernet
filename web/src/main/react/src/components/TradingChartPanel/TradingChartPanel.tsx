@@ -10,7 +10,7 @@ import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
-import { IconSearch, IconX } from "@tabler/icons-react"
+import { IconCaretDownFilled, IconSearch, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -706,6 +706,7 @@ export const TradingChartPanel: FC = () => {
                 {getBaseAsset(symbol).slice(0, 1)}
               </Avatar>
             )}
+            rightIcon={<IconCaretDownFilled size={15} />}
             onClick={() => {
               setSymbolDraft(symbol)
               setSymbolSearch("")
