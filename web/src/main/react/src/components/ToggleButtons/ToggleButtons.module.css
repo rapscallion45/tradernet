@@ -1,0 +1,21 @@
+.buttonWrap {
+  display: inline-flex;
+}
+
+.buttonWrap:not(:first-child) {
+  margin-left: -1px;
+}
+
+.buttonWrap :global(button) {
+  border-radius: 0;
+}
+
+.buttonFirst :global(button) {
+  border-top-left-radius: var(--mantine-radius-sm);
+  border-bottom-left-radius: var(--mantine-radius-sm);
+}
+
+.buttonLast :global(button) {
+  border-top-right-radius: var(--mantine-radius-sm);
+  border-bottom-right-radius: var(--mantine-radius-sm);
+}
