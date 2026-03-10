@@ -1,5 +1,5 @@
-import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { FC, Fragment, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
+import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Divider, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -111,18 +111,54 @@ const intervalTokenToMs = (token: string): number => {
   return Math.max(1_000, amount * multiplier)
 }
 
-const currencyFlagMap: Record<string, string> = {
-  USD: "🇺🇸",
-  EUR: "🇪🇺",
-  GBP: "🇬🇧",
-  JPY: "🇯🇵",
-  CAD: "🇨🇦",
-  AUD: "🇦🇺",
-  CHF: "🇨🇭",
-  INR: "🇮🇳",
+const currencyCountryMap: Record<string, string> = {
+  USD: "US",
+  EUR: "EU",
+  GBP: "GB",
+  JPY: "JP",
+  CAD: "CA",
+  AUD: "AU",
+  CHF: "CH",
+  INR: "IN",
+  CNY: "CN",
+  HKD: "HK",
+  SGD: "SG",
+  NZD: "NZ",
+  SEK: "SE",
+  NOK: "NO",
+  DKK: "DK",
+  PLN: "PL",
+  CZK: "CZ",
+  HUF: "HU",
+  RON: "RO",
+  BGN: "BG",
+  HRK: "HR",
+  RUB: "RU",
+  TRY: "TR",
+  BRL: "BR",
+  MXN: "MX",
+  ZAR: "ZA",
+  KRW: "KR",
+  THB: "TH",
+  MYR: "MY",
+  IDR: "ID",
+  PHP: "PH",
+  VND: "VN",
+  AED: "AE",
+  SAR: "SA",
+  ILS: "IL",
 }
 
-const getCurrencyFlag = (code: string): string => currencyFlagMap[code.toUpperCase()] ?? "🏳️"
+const toRegionalFlag = (countryCode: string): string =>
+  countryCode
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+
+const getCurrencyFlag = (code: string): string => {
+  const normalized = code.toUpperCase()
+  const countryCode = currencyCountryMap[normalized]
+  return countryCode ? toRegionalFlag(countryCode) : "🏳️"
+}
 
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
@@ -866,25 +902,27 @@ export const TradingChartPanel: FC = () => {
             }
           />
           <ScrollArea h={260} type="auto">
-            <Stack gap="xs">
-              {filteredCurrencyOptions.map((item) => {
+            <Stack gap={0}>
+              {filteredCurrencyOptions.map((item, index) => {
                 const selected = item === currencyDraft
                 return (
-                  <Paper
-                    key={item}
-                    withBorder
-                    p="xs"
-                    className={classes.selectorRow}
-                    data-selected={selected}
-                    onClick={() => setCurrencyDraft(item)}>
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="lg">{getCurrencyFlag(item)}</Text>
-                        <Text fw={600}>{item}</Text>
+                  <Fragment key={item}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setCurrencyDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap="xs">
+                          <Text size="lg">{getCurrencyFlag(item)}</Text>
+                          <Text fw={600}>{item}</Text>
+                        </Group>
+                        {selected && <Badge variant="light">Selected</Badge>}
                       </Group>
-                      {selected && <Badge variant="light">Selected</Badge>}
-                    </Group>
-                  </Paper>
+                    </Paper>
+                    {index < filteredCurrencyOptions.length - 1 && <Divider w="100%" />}
+                  </Fragment>
                 )
               })}
             </Stack>
@@ -920,34 +958,36 @@ export const TradingChartPanel: FC = () => {
             }
           />
           <ScrollArea h={300} type="auto">
-            <Stack gap="xs">
-              {filteredSymbolOptions.map((item) => {
+            <Stack gap={0}>
+              {filteredSymbolOptions.map((item, index) => {
                 const selected = item === symbolDraft
                 return (
-                  <Paper
-                    key={item}
-                    withBorder
-                    p="xs"
-                    className={classes.selectorRow}
-                    data-selected={selected}
-                    onClick={() => setSymbolDraft(item)}>
-                    <Group justify="space-between">
-                      <Group gap={8} wrap={"nowrap"}>
-                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
-                          {getBaseAsset(item).slice(0, 1)}
-                        </Avatar>
-                        <Stack gap={0}>
-                          <Text size={"sm"} fw={600}>
-                            {item}
-                          </Text>
-                          <Text size={"xs"} c={"dimmed"}>
-                            {getBaseAsset(item)}
-                          </Text>
-                        </Stack>
+                  <Fragment key={item}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setSymbolDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap={8} wrap={"nowrap"}>
+                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
+                            {getBaseAsset(item).slice(0, 1)}
+                          </Avatar>
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={600}>
+                              {item}
+                            </Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              {getBaseAsset(item)}
+                            </Text>
+                          </Stack>
+                        </Group>
+                        {selected && <IconCheck size={16} />}
                       </Group>
-                      {selected && <IconCheck size={16} />}
-                    </Group>
-                  </Paper>
+                    </Paper>
+                    {index < filteredSymbolOptions.length - 1 && <Divider w="100%" />}
+                  </Fragment>
                 )
               })}
             </Stack>
