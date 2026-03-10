@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -11,7 +11,7 @@ import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
 import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
-import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconX } from "@tabler/icons-react"
+import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconTrash, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -706,6 +706,14 @@ export const TradingChartPanel: FC = () => {
     [],
   )
 
+  const drawingCount = drawings.length
+  const indicatorCount = Number(indicators.ema) + Number(indicators.sma) + Number(indicators.bb)
+
+  const clearAllIndicators = () => {
+    setIndicators({ ema: false, sma: false, bb: false })
+    setIndicatorDraft({ ema: false, sma: false, bb: false })
+  }
+
   return (
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
@@ -776,9 +784,27 @@ export const TradingChartPanel: FC = () => {
             }}>
             Indicators
           </Button>
-          <MantineButton size="xs" variant="light" onClick={() => setDrawings([])}>
-            Clear drawings
-          </MantineButton>
+          <Menu shadow="md" width={290} position="bottom-start">
+            <Menu.Target>
+              <ActionIcon variant="light" size="lg" aria-label="Clear drawings or indicators">
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item disabled={drawingCount === 0} onClick={() => setDrawings([])}>
+                {`Remove ${drawingCount} drawing${drawingCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+              <Menu.Item disabled={indicatorCount === 0} onClick={clearAllIndicators}>
+                {`Remove ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+              <Menu.Item disabled={drawingCount + indicatorCount === 0} onClick={() => {
+                setDrawings([])
+                clearAllIndicators()
+              }}>
+                {`Remove ${drawingCount} drawing${drawingCount === 1 ? "" : "s"} & ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
 
         <Group gap="xs">
