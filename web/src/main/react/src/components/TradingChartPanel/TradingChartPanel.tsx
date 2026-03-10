@@ -1,5 +1,5 @@
 import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -10,6 +10,7 @@ import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
+import { ActionIcon } from "components/ActionIcon/ActionIcon"
 import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
 import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconTrash, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
@@ -786,9 +787,7 @@ export const TradingChartPanel: FC = () => {
           </Button>
           <Menu shadow="md" width={290} position="bottom-start">
             <Menu.Target>
-              <ActionIcon variant="light" size="lg" aria-label="Clear drawings or indicators">
-                <IconTrash size={16} />
-              </ActionIcon>
+              <ActionIcon icon={<IconTrash size={16} />} variant="outline" size="lg" aria-label="Clear drawings or indicators" />
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item disabled={drawingCount === 0} onClick={() => setDrawings([])}>
@@ -855,7 +854,7 @@ export const TradingChartPanel: FC = () => {
             aria-label="Search currencies"
             leftSection={<IconSearch size={15} />}
             rightSection={
-              <ActionIcon
+              <MantineActionIcon
                 variant="subtle"
                 color="gray"
                 size="sm"
@@ -863,7 +862,7 @@ export const TradingChartPanel: FC = () => {
                 disabled={!currencySearch}
                 onClick={() => setCurrencySearch("")}>
                 <IconX size={15} />
-              </ActionIcon>
+              </MantineActionIcon>
             }
           />
           <ScrollArea h={260} type="auto">
@@ -909,7 +908,7 @@ export const TradingChartPanel: FC = () => {
             aria-label="Search symbols"
             leftSection={<IconSearch size={15} />}
             rightSection={
-              <ActionIcon
+              <MantineActionIcon
                 variant="subtle"
                 color="gray"
                 size="sm"
@@ -917,7 +916,7 @@ export const TradingChartPanel: FC = () => {
                 disabled={!symbolSearch}
                 onClick={() => setSymbolSearch("")}>
                 <IconX size={15} />
-              </ActionIcon>
+              </MantineActionIcon>
             }
           />
           <ScrollArea h={300} type="auto">
