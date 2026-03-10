@@ -883,21 +883,18 @@ export const TradingChartPanel: FC = () => {
                     className={classes.selectorRow}
                     data-selected={selected}
                     onClick={() => setSymbolDraft(item)}>
-                    <Group justify="space-between">
-                      <Group gap={8} wrap={"nowrap"}>
-                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
-                          {getBaseAsset(item).slice(0, 1)}
-                        </Avatar>
-                        <Stack gap={0}>
-                          <Text size={"sm"} fw={600}>
-                            {item}
-                          </Text>
-                          <Text size={"xs"} c={"dimmed"}>
-                            {getBaseAsset(item)}
-                          </Text>
-                        </Stack>
-                      </Group>
-                      {selected && <Badge variant="light">Selected</Badge>}
+                    <Group gap={8} wrap={"nowrap"}>
+                      <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
+                        {getBaseAsset(item).slice(0, 1)}
+                      </Avatar>
+                      <Stack gap={0}>
+                        <Text size={"sm"} fw={600}>
+                          {item}
+                        </Text>
+                        <Text size={"xs"} c={"dimmed"}>
+                          {getBaseAsset(item)}
+                        </Text>
+                      </Stack>
                     </Group>
                   </Paper>
                 )
