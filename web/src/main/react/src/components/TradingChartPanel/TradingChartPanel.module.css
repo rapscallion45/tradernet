@@ -76,3 +76,21 @@
   cursor: pointer;
   min-width: 0;
 }
+
+.indicatorModalLayout {
+  min-height: 320px;
+}
+
+.indicatorSidebar {
+  min-width: 160px;
+}
+
+.indicatorList {
+  flex: 1;
+}
+
+.indicatorHeader {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  width: 100%;
+}

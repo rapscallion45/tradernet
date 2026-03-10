@@ -11,7 +11,7 @@ import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
 import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
-import { IconCaretDownFilled, IconSearch, IconX } from "@tabler/icons-react"
+import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -230,6 +230,7 @@ export const TradingChartPanel: FC = () => {
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [currencyModalOpened, setCurrencyModalOpened] = useState(false)
   const [symbolModalOpened, setSymbolModalOpened] = useState(false)
+  const [indicatorModalOpened, setIndicatorModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
   const [currencyDraft, setCurrencyDraft] = useState(currency)
   const [symbolDraft, setSymbolDraft] = useState(symbol)
@@ -237,6 +238,8 @@ export const TradingChartPanel: FC = () => {
   const [symbolSearch, setSymbolSearch] = useState("")
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
+  const [indicatorDraft, setIndicatorDraft] = useState<Indicators>({ ema: true, sma: false, bb: false })
+  const [indicatorSearch, setIndicatorSearch] = useState("")
   const [drawings, setDrawings] = useState<Drawing[]>([])
   const [pendingStart, setPendingStart] = useState<ChartPoint | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
@@ -260,6 +263,10 @@ export const TradingChartPanel: FC = () => {
     setSymbolDraft(symbol)
   }, [symbol])
 
+  useEffect(() => {
+    setIndicatorDraft(indicators)
+  }, [indicators])
+
   const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
 
   const filteredCurrencyOptions = useMemo(() => {
@@ -279,6 +286,23 @@ export const TradingChartPanel: FC = () => {
 
     return symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch))
   }, [symbolOptions, symbolSearch])
+
+  const filteredIndicatorOptions = useMemo(
+    () => {
+      const options = [
+        { key: "ema" as const, name: "EMA14", author: "Built-in", description: "Exponential moving average" },
+        { key: "sma" as const, name: "SMA20", author: "Built-in", description: "Simple moving average" },
+        { key: "bb" as const, name: "BB(20,2)", author: "Built-in", description: "Bollinger Bands" },
+      ]
+      const normalizedSearch = indicatorSearch.trim().toLowerCase()
+      if (!normalizedSearch) {
+        return options
+      }
+
+      return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
+    },
+    [indicatorSearch],
+  )
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -671,10 +695,6 @@ export const TradingChartPanel: FC = () => {
     setPendingStart(null)
   }
 
-  const toggleIndicator = (key: keyof Indicators) => {
-    setIndicators((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
-
   const toolOptions = useMemo<ToggleButtonOption<DrawTool>[]>(
     () => [
       { value: "none", label: undefined, icon: <Text size="xs">↔</Text>, tooltip: "Pan" },
@@ -744,15 +764,18 @@ export const TradingChartPanel: FC = () => {
               setPendingStart(null)
             }}
           />
-          <MantineButton size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
-            EMA
-          </MantineButton>
-          <MantineButton size="xs" variant={indicators.sma ? "filled" : "light"} onClick={() => toggleIndicator("sma")}>
-            SMA
-          </MantineButton>
-          <MantineButton size="xs" variant={indicators.bb ? "filled" : "light"} onClick={() => toggleIndicator("bb")}>
-            BB
-          </MantineButton>
+          <Button
+            size="xs"
+            variant="outline"
+            leftIcon={<IconChartHistogram size={15} />}
+            rightIcon={<IconCaretDownFilled size={15} />}
+            onClick={() => {
+              setIndicatorDraft(indicators)
+              setIndicatorSearch("")
+              setIndicatorModalOpened(true)
+            }}>
+            Indicators
+          </Button>
           <MantineButton size="xs" variant="light" onClick={() => setDrawings([])}>
             Clear drawings
           </MantineButton>
@@ -883,24 +906,75 @@ export const TradingChartPanel: FC = () => {
                     className={classes.selectorRow}
                     data-selected={selected}
                     onClick={() => setSymbolDraft(item)}>
-                    <Group gap={8} wrap={"nowrap"}>
-                      <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
-                        {getBaseAsset(item).slice(0, 1)}
-                      </Avatar>
-                      <Stack gap={0}>
-                        <Text size={"sm"} fw={600}>
-                          {item}
-                        </Text>
-                        <Text size={"xs"} c={"dimmed"}>
-                          {getBaseAsset(item)}
-                        </Text>
-                      </Stack>
+                    <Group justify="space-between">
+                      <Group gap={8} wrap={"nowrap"}>
+                        <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
+                          {getBaseAsset(item).slice(0, 1)}
+                        </Avatar>
+                        <Stack gap={0}>
+                          <Text size={"sm"} fw={600}>
+                            {item}
+                          </Text>
+                          <Text size={"xs"} c={"dimmed"}>
+                            {getBaseAsset(item)}
+                          </Text>
+                        </Stack>
+                      </Group>
+                      {selected && <IconCheck size={16} />}
                     </Group>
                   </Paper>
                 )
               })}
             </Stack>
           </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={indicatorModalOpened}
+        onCancel={() => setIndicatorModalOpened(false)}
+        onConfirm={() => {
+          setIndicators(indicatorDraft)
+          setIndicatorModalOpened(false)
+        }}
+        title="Indicators, metrics, and strategies"
+        confirmTextOverride="Apply">
+        <Stack gap="sm">
+          <TextInput
+            value={indicatorSearch}
+            onChange={(event) => setIndicatorSearch(event.currentTarget.value)}
+            placeholder="Search"
+            aria-label="Search indicators"
+            leftSection={<IconSearch size={15} />}
+          />
+          <Group align="flex-start" wrap="nowrap" className={classes.indicatorModalLayout}>
+            <Stack gap="xs" className={classes.indicatorSidebar}>
+              <Text size="xs" c="dimmed">BUILT-IN</Text>
+              <Text fw={600}>Technicals</Text>
+              <Text fw={600}>Fundamentals</Text>
+              <Text size="xs" c="dimmed">COMMUNITY</Text>
+              <Text fw={600}>Trending</Text>
+            </Stack>
+            <Stack gap="xs" className={classes.indicatorList}>
+              <Group className={classes.indicatorHeader}>
+                <Text size="xs" c="dimmed">SCRIPT NAME</Text>
+                <Text size="xs" c="dimmed">AUTHOR</Text>
+              </Group>
+              {filteredIndicatorOptions.map((indicatorOption) => (
+                <Paper key={indicatorOption.key} withBorder p="xs" className={classes.selectorRow} data-selected={indicatorDraft[indicatorOption.key]} onClick={() => setIndicatorDraft((prev) => ({ ...prev, [indicatorOption.key]: !prev[indicatorOption.key] }))}>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Stack gap={0}>
+                      <Text fw={600}>{indicatorOption.name}</Text>
+                      <Text size="xs" c="dimmed">{indicatorOption.description}</Text>
+                    </Stack>
+                    <Group gap="md" wrap="nowrap">
+                      <Text c="blue" size="sm">{indicatorOption.author}</Text>
+                      {indicatorDraft[indicatorOption.key] && <IconCheck size={16} />}
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          </Group>
         </Stack>
       </ConfirmationModal>
       <ConfirmationModal
