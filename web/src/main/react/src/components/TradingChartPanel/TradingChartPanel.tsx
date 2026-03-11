@@ -920,8 +920,8 @@ export const TradingChartPanel: FC = () => {
                       onClick={() => setCurrencyDraft(item)}>
                       <Group justify="space-between">
                         <Group gap="xs">
-                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius="sm" size={18} alt={`${item} flag`}>
-                            <Text size="xs">{getCurrencyFlag(item)}</Text>
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={24} alt={`${item} flag`}>
+                            <Text size="sm">{getCurrencyFlag(item)}</Text>
                           </Avatar>
                           <Text fw={600}>{item}</Text>
                         </Group>
