@@ -1,5 +1,6 @@
 import { FC, Fragment, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
 import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Divider, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { useLocalStorage } from "@mantine/hooks"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -12,7 +13,7 @@ import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModa
 import { Button } from "components/Button/Button"
 import { ActionIcon } from "components/ActionIcon/ActionIcon"
 import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
-import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconTrash, IconX } from "@tabler/icons-react"
+import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconStar, IconStarFilled, IconTrash, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -278,6 +279,14 @@ export const TradingChartPanel: FC = () => {
   const [symbolDraft, setSymbolDraft] = useState(symbol)
   const [currencySearch, setCurrencySearch] = useState("")
   const [symbolSearch, setSymbolSearch] = useState("")
+  const [favoriteCurrencies, setFavoriteCurrencies] = useLocalStorage<string[]>({
+    key: "trading-chart-favorite-currencies",
+    defaultValue: [],
+  })
+  const [favoriteSymbols, setFavoriteSymbols] = useLocalStorage<string[]>({
+    key: "trading-chart-favorite-symbols",
+    defaultValue: [],
+  })
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [indicatorDraft, setIndicatorDraft] = useState<Indicators>({ ema: true, sma: false, bb: false })
@@ -313,21 +322,17 @@ export const TradingChartPanel: FC = () => {
 
   const filteredCurrencyOptions = useMemo(() => {
     const normalizedSearch = currencySearch.trim().toLowerCase()
-    if (!normalizedSearch) {
-      return currencyOptions
-    }
+    const filtered = normalizedSearch ? currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : currencyOptions
 
-    return currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch))
-  }, [currencyOptions, currencySearch])
+    return [...filtered].sort((left, right) => Number(favoriteCurrencies.includes(right)) - Number(favoriteCurrencies.includes(left)))
+  }, [currencyOptions, currencySearch, favoriteCurrencies])
 
   const filteredSymbolOptions = useMemo(() => {
     const normalizedSearch = symbolSearch.trim().toLowerCase()
-    if (!normalizedSearch) {
-      return symbolOptions
-    }
+    const filtered = normalizedSearch ? symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : symbolOptions
 
-    return symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch))
-  }, [symbolOptions, symbolSearch])
+    return [...filtered].sort((left, right) => Number(favoriteSymbols.includes(right)) - Number(favoriteSymbols.includes(left)))
+  }, [symbolOptions, symbolSearch, favoriteSymbols])
 
   const filteredIndicatorOptions = useMemo(
     () => {
@@ -925,7 +930,19 @@ export const TradingChartPanel: FC = () => {
                           </Avatar>
                           <Text fw={600}>{item}</Text>
                         </Group>
-                        {selected && <Badge variant="light">Selected</Badge>}
+                        <Group gap="xs">
+                          {selected && <Badge variant="light">Selected</Badge>}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteCurrencies.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
                       </Group>
                     </Paper>
                     {index < filteredCurrencyOptions.length - 1 && <Divider w="100%" />}
@@ -990,7 +1007,19 @@ export const TradingChartPanel: FC = () => {
                             </Text>
                           </Stack>
                         </Group>
-                        {selected && <IconCheck size={16} />}
+                        <Group gap="xs">
+                          {selected && <IconCheck size={16} />}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteSymbols.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
                       </Group>
                     </Paper>
                     {index < filteredSymbolOptions.length - 1 && <Divider w="100%" />}
