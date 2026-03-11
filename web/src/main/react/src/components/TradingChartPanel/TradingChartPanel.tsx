@@ -160,6 +160,11 @@ const getCurrencyFlag = (code: string): string => {
   return countryCode ? toRegionalFlag(countryCode) : "🏳️"
 }
 
+const getCurrencyFlagUrl = (code: string): string | null => {
+  const countryCode = currencyCountryMap[code.toUpperCase()]
+  return countryCode ? `https://flagcdn.com/24x18/${countryCode.toLowerCase()}.png` : null
+}
+
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
 const toCandleArrays = (candles: Candle[]): CandleArrays => {
@@ -915,7 +920,9 @@ export const TradingChartPanel: FC = () => {
                       onClick={() => setCurrencyDraft(item)}>
                       <Group justify="space-between">
                         <Group gap="xs">
-                          <Text size="lg">{getCurrencyFlag(item)}</Text>
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius="sm" size={18} alt={`${item} flag`}>
+                            <Text size="xs">{getCurrencyFlag(item)}</Text>
+                          </Avatar>
                           <Text fw={600}>{item}</Text>
                         </Group>
                         {selected && <Badge variant="light">Selected</Badge>}
