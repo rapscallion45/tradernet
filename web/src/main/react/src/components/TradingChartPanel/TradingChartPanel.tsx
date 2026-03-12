@@ -817,16 +817,16 @@ export const TradingChartPanel: FC = () => {
             }}>
             {symbol}
           </Button>
-          <MantineButton
+          <Button
             size="xs"
-            variant="light"
+            variant="outline"
             aria-label="Chart frequency"
             onClick={() => {
               setIntervalDraft(intervalToken)
               setIntervalModalOpened(true)
             }}>
-            Interval {intervalToken}
-          </MantineButton>
+            {intervalToken}
+          </Button>
           <ToggleButtons
             current={tool}
             options={toolOptions}
