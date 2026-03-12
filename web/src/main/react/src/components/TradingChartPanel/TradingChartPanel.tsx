@@ -1,5 +1,6 @@
-import { FC, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { Badge, Button, Group, Loader, Modal, Paper, SegmentedControl, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { FC, Fragment, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
+import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Divider, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import { useLocalStorage } from "@mantine/hooks"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
@@ -8,6 +9,12 @@ import { DEFAULT_CHART_SYMBOL } from "global/constants"
 import { formatCurrency, formatDateTime } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
+import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
+import { Button } from "components/Button/Button"
+import { ActionIcon } from "components/ActionIcon/ActionIcon"
+import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
+import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconStar, IconStarFilled, IconTrash, IconX } from "@tabler/icons-react"
+import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
   time: number
@@ -104,6 +111,61 @@ const intervalTokenToMs = (token: string): number => {
   const multiplier = intervalUnitMs[unit] || 1_000
   return Math.max(1_000, amount * multiplier)
 }
+
+const currencyCountryMap: Record<string, string> = {
+  USD: "US",
+  EUR: "EU",
+  GBP: "GB",
+  JPY: "JP",
+  CAD: "CA",
+  AUD: "AU",
+  CHF: "CH",
+  INR: "IN",
+  CNY: "CN",
+  HKD: "HK",
+  SGD: "SG",
+  NZD: "NZ",
+  SEK: "SE",
+  NOK: "NO",
+  DKK: "DK",
+  PLN: "PL",
+  CZK: "CZ",
+  HUF: "HU",
+  RON: "RO",
+  BGN: "BG",
+  HRK: "HR",
+  RUB: "RU",
+  TRY: "TR",
+  BRL: "BR",
+  MXN: "MX",
+  ZAR: "ZA",
+  KRW: "KR",
+  THB: "TH",
+  MYR: "MY",
+  IDR: "ID",
+  PHP: "PH",
+  VND: "VN",
+  AED: "AE",
+  SAR: "SA",
+  ILS: "IL",
+}
+
+const toRegionalFlag = (countryCode: string): string =>
+  countryCode
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+
+const getCurrencyFlag = (code: string): string => {
+  const normalized = code.toUpperCase()
+  const countryCode = currencyCountryMap[normalized]
+  return countryCode ? toRegionalFlag(countryCode) : "🏳️"
+}
+
+const getCurrencyFlagUrl = (code: string): string | null => {
+  const countryCode = currencyCountryMap[code.toUpperCase()]
+  return countryCode ? `https://flagcdn.com/24x18/${countryCode.toLowerCase()}.png` : null
+}
+
 const mean = (values: number[]) => values.reduce((acc, value) => acc + value, 0) / values.length
 
 const toCandleArrays = (candles: Candle[]): CandleArrays => {
@@ -209,9 +271,26 @@ export const TradingChartPanel: FC = () => {
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
   const [intervalToken, setIntervalToken] = useState("1S")
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
+  const [currencyModalOpened, setCurrencyModalOpened] = useState(false)
+  const [symbolModalOpened, setSymbolModalOpened] = useState(false)
+  const [indicatorModalOpened, setIndicatorModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
+  const [currencyDraft, setCurrencyDraft] = useState(currency)
+  const [symbolDraft, setSymbolDraft] = useState(symbol)
+  const [currencySearch, setCurrencySearch] = useState("")
+  const [symbolSearch, setSymbolSearch] = useState("")
+  const [favoriteCurrencies, setFavoriteCurrencies] = useLocalStorage<string[]>({
+    key: "trading-chart-favorite-currencies",
+    defaultValue: ["USD", "GBP", "EUR", "AUD"],
+  })
+  const [favoriteSymbols, setFavoriteSymbols] = useLocalStorage<string[]>({
+    key: "trading-chart-favorite-symbols",
+    defaultValue: [],
+  })
   const [tool, setTool] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
+  const [indicatorDraft, setIndicatorDraft] = useState<Indicators>({ ema: true, sma: false, bb: false })
+  const [indicatorSearch, setIndicatorSearch] = useState("")
   const [drawings, setDrawings] = useState<Drawing[]>([])
   const [pendingStart, setPendingStart] = useState<ChartPoint | null>(null)
   const [lastPrice, setLastPrice] = useState(100)
@@ -227,7 +306,66 @@ export const TradingChartPanel: FC = () => {
     }
   }, [symbol, symbolOptions])
 
+  useEffect(() => {
+    setCurrencyDraft(currency)
+  }, [currency])
+
+  useEffect(() => {
+    setSymbolDraft(symbol)
+  }, [symbol])
+
+  useEffect(() => {
+    setIndicatorDraft(indicators)
+  }, [indicators])
+
   const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
+
+  const filteredCurrencyOptions = useMemo(() => {
+    const normalizedSearch = currencySearch.trim().toLowerCase()
+    return normalizedSearch ? currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : currencyOptions
+  }, [currencyOptions, currencySearch])
+
+  const filteredSymbolOptions = useMemo(() => {
+    const normalizedSearch = symbolSearch.trim().toLowerCase()
+    return normalizedSearch ? symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : symbolOptions
+  }, [symbolOptions, symbolSearch])
+
+  const favoriteCurrencyOptions = useMemo(
+    () => filteredCurrencyOptions.filter((item) => favoriteCurrencies.includes(item)),
+    [filteredCurrencyOptions, favoriteCurrencies],
+  )
+
+  const nonFavoriteCurrencyOptions = useMemo(
+    () => filteredCurrencyOptions.filter((item) => !favoriteCurrencies.includes(item)),
+    [filteredCurrencyOptions, favoriteCurrencies],
+  )
+
+  const favoriteSymbolOptions = useMemo(
+    () => filteredSymbolOptions.filter((item) => favoriteSymbols.includes(item)),
+    [filteredSymbolOptions, favoriteSymbols],
+  )
+
+  const nonFavoriteSymbolOptions = useMemo(
+    () => filteredSymbolOptions.filter((item) => !favoriteSymbols.includes(item)),
+    [filteredSymbolOptions, favoriteSymbols],
+  )
+
+  const filteredIndicatorOptions = useMemo(
+    () => {
+      const options = [
+        { key: "ema" as const, name: "EMA14", author: "Built-in", description: "Exponential moving average" },
+        { key: "sma" as const, name: "SMA20", author: "Built-in", description: "Simple moving average" },
+        { key: "bb" as const, name: "BB(20,2)", author: "Built-in", description: "Bollinger Bands" },
+      ]
+      const normalizedSearch = indicatorSearch.trim().toLowerCase()
+      if (!normalizedSearch) {
+        return options
+      }
+
+      return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
+    },
+    [indicatorSearch],
+  )
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -620,60 +758,114 @@ export const TradingChartPanel: FC = () => {
     setPendingStart(null)
   }
 
-  const toggleIndicator = (key: keyof Indicators) => {
-    setIndicators((prev) => ({ ...prev, [key]: !prev[key] }))
+  const toolOptions = useMemo<ToggleButtonOption<DrawTool>[]>(
+    () => [
+      { value: "none", label: undefined, icon: <Text size="xs">↔</Text>, tooltip: "Pan" },
+      { value: "trendline", label: undefined, icon: <Text size="xs">／</Text>, tooltip: "Trendline" },
+      { value: "ray", label: undefined, icon: <Text size="xs">↗</Text>, tooltip: "Ray" },
+      { value: "hline", label: undefined, icon: <Text size="xs">―</Text>, tooltip: "Horizontal line" },
+      { value: "vline", label: undefined, icon: <Text size="xs">|</Text>, tooltip: "Vertical line" },
+    ],
+    [],
+  )
+
+  const drawingCount = drawings.length
+  const indicatorCount = Number(indicators.ema) + Number(indicators.sma) + Number(indicators.bb)
+
+  const clearAllIndicators = () => {
+    setIndicators({ ema: false, sma: false, bb: false })
+    setIndicatorDraft({ ema: false, sma: false, bb: false })
   }
 
   return (
     <Stack gap="sm">
       <Group className={classes.toolbar} justify="space-between">
-        <Group>
-          <Select value={currency} onChange={(value) => setCurrency(value ?? currency)} data={currencyOptions} w={95} size="xs" aria-label="Quote currency" />
+        <Group gap="sm">
           <Select
-            value={symbol}
-            onChange={(value) => setSymbol((value as string) || DEFAULT_CHART_SYMBOL)}
-            data={symbolOptions}
-            w={130}
             size="xs"
-            aria-label="Chart symbol"
+            className={classes.currencySelectTrigger}
+            aria-label="Quote currency"
+            value={currency}
+            data={[currency]}
+            readOnly
+            searchable={false}
+            checkIconPosition="right"
+            styles={{
+              wrapper: { width: "auto" },
+              input: { width: `${Math.max(currency.length + 4, 8)}ch` },
+            }}
+            onClick={() => {
+              setCurrencyDraft(currency)
+              setCurrencySearch("")
+              setCurrencyModalOpened(true)
+            }}
           />
           <Button
             size="xs"
-            variant="light"
+            variant="outline"
+            aria-label="Chart symbol"
+            leftIcon={(
+              <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
+                {getBaseAsset(symbol).slice(0, 1)}
+              </Avatar>
+            )}
+            rightIcon={<IconCaretDownFilled size={15} />}
+            onClick={() => {
+              setSymbolDraft(symbol)
+              setSymbolSearch("")
+              setSymbolModalOpened(true)
+            }}>
+            {symbol}
+          </Button>
+          <Button
+            size="xs"
+            variant="outline"
             aria-label="Chart frequency"
             onClick={() => {
               setIntervalDraft(intervalToken)
               setIntervalModalOpened(true)
             }}>
-            Interval {intervalToken}
+            {intervalToken}
           </Button>
-          <SegmentedControl
-            size="xs"
-            value={tool}
-            onChange={(value) => {
-              setTool(value as DrawTool)
+          <ToggleButtons
+            current={tool}
+            options={toolOptions}
+            setCurrent={(value) => {
+              setTool(value)
               setPendingStart(null)
             }}
-            data={[
-              { value: "none", label: "Pan" },
-              { value: "trendline", label: "Trendline" },
-              { value: "ray", label: "Ray" },
-              { value: "hline", label: "H-Line" },
-              { value: "vline", label: "V-Line" },
-            ]}
           />
-          <Button size="xs" variant={indicators.ema ? "filled" : "light"} onClick={() => toggleIndicator("ema")}>
-            EMA
+          <Button
+            size="xs"
+            variant="outline"
+            leftIcon={<IconChartHistogram size={15} />}
+            rightIcon={<IconCaretDownFilled size={15} />}
+            onClick={() => {
+              setIndicatorDraft(indicators)
+              setIndicatorSearch("")
+              setIndicatorModalOpened(true)
+            }}>
+            Indicators
           </Button>
-          <Button size="xs" variant={indicators.sma ? "filled" : "light"} onClick={() => toggleIndicator("sma")}>
-            SMA
-          </Button>
-          <Button size="xs" variant={indicators.bb ? "filled" : "light"} onClick={() => toggleIndicator("bb")}>
-            BB
-          </Button>
-          <Button size="xs" variant="light" onClick={() => setDrawings([])}>
-            Clear drawings
-          </Button>
+          <Menu shadow="md" width={290} position="bottom-start">
+            <Menu.Target>
+              <ActionIcon icon={<IconTrash size={16} />} variant="outline" size="lg" aria-label="Clear drawings or indicators" />
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item disabled={drawingCount === 0} onClick={() => setDrawings([])}>
+                {`Remove ${drawingCount} drawing${drawingCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+              <Menu.Item disabled={indicatorCount === 0} onClick={clearAllIndicators}>
+                {`Remove ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+              <Menu.Item disabled={drawingCount + indicatorCount === 0} onClick={() => {
+                setDrawings([])
+                clearAllIndicators()
+              }}>
+                {`Remove ${drawingCount} drawing${drawingCount === 1 ? "" : "s"} & ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
 
         <Group gap="xs">
@@ -707,7 +899,294 @@ export const TradingChartPanel: FC = () => {
           onMouseLeave={handleOverlayMouseLeave}
         />
       </Paper>
-      <Modal opened={intervalModalOpened} onClose={() => setIntervalModalOpened(false)} title="Set chart interval" centered>
+      <ConfirmationModal
+        opened={currencyModalOpened}
+        onCancel={() => setCurrencyModalOpened(false)}
+        onConfirm={() => {
+          setCurrency(currencyDraft)
+          setCurrencyModalOpened(false)
+        }}
+        title="Select quote currency"
+        confirmTextOverride="Apply">
+        <Stack gap="xs">
+          <TextInput
+            value={currencySearch}
+            onChange={(event) => setCurrencySearch(event.currentTarget.value)}
+            placeholder="Search currencies"
+            aria-label="Search currencies"
+            leftSection={<IconSearch size={15} />}
+            rightSection={
+              <MantineActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label="Clear currency search"
+                disabled={!currencySearch}
+                onClick={() => setCurrencySearch("")}>
+                <IconX size={15} />
+              </MantineActionIcon>
+            }
+          />
+          <ScrollArea h={260} type="auto">
+            <Stack gap={0}>
+              {favoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteCurrencyOptions.map((item, index) => {
+                const selected = item === currencyDraft
+                return (
+                  <Fragment key={`favorite-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setCurrencyDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap="md">
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
+                            <Text size="sm">{getCurrencyFlag(item)}</Text>
+                          </Avatar>
+                          <Text fw={600}>{item}</Text>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <Badge variant="light">Selected</Badge>}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteCurrencies.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {(index < favoriteCurrencyOptions.length - 1 || nonFavoriteCurrencyOptions.length > 0) && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+              {nonFavoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All currencies</Text>}
+              {nonFavoriteCurrencyOptions.map((item, index) => {
+                const selected = item === currencyDraft
+                return (
+                  <Fragment key={`all-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setCurrencyDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap="md">
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
+                            <Text size="sm">{getCurrencyFlag(item)}</Text>
+                          </Avatar>
+                          <Text fw={600}>{item}</Text>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <Badge variant="light">Selected</Badge>}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteCurrencies.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {index < nonFavoriteCurrencyOptions.length - 1 && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={symbolModalOpened}
+        onCancel={() => setSymbolModalOpened(false)}
+        onConfirm={() => {
+          setSymbol(symbolDraft || DEFAULT_CHART_SYMBOL)
+          setSymbolModalOpened(false)
+        }}
+        title="Select trading symbol"
+        confirmTextOverride="Apply">
+        <Stack gap="xs">
+          <TextInput
+            value={symbolSearch}
+            onChange={(event) => setSymbolSearch(event.currentTarget.value)}
+            placeholder="Search symbols"
+            aria-label="Search symbols"
+            leftSection={<IconSearch size={15} />}
+            rightSection={
+              <MantineActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label="Clear symbol search"
+                disabled={!symbolSearch}
+                onClick={() => setSymbolSearch("")}>
+                <IconX size={15} />
+              </MantineActionIcon>
+            }
+          />
+          <ScrollArea h={300} type="auto">
+            <Stack gap={0}>
+              {favoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteSymbolOptions.map((item, index) => {
+                const selected = item === symbolDraft
+                return (
+                  <Fragment key={`favorite-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setSymbolDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap={12} wrap={"nowrap"}>
+                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
+                            {getBaseAsset(item).slice(0, 1)}
+                          </Avatar>
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={600}>
+                              {item}
+                            </Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              {getBaseAsset(item)}
+                            </Text>
+                          </Stack>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <IconCheck size={16} />}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteSymbols.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {(index < favoriteSymbolOptions.length - 1 || nonFavoriteSymbolOptions.length > 0) && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+              {nonFavoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All symbols</Text>}
+              {nonFavoriteSymbolOptions.map((item, index) => {
+                const selected = item === symbolDraft
+                return (
+                  <Fragment key={`all-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setSymbolDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap={12} wrap={"nowrap"}>
+                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
+                            {getBaseAsset(item).slice(0, 1)}
+                          </Avatar>
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={600}>
+                              {item}
+                            </Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              {getBaseAsset(item)}
+                            </Text>
+                          </Stack>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <IconCheck size={16} />}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteSymbols.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {index < nonFavoriteSymbolOptions.length - 1 && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={indicatorModalOpened}
+        onCancel={() => setIndicatorModalOpened(false)}
+        onConfirm={() => {
+          setIndicators(indicatorDraft)
+          setIndicatorModalOpened(false)
+        }}
+        title="Indicators, metrics, and strategies"
+        confirmTextOverride="Apply">
+        <Stack gap="sm">
+          <TextInput
+            value={indicatorSearch}
+            onChange={(event) => setIndicatorSearch(event.currentTarget.value)}
+            placeholder="Search"
+            aria-label="Search indicators"
+            leftSection={<IconSearch size={15} />}
+          />
+          <Group align="flex-start" wrap="nowrap" className={classes.indicatorModalLayout}>
+            <Stack gap="xs" className={classes.indicatorSidebar}>
+              <Text size="xs" c="dimmed">BUILT-IN</Text>
+              <Text fw={600}>Technicals</Text>
+              <Text fw={600}>Fundamentals</Text>
+              <Text size="xs" c="dimmed">COMMUNITY</Text>
+              <Text fw={600}>Trending</Text>
+            </Stack>
+            <Stack gap="xs" className={classes.indicatorList}>
+              <Group className={classes.indicatorHeader}>
+                <Text size="xs" c="dimmed">SCRIPT NAME</Text>
+                <Text size="xs" c="dimmed">AUTHOR</Text>
+              </Group>
+              {filteredIndicatorOptions.map((indicatorOption) => (
+                <Paper key={indicatorOption.key} withBorder p="xs" className={classes.selectorRow} data-selected={indicatorDraft[indicatorOption.key]} onClick={() => setIndicatorDraft((prev) => ({ ...prev, [indicatorOption.key]: !prev[indicatorOption.key] }))}>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Stack gap={0}>
+                      <Text fw={600}>{indicatorOption.name}</Text>
+                      <Text size="xs" c="dimmed">{indicatorOption.description}</Text>
+                    </Stack>
+                    <Group gap="md" wrap="nowrap">
+                      <Text c="blue" size="sm">{indicatorOption.author}</Text>
+                      {indicatorDraft[indicatorOption.key] && <IconCheck size={16} />}
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          </Group>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={intervalModalOpened}
+        onCancel={() => setIntervalModalOpened(false)}
+        onConfirm={() => {
+          const normalized = normalizeIntervalToken(intervalDraft)
+          setIntervalToken(normalized)
+          setIntervalModalOpened(false)
+        }}
+        title="Set chart interval"
+        confirmTextOverride="Apply">
         <Stack>
           <Text size="sm" c="dimmed">
             Use format number + unit: S (seconds), M (minutes), H (hours), D (days), MO (months), Y (years). Example: 15D.
@@ -720,27 +1199,13 @@ export const TradingChartPanel: FC = () => {
           />
           <Group gap="xs">
             {intervalPresets.map((preset) => (
-              <Button key={preset} size="xs" variant="subtle" onClick={() => setIntervalDraft(preset)}>
+              <MantineButton key={preset} size="xs" variant="subtle" onClick={() => setIntervalDraft(preset)}>
                 {preset}
-              </Button>
+              </MantineButton>
             ))}
           </Group>
-          <Group justify="flex-end">
-            <Button size="xs" variant="subtle" onClick={() => setIntervalModalOpened(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="xs"
-              onClick={() => {
-                const normalized = normalizeIntervalToken(intervalDraft)
-                setIntervalToken(normalized)
-                setIntervalModalOpened(false)
-              }}>
-              Apply
-            </Button>
-          </Group>
         </Stack>
-      </Modal>
+      </ConfirmationModal>
     </Stack>
   )
 }
