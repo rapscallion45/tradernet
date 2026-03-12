@@ -281,7 +281,7 @@ export const TradingChartPanel: FC = () => {
   const [symbolSearch, setSymbolSearch] = useState("")
   const [favoriteCurrencies, setFavoriteCurrencies] = useLocalStorage<string[]>({
     key: "trading-chart-favorite-currencies",
-    defaultValue: [],
+    defaultValue: ["USD", "GBP", "EUR", "AUD"],
   })
   const [favoriteSymbols, setFavoriteSymbols] = useLocalStorage<string[]>({
     key: "trading-chart-favorite-symbols",
@@ -322,17 +322,33 @@ export const TradingChartPanel: FC = () => {
 
   const filteredCurrencyOptions = useMemo(() => {
     const normalizedSearch = currencySearch.trim().toLowerCase()
-    const filtered = normalizedSearch ? currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : currencyOptions
-
-    return [...filtered].sort((left, right) => Number(favoriteCurrencies.includes(right)) - Number(favoriteCurrencies.includes(left)))
-  }, [currencyOptions, currencySearch, favoriteCurrencies])
+    return normalizedSearch ? currencyOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : currencyOptions
+  }, [currencyOptions, currencySearch])
 
   const filteredSymbolOptions = useMemo(() => {
     const normalizedSearch = symbolSearch.trim().toLowerCase()
-    const filtered = normalizedSearch ? symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : symbolOptions
+    return normalizedSearch ? symbolOptions.filter((item) => item.toLowerCase().includes(normalizedSearch)) : symbolOptions
+  }, [symbolOptions, symbolSearch])
 
-    return [...filtered].sort((left, right) => Number(favoriteSymbols.includes(right)) - Number(favoriteSymbols.includes(left)))
-  }, [symbolOptions, symbolSearch, favoriteSymbols])
+  const favoriteCurrencyOptions = useMemo(
+    () => filteredCurrencyOptions.filter((item) => favoriteCurrencies.includes(item)),
+    [filteredCurrencyOptions, favoriteCurrencies],
+  )
+
+  const nonFavoriteCurrencyOptions = useMemo(
+    () => filteredCurrencyOptions.filter((item) => !favoriteCurrencies.includes(item)),
+    [filteredCurrencyOptions, favoriteCurrencies],
+  )
+
+  const favoriteSymbolOptions = useMemo(
+    () => filteredSymbolOptions.filter((item) => favoriteSymbols.includes(item)),
+    [filteredSymbolOptions, favoriteSymbols],
+  )
+
+  const nonFavoriteSymbolOptions = useMemo(
+    () => filteredSymbolOptions.filter((item) => !favoriteSymbols.includes(item)),
+    [filteredSymbolOptions, favoriteSymbols],
+  )
 
   const filteredIndicatorOptions = useMemo(
     () => {
@@ -913,10 +929,11 @@ export const TradingChartPanel: FC = () => {
           />
           <ScrollArea h={260} type="auto">
             <Stack gap={0}>
-              {filteredCurrencyOptions.map((item, index) => {
+              {favoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteCurrencyOptions.map((item, index) => {
                 const selected = item === currencyDraft
                 return (
-                  <Fragment key={item}>
+                  <Fragment key={`favorite-${item}`}>
                     <Paper
                       p="xs"
                       radius={0}
@@ -924,8 +941,8 @@ export const TradingChartPanel: FC = () => {
                       data-selected={selected}
                       onClick={() => setCurrencyDraft(item)}>
                       <Group justify="space-between">
-                        <Group gap="xs">
-                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={24} alt={`${item} flag`}>
+                        <Group gap="md">
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
                             <Text size="sm">{getCurrencyFlag(item)}</Text>
                           </Avatar>
                           <Text fw={600}>{item}</Text>
@@ -945,7 +962,44 @@ export const TradingChartPanel: FC = () => {
                         </Group>
                       </Group>
                     </Paper>
-                    {index < filteredCurrencyOptions.length - 1 && <Divider w="100%" />}
+                    {(index < favoriteCurrencyOptions.length - 1 || nonFavoriteCurrencyOptions.length > 0) && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+              {nonFavoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All currencies</Text>}
+              {nonFavoriteCurrencyOptions.map((item, index) => {
+                const selected = item === currencyDraft
+                return (
+                  <Fragment key={`all-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setCurrencyDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap="md">
+                          <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
+                            <Text size="sm">{getCurrencyFlag(item)}</Text>
+                          </Avatar>
+                          <Text fw={600}>{item}</Text>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <Badge variant="light">Selected</Badge>}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteCurrencies.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {index < nonFavoriteCurrencyOptions.length - 1 && <Divider w="100%" />}
                   </Fragment>
                 )
               })}
@@ -983,10 +1037,11 @@ export const TradingChartPanel: FC = () => {
           />
           <ScrollArea h={300} type="auto">
             <Stack gap={0}>
-              {filteredSymbolOptions.map((item, index) => {
+              {favoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteSymbolOptions.map((item, index) => {
                 const selected = item === symbolDraft
                 return (
-                  <Fragment key={item}>
+                  <Fragment key={`favorite-${item}`}>
                     <Paper
                       p="xs"
                       radius={0}
@@ -994,8 +1049,8 @@ export const TradingChartPanel: FC = () => {
                       data-selected={selected}
                       onClick={() => setSymbolDraft(item)}>
                       <Group justify="space-between">
-                        <Group gap={8} wrap={"nowrap"}>
-                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={24}>
+                        <Group gap={12} wrap={"nowrap"}>
+                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
                             {getBaseAsset(item).slice(0, 1)}
                           </Avatar>
                           <Stack gap={0}>
@@ -1022,7 +1077,51 @@ export const TradingChartPanel: FC = () => {
                         </Group>
                       </Group>
                     </Paper>
-                    {index < filteredSymbolOptions.length - 1 && <Divider w="100%" />}
+                    {(index < favoriteSymbolOptions.length - 1 || nonFavoriteSymbolOptions.length > 0) && <Divider w="100%" />}
+                  </Fragment>
+                )
+              })}
+              {nonFavoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All symbols</Text>}
+              {nonFavoriteSymbolOptions.map((item, index) => {
+                const selected = item === symbolDraft
+                return (
+                  <Fragment key={`all-${item}`}>
+                    <Paper
+                      p="xs"
+                      radius={0}
+                      className={classes.selectorRow}
+                      data-selected={selected}
+                      onClick={() => setSymbolDraft(item)}>
+                      <Group justify="space-between">
+                        <Group gap={12} wrap={"nowrap"}>
+                          <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
+                            {getBaseAsset(item).slice(0, 1)}
+                          </Avatar>
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={600}>
+                              {item}
+                            </Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              {getBaseAsset(item)}
+                            </Text>
+                          </Stack>
+                        </Group>
+                        <Group gap="xs">
+                          {selected && <IconCheck size={16} />}
+                          <MantineActionIcon
+                            variant="subtle"
+                            color={favoriteSymbols.includes(item) ? "yellow" : "gray"}
+                            aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                            }}>
+                            {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </MantineActionIcon>
+                        </Group>
+                      </Group>
+                    </Paper>
+                    {index < nonFavoriteSymbolOptions.length - 1 && <Divider w="100%" />}
                   </Fragment>
                 )
               })}
