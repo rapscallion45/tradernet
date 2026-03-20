@@ -12,8 +12,7 @@ import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { Button } from "components/Button/Button"
 import { ActionIcon } from "components/ActionIcon/ActionIcon"
-import ToggleButtons, { ToggleButtonOption } from "components/ToggleButtons/ToggleButtons"
-import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconSearch, IconStar, IconStarFilled, IconTrash, IconX } from "@tabler/icons-react"
+import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconPencil, IconSearch, IconStar, IconStarFilled, IconTrash, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
 type Candle = {
@@ -273,12 +272,14 @@ export const TradingChartPanel: FC = () => {
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [currencyModalOpened, setCurrencyModalOpened] = useState(false)
   const [symbolModalOpened, setSymbolModalOpened] = useState(false)
+  const [drawToolModalOpened, setDrawToolModalOpened] = useState(false)
   const [indicatorModalOpened, setIndicatorModalOpened] = useState(false)
   const [intervalDraft, setIntervalDraft] = useState("1S")
   const [currencyDraft, setCurrencyDraft] = useState(currency)
   const [symbolDraft, setSymbolDraft] = useState(symbol)
   const [currencySearch, setCurrencySearch] = useState("")
   const [symbolSearch, setSymbolSearch] = useState("")
+  const [toolSearch, setToolSearch] = useState("")
   const [favoriteCurrencies, setFavoriteCurrencies] = useLocalStorage<string[]>({
     key: "trading-chart-favorite-currencies",
     defaultValue: ["USD", "GBP", "EUR", "AUD"],
@@ -288,6 +289,7 @@ export const TradingChartPanel: FC = () => {
     defaultValue: [],
   })
   const [tool, setTool] = useState<DrawTool>("none")
+  const [toolDraft, setToolDraft] = useState<DrawTool>("none")
   const [indicators, setIndicators] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [indicatorDraft, setIndicatorDraft] = useState<Indicators>({ ema: true, sma: false, bb: false })
   const [indicatorSearch, setIndicatorSearch] = useState("")
@@ -317,6 +319,10 @@ export const TradingChartPanel: FC = () => {
   useEffect(() => {
     setIndicatorDraft(indicators)
   }, [indicators])
+
+  useEffect(() => {
+    setToolDraft(tool)
+  }, [tool])
 
   const showStreamSpinner = candleCount === 0 && streamStatus !== "error"
 
@@ -348,6 +354,25 @@ export const TradingChartPanel: FC = () => {
   const nonFavoriteSymbolOptions = useMemo(
     () => filteredSymbolOptions.filter((item) => !favoriteSymbols.includes(item)),
     [filteredSymbolOptions, favoriteSymbols],
+  )
+
+  const filteredDrawToolOptions = useMemo(
+    () => {
+      const options = [
+        { key: "none" as const, name: "Pan", description: "Move around the chart without drawing", icon: "↔" },
+        { key: "trendline" as const, name: "Trendline", description: "Draw a line between two points", icon: "／" },
+        { key: "ray" as const, name: "Ray", description: "Draw a line that extends forward", icon: "↗" },
+        { key: "hline" as const, name: "Horizontal line", description: "Mark a horizontal price level", icon: "―" },
+        { key: "vline" as const, name: "Vertical line", description: "Mark a point in time", icon: "|" },
+      ]
+      const normalizedSearch = toolSearch.trim().toLowerCase()
+      if (!normalizedSearch) {
+        return options
+      }
+
+      return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
+    },
+    [toolSearch],
   )
 
   const filteredIndicatorOptions = useMemo(
@@ -758,17 +783,6 @@ export const TradingChartPanel: FC = () => {
     setPendingStart(null)
   }
 
-  const toolOptions = useMemo<ToggleButtonOption<DrawTool>[]>(
-    () => [
-      { value: "none", label: undefined, icon: <Text size="xs">↔</Text>, tooltip: "Pan" },
-      { value: "trendline", label: undefined, icon: <Text size="xs">／</Text>, tooltip: "Trendline" },
-      { value: "ray", label: undefined, icon: <Text size="xs">↗</Text>, tooltip: "Ray" },
-      { value: "hline", label: undefined, icon: <Text size="xs">―</Text>, tooltip: "Horizontal line" },
-      { value: "vline", label: undefined, icon: <Text size="xs">|</Text>, tooltip: "Vertical line" },
-    ],
-    [],
-  )
-
   const drawingCount = drawings.length
   const indicatorCount = Number(indicators.ema) + Number(indicators.sma) + Number(indicators.bb)
 
@@ -827,14 +841,18 @@ export const TradingChartPanel: FC = () => {
             }}>
             {intervalToken}
           </Button>
-          <ToggleButtons
-            current={tool}
-            options={toolOptions}
-            setCurrent={(value) => {
-              setTool(value)
-              setPendingStart(null)
-            }}
-          />
+          <Button
+            size="xs"
+            variant="outline"
+            leftIcon={<IconPencil size={15} />}
+            rightIcon={<IconCaretDownFilled size={15} />}
+            onClick={() => {
+              setToolDraft(tool)
+              setToolSearch("")
+              setDrawToolModalOpened(true)
+            }}>
+            Draw
+          </Button>
           <Button
             size="xs"
             variant="outline"
@@ -1127,6 +1145,64 @@ export const TradingChartPanel: FC = () => {
               })}
             </Stack>
           </ScrollArea>
+        </Stack>
+      </ConfirmationModal>
+      <ConfirmationModal
+        opened={drawToolModalOpened}
+        onCancel={() => setDrawToolModalOpened(false)}
+        onConfirm={() => {
+          setTool(toolDraft)
+          setPendingStart(null)
+          setDrawToolModalOpened(false)
+        }}
+        title="Drawing tools"
+        confirmTextOverride="Apply">
+        <Stack gap="sm">
+          <TextInput
+            value={toolSearch}
+            onChange={(event) => setToolSearch(event.currentTarget.value)}
+            placeholder="Search drawing tools"
+            aria-label="Search drawing tools"
+            leftSection={<IconSearch size={15} />}
+          />
+          <Group align="flex-start" wrap="nowrap" className={classes.indicatorModalLayout}>
+            <Stack gap="xs" className={classes.indicatorSidebar}>
+              <Text size="xs" c="dimmed">TOOLS</Text>
+              <Text fw={600}>Chart navigation</Text>
+              <Text fw={600}>Lines</Text>
+            </Stack>
+            <Stack gap="xs" className={classes.indicatorList}>
+              <Group className={classes.indicatorHeader}>
+                <Text size="xs" c="dimmed">TOOL</Text>
+                <Text size="xs" c="dimmed">TYPE</Text>
+              </Group>
+              {filteredDrawToolOptions.map((drawToolOption) => (
+                <Paper
+                  key={drawToolOption.key}
+                  withBorder
+                  p="xs"
+                  className={classes.selectorRow}
+                  data-selected={toolDraft === drawToolOption.key}
+                  onClick={() => setToolDraft(drawToolOption.key)}>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Group gap="md" wrap="nowrap">
+                      <Avatar radius="xl" size={30}>
+                        <Text size="sm">{drawToolOption.icon}</Text>
+                      </Avatar>
+                      <Stack gap={0}>
+                        <Text fw={600}>{drawToolOption.name}</Text>
+                        <Text size="xs" c="dimmed">{drawToolOption.description}</Text>
+                      </Stack>
+                    </Group>
+                    <Group gap="md" wrap="nowrap">
+                      <Text c="blue" size="sm">{drawToolOption.key === "none" ? "Navigation" : "Drawing"}</Text>
+                      {toolDraft === drawToolOption.key && <IconCheck size={16} />}
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          </Group>
         </Stack>
       </ConfirmationModal>
       <ConfirmationModal
