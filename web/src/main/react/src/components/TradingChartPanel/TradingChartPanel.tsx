@@ -1,5 +1,21 @@
 import { FC, Fragment, MouseEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from "react"
-import { ActionIcon as MantineActionIcon, Avatar, Badge, Button as MantineButton, Divider, Group, Loader, Menu, Paper, ScrollArea, Select, Stack, Text, TextInput, useMantineColorScheme } from "@mantine/core"
+import {
+  ActionIcon as MantineActionIcon,
+  Avatar,
+  Badge,
+  Button as MantineButton,
+  Divider,
+  Group,
+  Loader,
+  Menu,
+  Paper,
+  ScrollArea,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  useMantineColorScheme,
+} from "@mantine/core"
 import { useLocalStorage } from "@mantine/hooks"
 import uPlot, { AlignedData, Options, Plugin } from "uplot"
 import "uplot/dist/uPlot.min.css"
@@ -149,10 +165,7 @@ const currencyCountryMap: Record<string, string> = {
   ILS: "IL",
 }
 
-const toRegionalFlag = (countryCode: string): string =>
-  countryCode
-    .toUpperCase()
-    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+const toRegionalFlag = (countryCode: string): string => countryCode.toUpperCase().replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
 
 const getCurrencyFlag = (code: string): string => {
   const normalized = code.toUpperCase()
@@ -346,51 +359,42 @@ export const TradingChartPanel: FC = () => {
     [filteredCurrencyOptions, favoriteCurrencies],
   )
 
-  const favoriteSymbolOptions = useMemo(
-    () => filteredSymbolOptions.filter((item) => favoriteSymbols.includes(item)),
-    [filteredSymbolOptions, favoriteSymbols],
-  )
+  const favoriteSymbolOptions = useMemo(() => filteredSymbolOptions.filter((item) => favoriteSymbols.includes(item)), [filteredSymbolOptions, favoriteSymbols])
 
   const nonFavoriteSymbolOptions = useMemo(
     () => filteredSymbolOptions.filter((item) => !favoriteSymbols.includes(item)),
     [filteredSymbolOptions, favoriteSymbols],
   )
 
-  const filteredDrawToolOptions = useMemo(
-    () => {
-      const options = [
-        { key: "none" as const, name: "Pan", description: "Move around the chart without drawing", icon: "↔" },
-        { key: "trendline" as const, name: "Trendline", description: "Draw a line between two points", icon: "／" },
-        { key: "ray" as const, name: "Ray", description: "Draw a line that extends forward", icon: "↗" },
-        { key: "hline" as const, name: "Horizontal line", description: "Mark a horizontal price level", icon: "―" },
-        { key: "vline" as const, name: "Vertical line", description: "Mark a point in time", icon: "|" },
-      ]
-      const normalizedSearch = toolSearch.trim().toLowerCase()
-      if (!normalizedSearch) {
-        return options
-      }
+  const filteredDrawToolOptions = useMemo(() => {
+    const options = [
+      { key: "none" as const, name: "Pan", description: "Move around the chart without drawing", icon: "↔" },
+      { key: "trendline" as const, name: "Trendline", description: "Draw a line between two points", icon: "／" },
+      { key: "ray" as const, name: "Ray", description: "Draw a line that extends forward", icon: "↗" },
+      { key: "hline" as const, name: "Horizontal line", description: "Mark a horizontal price level", icon: "―" },
+      { key: "vline" as const, name: "Vertical line", description: "Mark a point in time", icon: "|" },
+    ]
+    const normalizedSearch = toolSearch.trim().toLowerCase()
+    if (!normalizedSearch) {
+      return options
+    }
 
-      return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
-    },
-    [toolSearch],
-  )
+    return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
+  }, [toolSearch])
 
-  const filteredIndicatorOptions = useMemo(
-    () => {
-      const options = [
-        { key: "ema" as const, name: "EMA14", author: "Built-in", description: "Exponential moving average" },
-        { key: "sma" as const, name: "SMA20", author: "Built-in", description: "Simple moving average" },
-        { key: "bb" as const, name: "BB(20,2)", author: "Built-in", description: "Bollinger Bands" },
-      ]
-      const normalizedSearch = indicatorSearch.trim().toLowerCase()
-      if (!normalizedSearch) {
-        return options
-      }
+  const filteredIndicatorOptions = useMemo(() => {
+    const options = [
+      { key: "ema" as const, name: "EMA14", author: "Built-in", description: "Exponential moving average" },
+      { key: "sma" as const, name: "SMA20", author: "Built-in", description: "Simple moving average" },
+      { key: "bb" as const, name: "BB(20,2)", author: "Built-in", description: "Bollinger Bands" },
+    ]
+    const normalizedSearch = indicatorSearch.trim().toLowerCase()
+    if (!normalizedSearch) {
+      return options
+    }
 
-      return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
-    },
-    [indicatorSearch],
-  )
+    return options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(normalizedSearch))
+  }, [indicatorSearch])
 
   const summary = useMemo(() => {
     const candle = candlesRef.current.at(-1)
@@ -818,11 +822,11 @@ export const TradingChartPanel: FC = () => {
             size="xs"
             variant="outline"
             aria-label="Chart symbol"
-            leftIcon={(
+            leftIcon={
               <Avatar src={getAssetLogoUrl(symbol)} alt={symbol} radius="xl" size={16}>
                 {getBaseAsset(symbol).slice(0, 1)}
               </Avatar>
-            )}
+            }
             rightIcon={<IconCaretDownFilled size={15} />}
             onClick={() => {
               setSymbolDraft(symbol)
@@ -867,7 +871,7 @@ export const TradingChartPanel: FC = () => {
           </Button>
           <Menu shadow="md" width={290} position="bottom-start">
             <Menu.Target>
-              <ActionIcon icon={<IconTrash size={16} />} variant="outline" size="lg" aria-label="Clear drawings or indicators" />
+              <ActionIcon icon={<IconTrash size={16} />} variant={"subtle"} size={"lg"} aria-label={"Clear drawings or indicators"} />
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item disabled={drawingCount === 0} onClick={() => setDrawings([])}>
@@ -876,10 +880,12 @@ export const TradingChartPanel: FC = () => {
               <Menu.Item disabled={indicatorCount === 0} onClick={clearAllIndicators}>
                 {`Remove ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
               </Menu.Item>
-              <Menu.Item disabled={drawingCount + indicatorCount === 0} onClick={() => {
-                setDrawings([])
-                clearAllIndicators()
-              }}>
+              <Menu.Item
+                disabled={drawingCount + indicatorCount === 0}
+                onClick={() => {
+                  setDrawings([])
+                  clearAllIndicators()
+                }}>
                 {`Remove ${drawingCount} drawing${drawingCount === 1 ? "" : "s"} & ${indicatorCount} indicator${indicatorCount === 1 ? "" : "s"}`}
               </Menu.Item>
             </Menu.Dropdown>
@@ -947,17 +953,16 @@ export const TradingChartPanel: FC = () => {
           />
           <ScrollArea h={260} type="auto">
             <Stack gap={0}>
-              {favoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteCurrencyOptions.length > 0 && (
+                <Text p="xs" size="xs" c="dimmed">
+                  Favourites
+                </Text>
+              )}
               {favoriteCurrencyOptions.map((item, index) => {
                 const selected = item === currencyDraft
                 return (
                   <Fragment key={`favorite-${item}`}>
-                    <Paper
-                      p="xs"
-                      radius={0}
-                      className={classes.selectorRow}
-                      data-selected={selected}
-                      onClick={() => setCurrencyDraft(item)}>
+                    <Paper p="xs" radius={0} className={classes.selectorRow} data-selected={selected} onClick={() => setCurrencyDraft(item)}>
                       <Group justify="space-between">
                         <Group gap="md">
                           <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
@@ -973,7 +978,7 @@ export const TradingChartPanel: FC = () => {
                             aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
                             onClick={(event) => {
                               event.stopPropagation()
-                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                              setFavoriteCurrencies((prev) => (prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item]))
                             }}>
                             {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                           </MantineActionIcon>
@@ -984,17 +989,16 @@ export const TradingChartPanel: FC = () => {
                   </Fragment>
                 )
               })}
-              {nonFavoriteCurrencyOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All currencies</Text>}
+              {nonFavoriteCurrencyOptions.length > 0 && (
+                <Text p="xs" size="xs" c="dimmed">
+                  All currencies
+                </Text>
+              )}
               {nonFavoriteCurrencyOptions.map((item, index) => {
                 const selected = item === currencyDraft
                 return (
                   <Fragment key={`all-${item}`}>
-                    <Paper
-                      p="xs"
-                      radius={0}
-                      className={classes.selectorRow}
-                      data-selected={selected}
-                      onClick={() => setCurrencyDraft(item)}>
+                    <Paper p="xs" radius={0} className={classes.selectorRow} data-selected={selected} onClick={() => setCurrencyDraft(item)}>
                       <Group justify="space-between">
                         <Group gap="md">
                           <Avatar src={getCurrencyFlagUrl(item) ?? undefined} radius={"xl"} size={30} alt={`${item} flag`}>
@@ -1010,7 +1014,7 @@ export const TradingChartPanel: FC = () => {
                             aria-label={favoriteCurrencies.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
                             onClick={(event) => {
                               event.stopPropagation()
-                              setFavoriteCurrencies((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                              setFavoriteCurrencies((prev) => (prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item]))
                             }}>
                             {favoriteCurrencies.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                           </MantineActionIcon>
@@ -1055,17 +1059,16 @@ export const TradingChartPanel: FC = () => {
           />
           <ScrollArea h={300} type="auto">
             <Stack gap={0}>
-              {favoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">Favourites</Text>}
+              {favoriteSymbolOptions.length > 0 && (
+                <Text p="xs" size="xs" c="dimmed">
+                  Favourites
+                </Text>
+              )}
               {favoriteSymbolOptions.map((item, index) => {
                 const selected = item === symbolDraft
                 return (
                   <Fragment key={`favorite-${item}`}>
-                    <Paper
-                      p="xs"
-                      radius={0}
-                      className={classes.selectorRow}
-                      data-selected={selected}
-                      onClick={() => setSymbolDraft(item)}>
+                    <Paper p="xs" radius={0} className={classes.selectorRow} data-selected={selected} onClick={() => setSymbolDraft(item)}>
                       <Group justify="space-between">
                         <Group gap={12} wrap={"nowrap"}>
                           <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
@@ -1088,7 +1091,7 @@ export const TradingChartPanel: FC = () => {
                             aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
                             onClick={(event) => {
                               event.stopPropagation()
-                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                              setFavoriteSymbols((prev) => (prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item]))
                             }}>
                             {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                           </MantineActionIcon>
@@ -1099,17 +1102,16 @@ export const TradingChartPanel: FC = () => {
                   </Fragment>
                 )
               })}
-              {nonFavoriteSymbolOptions.length > 0 && <Text p="xs" size="xs" c="dimmed">All symbols</Text>}
+              {nonFavoriteSymbolOptions.length > 0 && (
+                <Text p="xs" size="xs" c="dimmed">
+                  All symbols
+                </Text>
+              )}
               {nonFavoriteSymbolOptions.map((item, index) => {
                 const selected = item === symbolDraft
                 return (
                   <Fragment key={`all-${item}`}>
-                    <Paper
-                      p="xs"
-                      radius={0}
-                      className={classes.selectorRow}
-                      data-selected={selected}
-                      onClick={() => setSymbolDraft(item)}>
+                    <Paper p="xs" radius={0} className={classes.selectorRow} data-selected={selected} onClick={() => setSymbolDraft(item)}>
                       <Group justify="space-between">
                         <Group gap={12} wrap={"nowrap"}>
                           <Avatar src={getAssetLogoUrl(item)} alt={item} radius={"xl"} size={30}>
@@ -1132,7 +1134,7 @@ export const TradingChartPanel: FC = () => {
                             aria-label={favoriteSymbols.includes(item) ? `Unfavorite ${item}` : `Favorite ${item}`}
                             onClick={(event) => {
                               event.stopPropagation()
-                              setFavoriteSymbols((prev) => prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item])
+                              setFavoriteSymbols((prev) => (prev.includes(item) ? prev.filter((entry) => entry !== item) : [...prev, item]))
                             }}>
                             {favoriteSymbols.includes(item) ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                           </MantineActionIcon>
@@ -1167,14 +1169,20 @@ export const TradingChartPanel: FC = () => {
           />
           <Group align="flex-start" wrap="nowrap" className={classes.indicatorModalLayout}>
             <Stack gap="xs" className={classes.indicatorSidebar}>
-              <Text size="xs" c="dimmed">TOOLS</Text>
+              <Text size="xs" c="dimmed">
+                TOOLS
+              </Text>
               <Text fw={600}>Chart navigation</Text>
               <Text fw={600}>Lines</Text>
             </Stack>
             <Stack gap="xs" className={classes.indicatorList}>
               <Group className={classes.indicatorHeader}>
-                <Text size="xs" c="dimmed">TOOL</Text>
-                <Text size="xs" c="dimmed">TYPE</Text>
+                <Text size="xs" c="dimmed">
+                  TOOL
+                </Text>
+                <Text size="xs" c="dimmed">
+                  TYPE
+                </Text>
               </Group>
               {filteredDrawToolOptions.map((drawToolOption) => (
                 <Paper
@@ -1191,11 +1199,15 @@ export const TradingChartPanel: FC = () => {
                       </Avatar>
                       <Stack gap={0}>
                         <Text fw={600}>{drawToolOption.name}</Text>
-                        <Text size="xs" c="dimmed">{drawToolOption.description}</Text>
+                        <Text size="xs" c="dimmed">
+                          {drawToolOption.description}
+                        </Text>
                       </Stack>
                     </Group>
                     <Group gap="md" wrap="nowrap">
-                      <Text c="blue" size="sm">{drawToolOption.key === "none" ? "Navigation" : "Drawing"}</Text>
+                      <Text c="blue" size="sm">
+                        {drawToolOption.key === "none" ? "Navigation" : "Drawing"}
+                      </Text>
                       {toolDraft === drawToolOption.key && <IconCheck size={16} />}
                     </Group>
                   </Group>
@@ -1224,26 +1236,44 @@ export const TradingChartPanel: FC = () => {
           />
           <Group align="flex-start" wrap="nowrap" className={classes.indicatorModalLayout}>
             <Stack gap="xs" className={classes.indicatorSidebar}>
-              <Text size="xs" c="dimmed">BUILT-IN</Text>
+              <Text size="xs" c="dimmed">
+                BUILT-IN
+              </Text>
               <Text fw={600}>Technicals</Text>
               <Text fw={600}>Fundamentals</Text>
-              <Text size="xs" c="dimmed">COMMUNITY</Text>
+              <Text size="xs" c="dimmed">
+                COMMUNITY
+              </Text>
               <Text fw={600}>Trending</Text>
             </Stack>
             <Stack gap="xs" className={classes.indicatorList}>
               <Group className={classes.indicatorHeader}>
-                <Text size="xs" c="dimmed">SCRIPT NAME</Text>
-                <Text size="xs" c="dimmed">AUTHOR</Text>
+                <Text size="xs" c="dimmed">
+                  SCRIPT NAME
+                </Text>
+                <Text size="xs" c="dimmed">
+                  AUTHOR
+                </Text>
               </Group>
               {filteredIndicatorOptions.map((indicatorOption) => (
-                <Paper key={indicatorOption.key} withBorder p="xs" className={classes.selectorRow} data-selected={indicatorDraft[indicatorOption.key]} onClick={() => setIndicatorDraft((prev) => ({ ...prev, [indicatorOption.key]: !prev[indicatorOption.key] }))}>
+                <Paper
+                  key={indicatorOption.key}
+                  withBorder
+                  p="xs"
+                  className={classes.selectorRow}
+                  data-selected={indicatorDraft[indicatorOption.key]}
+                  onClick={() => setIndicatorDraft((prev) => ({ ...prev, [indicatorOption.key]: !prev[indicatorOption.key] }))}>
                   <Group justify="space-between" wrap="nowrap">
                     <Stack gap={0}>
                       <Text fw={600}>{indicatorOption.name}</Text>
-                      <Text size="xs" c="dimmed">{indicatorOption.description}</Text>
+                      <Text size="xs" c="dimmed">
+                        {indicatorOption.description}
+                      </Text>
                     </Stack>
                     <Group gap="md" wrap="nowrap">
-                      <Text c="blue" size="sm">{indicatorOption.author}</Text>
+                      <Text c="blue" size="sm">
+                        {indicatorOption.author}
+                      </Text>
                       {indicatorDraft[indicatorOption.key] && <IconCheck size={16} />}
                     </Group>
                   </Group>

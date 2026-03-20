@@ -1,6 +1,7 @@
 import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
-import { Group, Image } from "@mantine/core"
+import { Group, Image, TextInput } from "@mantine/core"
+import { spotlight } from "@mantine/spotlight"
 import { IconHistory, IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
@@ -34,12 +35,12 @@ export const sidebarItems: SidebarItem[] = [
       {
         label: "Users",
         path: Routes.AdminUsers,
-        icon: <IconUser />,
+        icon: <IconUser size={15} />,
       },
       {
         label: "Groups",
         path: Routes.AdminGroups,
-        icon: <IconUsersGroup />,
+        icon: <IconUsersGroup size={15} />,
       },
     ],
   },
@@ -86,7 +87,22 @@ const Layout: FC = () => {
               <Title subtitle>Tradernet</Title>
             </Group>,
           ]}
-          rightSection={[<ColorSchemeToggle />, <AccountDrawer />]}
+          rightSection={[
+            <TextInput
+              placeholder={"Search (Ctrl + K)"}
+              onClick={spotlight.open}
+              onKeyDown={(e) => {
+                e.preventDefault()
+                spotlight.open()
+              }}
+              size={"md"}
+              variant={"filled"}
+              miw={150}
+              aria-label={"Search"}
+            />,
+            <ColorSchemeToggle />,
+            <AccountDrawer />,
+          ]}
         />
       }
       sidebar={

@@ -1,7 +1,6 @@
 import { FC } from "react"
 import { useNavigate } from "react-router-dom"
-import { Stack, TextInput } from "@mantine/core"
-import { spotlight } from "@mantine/spotlight"
+import { Stack } from "@mantine/core"
 import useSession from "hooks/useSession"
 import useHealthCheck from "hooks/useHealthCheck"
 import PageHeader from "components/layout/PageHeader/PageHeader"
@@ -30,20 +29,6 @@ const DashboardPage: FC = () => {
       <PageHeader
         title={<Title highlight={session.username}>{`Welcome ${session.username}, what would you like to do today?`}</Title>}
         description={`Tradernet server is ${health.status}.`}
-        rightSection={[
-          <TextInput
-            placeholder={"Search (Ctrl + K)"}
-            onClick={spotlight.open}
-            onKeyDown={(e) => {
-              e.preventDefault()
-              spotlight.open()
-            }}
-            size={"md"}
-            variant={"filled"}
-            miw={150}
-            aria-label={"Search"}
-          />,
-        ]}
       />
       <Stack gap={"lg"}>
         <Stack>
