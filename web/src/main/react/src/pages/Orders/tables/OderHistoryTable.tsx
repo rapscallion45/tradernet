@@ -1,5 +1,6 @@
 import { FC, useMemo, useState } from "react"
-import { Avatar, Badge, Button, Collapse, Divider, Group, Select, SimpleGrid, Stack, Text, TextInput } from "@mantine/core"
+import { ActionIcon, Avatar, Badge, Button, Collapse, Divider, Group, Select, SimpleGrid, Stack, Text, TextInput } from "@mantine/core"
+import { IconFilter, IconFilterOff } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -42,6 +43,7 @@ const OderHistoryTable: FC = () => {
   const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
   const [createdDateToFilter, setCreatedDateToFilter] = useState("")
   const [filtersExpanded, setFiltersExpanded] = useState(true)
+  const hasFiltersApplied = Boolean(assetFilter || positionFilter || statusFilter || createdDateFromFilter || createdDateToFilter)
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -179,11 +181,29 @@ const OderHistoryTable: FC = () => {
     <>
       <Stack gap={"xs"} mb={"sm"}>
         <Group justify={"space-between"}>
-          <Text size={"sm"} fw={600}>
-            Filters
-          </Text>
-          <Button size={"xs"} variant={"subtle"} onClick={() => setFiltersExpanded((current) => !current)}>
-            {filtersExpanded ? "Hide filters" : "Show filters"}
+          <Group gap={"xs"}>
+            <Text size={"sm"} fw={600}>
+              {hasFiltersApplied ? `Filtered Orders (${filteredOrders.length})` : `All Orders (${orders.length})`}
+            </Text>
+            <ActionIcon
+              size={"sm"}
+              variant={"subtle"}
+              aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
+              onClick={() => setFiltersExpanded((current) => !current)}>
+              {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
+            </ActionIcon>
+          </Group>
+          <Button
+            size={"xs"}
+            variant={"subtle"}
+            onClick={() => {
+              setAssetFilter("")
+              setPositionFilter(null)
+              setStatusFilter(null)
+              setCreatedDateFromFilter("")
+              setCreatedDateToFilter("")
+            }}>
+            Clear filters
           </Button>
         </Group>
         <Collapse in={filtersExpanded}>
@@ -200,21 +220,6 @@ const OderHistoryTable: FC = () => {
             <TextInput label={"Created to"} type={"date"} value={createdDateToFilter} onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)} />
           </SimpleGrid>
         </Collapse>
-        <Group justify={"space-between"}>
-          <Text size={"xs"} c={"dimmed"}>{`${filteredOrders.length} of ${orders.length} orders`}</Text>
-          <Button
-            size={"xs"}
-            variant={"subtle"}
-            onClick={() => {
-              setAssetFilter("")
-              setPositionFilter(null)
-              setStatusFilter(null)
-              setCreatedDateFromFilter("")
-              setCreatedDateToFilter("")
-            }}>
-            Clear filters
-          </Button>
-        </Group>
       </Stack>
 
       <Table<OrderSummary>
