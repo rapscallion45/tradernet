@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from "react"
-import { Avatar, Badge, Button, Divider, Group, Select, Stack, Text, TextInput } from "@mantine/core"
+import { Avatar, Badge, Button, Collapse, Divider, Group, Select, SimpleGrid, Stack, Text, TextInput } from "@mantine/core"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -41,6 +41,7 @@ const OderHistoryTable: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
   const [createdDateToFilter, setCreatedDateToFilter] = useState("")
+  const [filtersExpanded, setFiltersExpanded] = useState(true)
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -177,18 +178,28 @@ const OderHistoryTable: FC = () => {
   return (
     <>
       <Stack gap={"xs"} mb={"sm"}>
-        <Group grow>
-          <TextInput label={"Asset"} placeholder={"e.g. BTC"} value={assetFilter} onChange={(event) => setAssetFilter(event.currentTarget.value)} />
-          <Select label={"Position"} placeholder={"All"} clearable data={["BUY", "SELL"]} value={positionFilter} onChange={setPositionFilter} />
-          <Select label={"Status"} placeholder={"All"} clearable data={statusOptions} value={statusFilter} onChange={setStatusFilter} />
-          <TextInput
-            label={"Created from"}
-            type={"date"}
-            value={createdDateFromFilter}
-            onChange={(event) => setCreatedDateFromFilter(event.currentTarget.value)}
-          />
-          <TextInput label={"Created to"} type={"date"} value={createdDateToFilter} onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)} />
+        <Group justify={"space-between"}>
+          <Text size={"sm"} fw={600}>
+            Filters
+          </Text>
+          <Button size={"xs"} variant={"subtle"} onClick={() => setFiltersExpanded((current) => !current)}>
+            {filtersExpanded ? "Hide filters" : "Show filters"}
+          </Button>
         </Group>
+        <Collapse in={filtersExpanded}>
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing={"sm"}>
+            <TextInput label={"Asset"} placeholder={"e.g. BTC"} value={assetFilter} onChange={(event) => setAssetFilter(event.currentTarget.value)} />
+            <Select label={"Position"} placeholder={"All"} clearable data={["BUY", "SELL"]} value={positionFilter} onChange={setPositionFilter} />
+            <Select label={"Status"} placeholder={"All"} clearable data={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+            <TextInput
+              label={"Created from"}
+              type={"date"}
+              value={createdDateFromFilter}
+              onChange={(event) => setCreatedDateFromFilter(event.currentTarget.value)}
+            />
+            <TextInput label={"Created to"} type={"date"} value={createdDateToFilter} onChange={(event) => setCreatedDateToFilter(event.currentTarget.value)} />
+          </SimpleGrid>
+        </Collapse>
         <Group justify={"space-between"}>
           <Text size={"xs"} c={"dimmed"}>{`${filteredOrders.length} of ${orders.length} orders`}</Text>
           <Button
