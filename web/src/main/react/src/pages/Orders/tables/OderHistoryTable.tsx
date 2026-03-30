@@ -43,7 +43,6 @@ const OderHistoryTable: FC = () => {
   const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
   const [createdDateToFilter, setCreatedDateToFilter] = useState("")
   const [filtersExpanded, setFiltersExpanded] = useState(true)
-  const hasFiltersApplied = Boolean(assetFilter || positionFilter || statusFilter || createdDateFromFilter || createdDateToFilter)
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -180,19 +179,14 @@ const OderHistoryTable: FC = () => {
   return (
     <>
       <Stack gap={"xs"} mb={"sm"}>
-        <Group justify={"space-between"}>
-          <Group gap={"xs"}>
-            <Text size={"sm"} fw={600}>
-              {hasFiltersApplied ? `Filtered Orders (${filteredOrders.length})` : `All Orders (${orders.length})`}
-            </Text>
-            <ActionIcon
-              size={"sm"}
-              variant={"subtle"}
-              aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
-              onClick={() => setFiltersExpanded((current) => !current)}>
-              {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
-            </ActionIcon>
-          </Group>
+        <Group justify={"flex-end"}>
+          <ActionIcon
+            size={"sm"}
+            variant={"subtle"}
+            aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
+            onClick={() => setFiltersExpanded((current) => !current)}>
+            {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
+          </ActionIcon>
           <Button
             size={"xs"}
             variant={"subtle"}
