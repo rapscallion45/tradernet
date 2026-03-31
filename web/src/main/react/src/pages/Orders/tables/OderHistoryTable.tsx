@@ -4,6 +4,7 @@ import { IconFilter, IconFilterOff } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
+import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { Table } from "components/Table/Table"
 import { useCloseOrder } from "hooks/useCloseOrder"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
@@ -179,26 +180,29 @@ const OderHistoryTable: FC = () => {
   return (
     <>
       <Stack gap={"xs"} mb={"sm"}>
-        <Group justify={"flex-end"}>
-          <ActionIcon
-            size={"sm"}
-            variant={"subtle"}
-            aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
-            onClick={() => setFiltersExpanded((current) => !current)}>
-            {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
-          </ActionIcon>
-          <Button
-            size={"xs"}
-            variant={"subtle"}
-            onClick={() => {
-              setAssetFilter("")
-              setPositionFilter(null)
-              setStatusFilter(null)
-              setCreatedDateFromFilter("")
-              setCreatedDateToFilter("")
-            }}>
-            Clear filters
-          </Button>
+        <Group justify={"space-between"} align={"center"}>
+          <SectionHeading>ALL ORDERS</SectionHeading>
+          <Group gap={"xs"}>
+            <ActionIcon
+              size={"sm"}
+              variant={"subtle"}
+              aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
+              onClick={() => setFiltersExpanded((current) => !current)}>
+              {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
+            </ActionIcon>
+            <Button
+              size={"xs"}
+              variant={"subtle"}
+              onClick={() => {
+                setAssetFilter("")
+                setPositionFilter(null)
+                setStatusFilter(null)
+                setCreatedDateFromFilter("")
+                setCreatedDateToFilter("")
+              }}>
+              Clear filters
+            </Button>
+          </Group>
         </Group>
         <Collapse in={filtersExpanded}>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing={"sm"}>
