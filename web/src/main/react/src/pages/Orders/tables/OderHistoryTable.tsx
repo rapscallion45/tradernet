@@ -1,8 +1,9 @@
 import { FC, useMemo, useState } from "react"
-import { ActionIcon, Avatar, Badge, Button, Collapse, Divider, Group, Select, SimpleGrid, Stack, Text, TextInput } from "@mantine/core"
+import { ActionIcon, Avatar, Badge, Button as MantineButton, Collapse, Divider, Group, Select, SimpleGrid, Stack, Text, TextInput } from "@mantine/core"
 import { IconFilter, IconFilterOff } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { OrderSummary } from "api/types"
+import { Button } from "components/Button/Button"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
 import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { Table } from "components/Table/Table"
@@ -160,7 +161,7 @@ const OderHistoryTable: FC = () => {
         cell: ({ row }) => {
           const isClosed = row.original.status === "CLOSED"
           return (
-            <Button
+            <MantineButton
               size={"xs"}
               variant={"light"}
               disabled={isClosed}
@@ -170,7 +171,7 @@ const OderHistoryTable: FC = () => {
                 setPendingCloseOrder(row.original)
               }}>
               {isClosed ? "Closed" : "Close"}
-            </Button>
+            </MantineButton>
           )
         },
       },
