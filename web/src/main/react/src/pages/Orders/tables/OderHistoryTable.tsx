@@ -185,6 +185,20 @@ const OderHistoryTable: FC = () => {
         <Group justify={"space-between"} align={"center"}>
           <SectionHeading>{`${hasFiltersApplied ? "FILTERED ORDERS" : "ALL ORDERS"} (${hasFiltersApplied ? filteredOrders.length : orders.length})`}</SectionHeading>
           <Group gap={"xs"}>
+            {hasFiltersApplied && (
+              <Button
+                size={"xs"}
+                variant={"subtle"}
+                onClick={() => {
+                  setAssetFilter("")
+                  setPositionFilter(null)
+                  setStatusFilter(null)
+                  setCreatedDateFromFilter("")
+                  setCreatedDateToFilter("")
+                }}>
+                Clear filters
+              </Button>
+            )}
             <ActionIcon
               size={"sm"}
               variant={"subtle"}
@@ -192,18 +206,6 @@ const OderHistoryTable: FC = () => {
               onClick={() => setFiltersExpanded((current) => !current)}>
               {filtersExpanded ? <IconFilterOff size={16} /> : <IconFilter size={16} />}
             </ActionIcon>
-            <Button
-              size={"xs"}
-              variant={"subtle"}
-              onClick={() => {
-                setAssetFilter("")
-                setPositionFilter(null)
-                setStatusFilter(null)
-                setCreatedDateFromFilter("")
-                setCreatedDateToFilter("")
-              }}>
-              Clear filters
-            </Button>
           </Group>
         </Group>
         <Collapse in={filtersExpanded}>
