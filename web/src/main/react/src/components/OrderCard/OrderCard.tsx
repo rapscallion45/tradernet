@@ -18,7 +18,7 @@ export const OrderCard = forwardRef<HTMLButtonElement>(({ ...rest }, ref) => {
 
   return (
     <BaseCard ref={ref} classes={classes} {...rest}>
-      <Stack h="100%" justify={"space-between"} gap={"xs"}>
+      <Stack justify={"space-between"} gap={"md"}>
         <div className={classes.topSection}>
           <Title order={3}>New Order</Title>
         </div>

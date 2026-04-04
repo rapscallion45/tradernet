@@ -200,7 +200,7 @@ const OderHistoryTable: FC = () => {
               </Button>
             )}
             <ActionIcon
-              size={"sm"}
+               size={"lg"}
               variant={"subtle"}
               aria-label={filtersExpanded ? "Hide filters" : "Show filters"}
               onClick={() => setFiltersExpanded((current) => !current)}>

@@ -31,7 +31,7 @@ const AppLayout: FC<AppLayoutProps> = ({ header, sidebar, footer, children }) =>
         collapsed: { mobile: !mobileSidebarExpanded, desktop: !sidebar },
       }}
       footer={{ height: 45, collapsed: !footer }}
-      padding={{ base: "xs", sm: "lg" }}>
+      padding={{ base: "xs", sm: "md" }}>
       <AppShell.Header>{header}</AppShell.Header>
       {/** Desktop sidebar styling */}
       {sidebar && (
