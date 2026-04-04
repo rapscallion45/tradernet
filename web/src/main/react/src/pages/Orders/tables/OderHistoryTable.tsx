@@ -44,6 +44,7 @@ const OderHistoryTable: FC = () => {
   const [createdDateFromFilter, setCreatedDateFromFilter] = useState("")
   const [createdDateToFilter, setCreatedDateToFilter] = useState("")
   const [filtersExpanded, setFiltersExpanded] = useState(true)
+  const hasFiltersApplied = Boolean(assetFilter || positionFilter || statusFilter || createdDateFromFilter || createdDateToFilter)
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -181,7 +182,7 @@ const OderHistoryTable: FC = () => {
     <>
       <Stack gap={"xs"} mb={"sm"}>
         <Group justify={"space-between"} align={"center"}>
-          <SectionHeading>{`ALL ORDERS (${orders.length})`}</SectionHeading>
+          <SectionHeading>{`${hasFiltersApplied ? "FILTERED ORDERS" : "ALL ORDERS"} (${hasFiltersApplied ? filteredOrders.length : orders.length})`}</SectionHeading>
           <Group gap={"xs"}>
             <ActionIcon
               size={"sm"}
