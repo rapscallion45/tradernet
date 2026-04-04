@@ -181,7 +181,7 @@ const OderHistoryTable: FC = () => {
     <>
       <Stack gap={"xs"} mb={"sm"}>
         <Group justify={"space-between"} align={"center"}>
-          <SectionHeading>ALL ORDERS</SectionHeading>
+          <SectionHeading>{`ALL ORDERS (${orders.length})`}</SectionHeading>
           <Group gap={"xs"}>
             <ActionIcon
               size={"sm"}
