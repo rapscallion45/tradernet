@@ -2,7 +2,7 @@ import { useMemo } from "react"
 import { useQueries } from "@tanstack/react-query"
 import { getRestClient } from "api/RestClient"
 import { QueryClientKeys } from "global/constants"
-import { getSymbolMetrics } from "hooks/useSymbolMetrics"
+import { getSymbolMetrics } from "utils/metrics"
 
 const refetchIntervalMs = 15_000
 

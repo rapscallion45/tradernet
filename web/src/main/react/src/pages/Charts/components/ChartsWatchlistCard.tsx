@@ -1,7 +1,7 @@
 import { FC } from "react"
 import { Avatar, Badge, Divider, Group, Paper, ScrollArea, Table, Text } from "@mantine/core"
 import { IconChartCandle, IconStarFilled } from "@tabler/icons-react"
-import { SymbolMetrics } from "hooks/useSymbolMetrics"
+import { SymbolMetrics } from "utils/metrics"
 import { formatCurrency } from "utils/intl"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
 
