@@ -2,6 +2,7 @@ import { createBrowserRouter, isRouteErrorResponse, useRouteError } from "react-
 import { Badge, Card, Center, Group, Stack, Text, Title } from "@mantine/core"
 import Routes from "global/Routes"
 import Dashboard from "pages/Dashboard/DashboardPage"
+import ChartsPage from "pages/Charts/ChartsPage"
 import GroupsPage from "pages/Admin/Groups/GroupsPage"
 import SecurityRolesPage from "pages/Admin/SecurityRoles/SecurityRolesPage"
 import UsersPage from "pages/Admin/Users/UsersPage"
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
       {
         path: Routes.Orders,
         element: <OrderHistoryPage />,
+      },
+      {
+        path: Routes.Charts,
+        element: <ChartsPage />,
       },
       {
         path: "/admin",
