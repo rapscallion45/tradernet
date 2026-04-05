@@ -14,10 +14,10 @@ body {
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
+}
 
-  @mixin dark {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("../assets/app-background-dark.png");
-  }
+[data-mantine-color-scheme="dark"] body {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("../assets/app-background-dark.png");
 }
 
 :root {
