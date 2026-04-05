@@ -4,7 +4,7 @@ import { Spotlight, SpotlightActionData, SpotlightActionGroupData } from "@manti
 import Routes from "global/Routes"
 import useCurrentUser from "hooks/useCurrentUser"
 import classes from "./QuickNavigation.module.css"
-import { IconChartCandle, IconHistory, IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconChartLine, IconHistory, IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 
 /** default icon size */
 const iconSize = "lg"
@@ -38,7 +38,7 @@ const QuickNavigation: FC = () => {
       label: "Charts",
       description: "Open the dedicated charting workspace",
       onClick: () => navigate(Routes.Charts),
-      leftSection: <IconChartCandle />,
+      leftSection: <IconChartLine />,
     },
     {
       id: "users",

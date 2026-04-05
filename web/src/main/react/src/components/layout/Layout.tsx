@@ -2,7 +2,7 @@ import { FC, Suspense } from "react"
 import { Link as ReactRouterLink, LinkProps as ReactRouterLinkProps, Outlet, useLocation } from "react-router-dom"
 import { Group, Image, TextInput } from "@mantine/core"
 import { spotlight } from "@mantine/spotlight"
-import { IconChartCandle, IconHistory, IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconChartLine, IconHistory, IconHome, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 import Routes from "global/Routes"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
 import QuickNavigation from "components/QuickNavigation"
@@ -31,7 +31,7 @@ export const sidebarItems: SidebarItem[] = [
   {
     label: "Charts",
     path: Routes.Charts,
-    icon: <IconChartCandle />,
+    icon: <IconChartLine />,
   },
   {
     label: "Users & Groups",

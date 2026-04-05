@@ -6,7 +6,6 @@ import { useViewportSize } from "@mantine/hooks"
 import { getRestClient } from "api/ApiInterfaceAxios"
 import { MarketBar } from "api/types"
 import { TradingChartPanel } from "components/TradingChartPanel/TradingChartPanel"
-import { SectionHeading } from "components/SectionHeading/SectionHeading"
 import { QueryClientKeys } from "global/constants"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
@@ -72,7 +71,6 @@ const ChartsPage: FC = () => {
 
   return (
     <Stack gap="md" h={`calc(100dvh - 120px)`}>
-      <SectionHeading>CHARTS</SectionHeading>
       <Grid gutter="md" align="stretch" style={{ flex: 1 }}>
         <Grid.Col span={{ base: 12, lg: 10 }}>
           <TradingChartPanel onSymbolChange={setSelectedSymbol} height={chartHeight} />
