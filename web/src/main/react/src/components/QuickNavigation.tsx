@@ -4,7 +4,7 @@ import { Spotlight, SpotlightActionData, SpotlightActionGroupData } from "@manti
 import Routes from "global/Routes"
 import useCurrentUser from "hooks/useCurrentUser"
 import classes from "./QuickNavigation.module.css"
-import { IconHistory, IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
+import { IconChartCandle, IconHistory, IconHome, IconSearch, IconShield, IconUser, IconUsersGroup } from "@tabler/icons-react"
 
 /** default icon size */
 const iconSize = "lg"
@@ -32,6 +32,13 @@ const QuickNavigation: FC = () => {
       description: "View your orders with profit/loss",
       onClick: () => navigate(Routes.Orders),
       leftSection: <IconHistory />,
+    },
+    {
+      id: "charts",
+      label: "Charts",
+      description: "Open the dedicated charting workspace",
+      onClick: () => navigate(Routes.Charts),
+      leftSection: <IconChartCandle />,
     },
     {
       id: "users",

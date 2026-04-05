@@ -261,7 +261,11 @@ const createCandlestickPlugin = (seriesRef: MutableRefObject<CandleArrays>): Plu
   },
 })
 
-export const TradingChartPanel: FC = () => {
+type TradingChartPanelProps = {
+  onSymbolChange?: (symbol: string) => void
+}
+
+export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }) => {
   const chartHostRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<uPlot | null>(null)
@@ -320,6 +324,10 @@ export const TradingChartPanel: FC = () => {
       setSymbol(symbolOptions[0] ?? DEFAULT_CHART_SYMBOL)
     }
   }, [symbol, symbolOptions])
+
+  useEffect(() => {
+    onSymbolChange?.(symbol)
+  }, [onSymbolChange, symbol])
 
   useEffect(() => {
     setCurrencyDraft(currency)
