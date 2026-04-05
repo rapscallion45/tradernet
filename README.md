@@ -8,6 +8,10 @@ Tradernet is a multi-module project with a Java backend (WAR) and a Vite-based w
 - `data-model/`, `services/`, `api/` — Jakarta EE/Spring-based backend modules (the `api` module produces the WAR).
 - `pom.xml` — Maven parent project that aggregates modules and aligns WildFly versions.
 
+## Documentation
+
+For module-by-module explanations, see [`docs/README.md`](docs/README.md).
+
 ## Requirements
 
 - Java 11 (the Maven build targets Java 11).
