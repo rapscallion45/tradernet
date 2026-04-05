@@ -2,6 +2,7 @@ import { FC, useMemo, useState } from "react"
 import { Avatar, Badge, Divider, Grid, Group, Loader, Paper, ScrollArea, Stack, Table, Text, ThemeIcon } from "@mantine/core"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { IconChartCandle, IconStarFilled, IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { useViewportSize } from "@mantine/hooks"
 import { getRestClient } from "api/ApiInterfaceAxios"
 import { MarketBar } from "api/types"
 import { TradingChartPanel } from "components/TradingChartPanel/TradingChartPanel"
@@ -35,8 +36,10 @@ const getSymbolMetrics = (bars: MarketBar[]) => {
  */
 const ChartsPage: FC = () => {
   const { currency } = useCurrencyPreference()
+  const { height: viewportHeight } = useViewportSize()
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT")
   const { data: symbolOptions = [] } = useMarketSymbols()
+  const chartHeight = Math.max(520, viewportHeight - 180)
 
   const watchlistSymbols = useMemo(() => {
     const symbols = symbolOptions.length > 0 ? symbolOptions.slice(0, watchlistLimit) : [selectedSymbol]
@@ -68,14 +71,14 @@ const ChartsPage: FC = () => {
   const isUp = detailMetrics.delta >= 0
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" h={`calc(100dvh - 120px)`}>
       <SectionHeading>CHARTS</SectionHeading>
-      <Grid gutter="md" align="stretch">
-        <Grid.Col span={{ base: 12, lg: 8 }}>
-          <TradingChartPanel onSymbolChange={setSelectedSymbol} />
+      <Grid gutter="md" align="stretch" style={{ flex: 1 }}>
+        <Grid.Col span={{ base: 12, lg: 10 }}>
+          <TradingChartPanel onSymbolChange={setSelectedSymbol} height={chartHeight} />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, lg: 4 }}>
+        <Grid.Col span={{ base: 12, lg: 2 }}>
           <Stack gap="md" h="100%">
             <Paper withBorder radius="md" p="md">
               <Group justify="space-between" align="flex-start" mb="sm">

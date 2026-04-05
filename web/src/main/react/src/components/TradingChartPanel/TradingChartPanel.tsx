@@ -263,9 +263,10 @@ const createCandlestickPlugin = (seriesRef: MutableRefObject<CandleArrays>): Plu
 
 type TradingChartPanelProps = {
   onSymbolChange?: (symbol: string) => void
+  height?: number
 }
 
-export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }) => {
+export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, height }) => {
   const chartHostRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<uPlot | null>(null)
@@ -318,6 +319,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
+  const resolvedChartHeight = Math.max(320, height ?? chartHeight)
 
   useEffect(() => {
     if (!symbolOptions.includes(symbol)) {
@@ -546,7 +548,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
 
     const options: Options = {
       width: Math.max(host.clientWidth, 320),
-      height: chartHeight,
+      height: resolvedChartHeight,
       scales: {
         x: { time: true },
         y: { auto: true },
@@ -588,7 +590,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
 
       chartRef.current.setSize({
         width: Math.max(host.clientWidth, 320),
-        height: chartHeight,
+        height: resolvedChartHeight,
       })
       drawOverlay()
     })
@@ -604,7 +606,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
       chartRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDark])
+  }, [isDark, resolvedChartHeight])
 
   useEffect(() => {
     const worker = new Worker(new URL("../../workers/chartStreamWorker.ts", import.meta.url), { type: "module" })
@@ -637,7 +639,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
       workerRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [resolvedChartHeight])
 
   useEffect(() => {
     indicatorsRef.current = indicators
@@ -917,7 +919,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
             {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
           </Text>
         </div>
-        <div ref={chartHostRef} className={classes.plotHost} />
+        <div ref={chartHostRef} className={classes.plotHost} style={{ minHeight: resolvedChartHeight }} />
         {showStreamSpinner && (
           <div className={classes.centeredSpinner} aria-live="polite" aria-label="Waiting for market stream">
             <Loader size="md" />
@@ -926,6 +928,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange }
         <canvas
           ref={overlayRef}
           className={classes.overlayCanvas}
+          style={{ height: resolvedChartHeight }}
           onClick={handleOverlayClick}
           onMouseMove={handleOverlayMouseMove}
           onMouseLeave={handleOverlayMouseLeave}
