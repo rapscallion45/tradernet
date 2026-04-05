@@ -72,11 +72,11 @@ const ChartsPage: FC = () => {
   return (
     <Stack gap="md" h={`calc(100dvh - 120px)`}>
       <Grid gutter="md" align="stretch" style={{ flex: 1 }}>
-        <Grid.Col span={{ base: 12, lg: 10 }}>
+        <Grid.Col span={{ base: 12, lg: 9 }}>
           <TradingChartPanel onSymbolChange={setSelectedSymbol} height={chartHeight} />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, lg: 2 }}>
+        <Grid.Col span={{ base: 12, lg: 3 }}>
           <Stack gap="md" h="100%">
             <Paper withBorder radius="md" p="md">
               <Group justify="space-between" align="flex-start" mb="sm">
