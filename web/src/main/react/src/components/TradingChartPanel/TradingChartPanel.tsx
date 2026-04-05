@@ -639,7 +639,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       workerRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedChartHeight])
+  }, [])
 
   useEffect(() => {
     indicatorsRef.current = indicators
