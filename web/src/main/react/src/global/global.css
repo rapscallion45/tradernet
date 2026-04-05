@@ -17,7 +17,7 @@ body {
 }
 
 [data-mantine-color-scheme="dark"] body {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url("../assets/app-background-dark.png");
+  background-image: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url("../assets/app-background-dark.png");
 }
 
 :root {
