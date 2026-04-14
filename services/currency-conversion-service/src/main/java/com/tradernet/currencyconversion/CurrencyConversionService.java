@@ -8,6 +8,7 @@ import jakarta.ejb.Singleton;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -30,6 +31,7 @@ public class CurrencyConversionService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final MathContext MC = MathContext.DECIMAL64;
+    private static final int CURRENCY_SCALE = 2;
 
     private static final Map<CurrencyCode, BigDecimal> USD_BASED_FALLBACK_RATES = new EnumMap<>(CurrencyCode.class);
 
@@ -119,7 +121,10 @@ public class CurrencyConversionService {
         }
 
         BigDecimal rate = getRate(from, to, timestamp == null ? Instant.now() : timestamp);
-        return BigDecimal.valueOf(amount).multiply(rate, MC).doubleValue();
+        return BigDecimal.valueOf(amount)
+            .multiply(rate, MC)
+            .setScale(CURRENCY_SCALE, RoundingMode.HALF_UP)
+            .doubleValue();
     }
 
     public MarketBar convertBar(MarketBar bar, CurrencyCode targetCurrency) {
