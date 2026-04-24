@@ -739,13 +739,13 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       return null
     }
 
-    const rect = plot.root.getBoundingClientRect()
-    const rootX = event.clientX - rect.left
-    const rootY = event.clientY - rect.top
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
 
     return {
-      time: plot.posToVal(rootX, "x", false),
-      price: plot.posToVal(rootY, "y", false),
+      time: plot.posToVal(x, "x", true),
+      price: plot.posToVal(y, "y", true),
     }
   }
 
