@@ -1,8 +1,10 @@
 import { FC, Suspense, useMemo } from "react"
-import { Card, Group, Stack, Table, Text } from "@mantine/core"
+import { Card, Group, Stack, Text } from "@mantine/core"
+import { ColumnDef } from "@tanstack/react-table"
 import { Title } from "components/Title/Title"
 import PageHeader from "components/layout/PageHeader/PageHeader"
 import PageLoadingSkeleton from "components/PageLoadingSkeleton"
+import { Table } from "components/Table/Table"
 import { usePortfolio } from "hooks/usePortfolio"
 import { formatCurrency, formatDateTime, formatNumber } from "utils/intl"
 import classes from "./PortfolioPage.module.css"
@@ -66,8 +68,70 @@ const PortfolioChart: FC = () => {
   )
 }
 
+type PortfolioAssetRow = {
+  id: string
+  symbol: string
+  quantity: number
+  averageCost: number
+  currentPrice: number
+  marketValue: number
+  profitLoss: number
+  profitLossPercent: number
+}
+
 const PortfolioContent: FC = () => {
   const { data: portfolio } = usePortfolio()
+
+  const rows = useMemo<PortfolioAssetRow[]>(
+    () =>
+      portfolio.assets.map((asset) => ({
+        id: asset.symbol,
+        symbol: asset.symbol,
+        quantity: asset.quantity,
+        averageCost: asset.averageCost,
+        currentPrice: asset.currentPrice,
+        marketValue: asset.marketValue,
+        profitLoss: asset.profitLoss,
+        profitLossPercent: asset.profitLossPercent,
+      })),
+    [portfolio.assets],
+  )
+
+  const columns = useMemo<ColumnDef<PortfolioAssetRow>[]>(
+    () => [
+      { accessorKey: "symbol", header: "Asset" },
+      {
+        accessorKey: "quantity",
+        header: "Quantity",
+        cell: ({ row }) => formatNumber(row.original.quantity, { maximumFractionDigits: 8 }),
+      },
+      {
+        accessorKey: "averageCost",
+        header: "Avg Cost",
+        cell: ({ row }) => formatCurrency(row.original.averageCost, portfolio.currency),
+      },
+      {
+        accessorKey: "currentPrice",
+        header: "Current Price",
+        cell: ({ row }) => formatCurrency(row.original.currentPrice, portfolio.currency),
+      },
+      {
+        accessorKey: "marketValue",
+        header: "Market Value",
+        cell: ({ row }) => formatCurrency(row.original.marketValue, portfolio.currency),
+      },
+      {
+        accessorKey: "profitLoss",
+        header: "P/L",
+        cell: ({ row }) => {
+          const value = row.original.profitLoss
+          const color = value >= 0 ? "green" : "red"
+          return <Text c={color}>{`${formatCurrency(value, portfolio.currency)} (${row.original.profitLossPercent.toFixed(2)}%)`}</Text>
+        },
+      },
+    ],
+    [portfolio.currency],
+  )
 
   return (
     <Stack gap="lg">
@@ -101,39 +165,7 @@ const PortfolioContent: FC = () => {
         <Text fw={700} mb="sm">
           Held currencies
         </Text>
-        <Table striped highlightOnHover withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Asset</Table.Th>
-              <Table.Th ta="right">Quantity</Table.Th>
-              <Table.Th ta="right">Avg Cost</Table.Th>
-              <Table.Th ta="right">Current Price</Table.Th>
-              <Table.Th ta="right">Market Value</Table.Th>
-              <Table.Th ta="right">P/L</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {portfolio.assets.map((asset) => (
-              <Table.Tr key={asset.symbol}>
-                <Table.Td>{asset.symbol}</Table.Td>
-                <Table.Td ta="right">{formatNumber(asset.quantity, { maximumFractionDigits: 8 })}</Table.Td>
-                <Table.Td ta="right">{formatCurrency(asset.averageCost, portfolio.currency)}</Table.Td>
-                <Table.Td ta="right">{formatCurrency(asset.currentPrice, portfolio.currency)}</Table.Td>
-                <Table.Td ta="right">{formatCurrency(asset.marketValue, portfolio.currency)}</Table.Td>
-                <Table.Td ta="right" c={asset.profitLoss >= 0 ? "green" : "red"}>{`${formatCurrency(asset.profitLoss, portfolio.currency)} (${asset.profitLossPercent.toFixed(2)}%)`}</Table.Td>
-              </Table.Tr>
-            ))}
-            {portfolio.assets.length === 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={6}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    No held currencies yet. Place an order to start building your portfolio.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
-          </Table.Tbody>
-        </Table>
+        <Table<PortfolioAssetRow> columns={columns} data={rows} caption={rows.length === 0 ? "No held currencies yet. Place an order to start building your portfolio." : undefined} />
       </Card>
     </Stack>
   )
