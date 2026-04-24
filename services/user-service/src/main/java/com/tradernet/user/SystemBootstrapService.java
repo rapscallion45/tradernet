@@ -166,6 +166,7 @@ public class SystemBootstrapService {
         ensureResource("Groups", "groups");
         ensureResource("Security Roles", "roles");
         ensureResource("Orders", "orders");
+        ensureResource("Portfolio", "portfolio");
         ensureResource("Trades", "trades");
         ensureResource("Signals", "signals");
         ensureResource("Market", "market");
