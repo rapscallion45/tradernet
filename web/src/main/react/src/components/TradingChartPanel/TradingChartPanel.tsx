@@ -742,10 +742,25 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
+    const width = plot.bbox.width
+    const height = plot.bbox.height
+    const xMin = plot.scales.x.min
+    const xMax = plot.scales.x.max
+    const yMin = plot.scales.y.min
+    const yMax = plot.scales.y.max
+
+    if (!width || !height || xMin == null || xMax == null || yMin == null || yMax == null) {
+      return null
+    }
+
+    const clampedX = Math.min(Math.max(x, 0), width)
+    const clampedY = Math.min(Math.max(y, 0), height)
+    const xRatio = clampedX / width
+    const yRatio = clampedY / height
 
     return {
-      time: plot.posToVal(x, "x", true),
-      price: plot.posToVal(y, "y", true),
+      time: xMin + (xMax - xMin) * xRatio,
+      price: yMax - (yMax - yMin) * yRatio,
     }
   }
 
