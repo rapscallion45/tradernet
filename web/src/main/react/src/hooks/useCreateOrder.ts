@@ -68,6 +68,7 @@ export const useCreateOrder = () => {
     onSuccess: (data, payload) => {
       handleSuccess(data, { ...defaultHandlers(payload) }, payload)
       void queryClient.invalidateQueries({ queryKey: [QueryClientKeys.Orders] })
+      void queryClient.invalidateQueries({ queryKey: [QueryClientKeys.Portfolio] })
     },
     onError: (error, payload) => {
       handleError(error, { ...defaultHandlers(payload) }, payload)
