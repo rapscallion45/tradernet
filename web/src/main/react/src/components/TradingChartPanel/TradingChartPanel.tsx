@@ -443,6 +443,10 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
     ctx.clearRect(0, 0, width, height)
     ctx.strokeStyle = "#38bdf8"
     ctx.lineWidth = 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(0, 0, width, height)
+    ctx.clip()
 
     drawings.forEach((drawing) => {
       if (drawing.type === "hline") {
@@ -497,8 +501,8 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
 
     const hover = hoverPointRef.current
     if (hover) {
-      const hoverX = plot.valToPos(hover.time, "x", true) - left
-      const hoverY = plot.valToPos(hover.price, "y", true) - top
+      const hoverX = Math.min(Math.max(plot.valToPos(hover.time, "x", true) - left, 0), width)
+      const hoverY = Math.min(Math.max(plot.valToPos(hover.price, "y", true) - top, 0), height)
       const crosshair = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.55)"
       const chipBg = isDark ? "rgba(22, 28, 36, 0.95)" : "rgba(255,255,255,0.95)"
       const chipFg = isDark ? "#e5e7eb" : "#111827"
@@ -535,6 +539,8 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       ctx.fillStyle = chipFg
       ctx.fillText(xLabel, xChipX + 5, Math.max(0, height - 5))
     }
+
+    ctx.restore()
   }
 
   useEffect(() => {
@@ -742,15 +748,25 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
+    const width = plot.bbox.width
+    const height = plot.bbox.height
+    const xMin = plot.scales.x.min
+    const xMax = plot.scales.x.max
+    const yMin = plot.scales.y.min
+    const yMax = plot.scales.y.max
 
-    // posToVal(..., can=false) expects plot-space css pixels relative to uPlot root,
-    // so include plot bbox offsets instead of raw overlay-local coordinates.
-    const plotX = x + plot.bbox.left
-    const plotY = y + plot.bbox.top
+    if (!width || !height || xMin == null || xMax == null || yMin == null || yMax == null) {
+      return null
+    }
+
+    const clampedX = Math.min(Math.max(x, 0), width)
+    const clampedY = Math.min(Math.max(y, 0), height)
+    const xRatio = clampedX / width
+    const yRatio = clampedY / height
 
     return {
-      time: plot.posToVal(plotX, "x", false),
-      price: plot.posToVal(plotY, "y", false),
+      time: xMin + (xMax - xMin) * xRatio,
+      price: yMax - (yMax - yMin) * yRatio,
     }
   }
 
