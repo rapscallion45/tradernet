@@ -163,10 +163,9 @@ public class OrderResource {
         double rawEntry = order.getPrice();
         double quantity = order.getQuantity();
 
-        Instant entryTimestamp = order.getCreatedAt() == null ? Instant.now() : order.getCreatedAt();
         Instant currentTimestamp = closed && order.getClosedAt() != null ? order.getClosedAt() : Instant.now();
 
-        double entry = currencyConversionService.convertAmount(rawEntry, sourceCurrency, displayCurrency, entryTimestamp);
+        double entry = currencyConversionService.convertAmount(rawEntry, sourceCurrency, displayCurrency, currentTimestamp);
         double currentPrice = currencyConversionService.convertAmount(rawCurrentPrice, sourceCurrency, displayCurrency, currentTimestamp);
         Double closePrice = order.getClosePrice() == null ? null
             : currencyConversionService.convertAmount(order.getClosePrice(), sourceCurrency, displayCurrency, currentTimestamp);

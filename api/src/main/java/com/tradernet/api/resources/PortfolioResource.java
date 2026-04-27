@@ -199,23 +199,41 @@ public class PortfolioResource {
     }
 
     private void applyTrade(PositionAggregate aggregate, double quantityDelta, double tradePrice) {
-        if (quantityDelta > 0) {
-            aggregate.netCost += quantityDelta * tradePrice;
-            aggregate.netQuantity += quantityDelta;
+        if (Math.abs(quantityDelta) < 1e-9) {
             return;
         }
 
-        if (quantityDelta < 0 && aggregate.netQuantity > 0) {
-            double quantityToSell = Math.min(aggregate.netQuantity, Math.abs(quantityDelta));
-            double averageCost = aggregate.netQuantity == 0 ? 0 : (aggregate.netCost / aggregate.netQuantity);
-            aggregate.netQuantity -= quantityToSell;
-            aggregate.netCost -= quantityToSell * averageCost;
-
+        if (Math.abs(aggregate.netQuantity) < 1e-9 || hasSameSign(aggregate.netQuantity, quantityDelta)) {
+            aggregate.netQuantity += quantityDelta;
+            aggregate.netCost += quantityDelta * tradePrice;
             if (Math.abs(aggregate.netQuantity) < 1e-9) {
                 aggregate.netQuantity = 0;
                 aggregate.netCost = 0;
             }
+            return;
         }
+
+        double newQuantity = aggregate.netQuantity + quantityDelta;
+        double averageCost = Math.abs(aggregate.netCost / aggregate.netQuantity);
+
+        if (Math.abs(newQuantity) < 1e-9) {
+            aggregate.netQuantity = 0;
+            aggregate.netCost = 0;
+            return;
+        }
+
+        if (hasSameSign(aggregate.netQuantity, newQuantity)) {
+            aggregate.netQuantity = newQuantity;
+            aggregate.netCost = Math.copySign(Math.abs(newQuantity) * averageCost, newQuantity);
+            return;
+        }
+
+        aggregate.netQuantity = newQuantity;
+        aggregate.netCost = newQuantity * tradePrice;
+    }
+
+    private boolean hasSameSign(double left, double right) {
+        return (left > 0 && right > 0) || (left < 0 && right < 0);
     }
 
     private double resolveCurrentPrice(String symbol, double fallbackPrice) {
