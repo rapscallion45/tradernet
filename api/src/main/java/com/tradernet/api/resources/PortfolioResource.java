@@ -21,7 +21,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -62,34 +61,21 @@ public class PortfolioResource {
         Instant now = Instant.now();
 
         List<OrderEntity> orders = orderService.getOrdersByUserId(authUser.get().getId());
-        PortfolioSummaryDto summary = buildPortfolioSummary(orders, displayCurrency, now);
+        List<PositionEvent> positionEvents = buildPositionEvents(orders, now);
 
-        if ("standard".equalsIgnoreCase(authUser.get().getUsername())) {
-            summary.setHistory(buildSampleHistory(summary.getTotalMarketValue(), now));
-        } else {
-            summary.setHistory(buildSimpleHistory(summary.getTotalMarketValue(), now));
-        }
+        PortfolioSummaryDto summary = buildPortfolioSummary(positionEvents, displayCurrency, now);
+        summary.setHistory(buildHistoryFromEvents(positionEvents, displayCurrency, now));
 
         return Response.ok(summary).build();
     }
 
-    private PortfolioSummaryDto buildPortfolioSummary(List<OrderEntity> orders, CurrencyCode displayCurrency, Instant now) {
+    private PortfolioSummaryDto buildPortfolioSummary(List<PositionEvent> positionEvents, CurrencyCode displayCurrency, Instant now) {
         Map<String, PositionAggregate> positions = new HashMap<>();
 
-        for (OrderEntity order : orders) {
-            if (order == null || order.getSymbol() == null || order.getSymbol().isBlank()) {
-                continue;
-            }
-
-            String symbol = order.getSymbol().trim().toUpperCase(Locale.ROOT);
-            PositionAggregate aggregate = positions.computeIfAbsent(symbol, ignored -> new PositionAggregate());
-
-            double quantity = order.getQuantity();
-            double signedQuantity = order.getSide() == OrderEntity.Side.BUY ? quantity : -quantity;
-            double signedCost = signedQuantity * order.getPrice();
-
-            aggregate.netQuantity += signedQuantity;
-            aggregate.netCost += signedCost;
+        for (PositionEvent event : positionEvents) {
+            PositionAggregate aggregate = positions.computeIfAbsent(event.symbol, ignored -> new PositionAggregate());
+            applyTrade(aggregate, event.quantityDelta, event.price);
+            aggregate.lastKnownPrice = event.price;
         }
 
         List<PortfolioAssetDto> assets = new ArrayList<>();
@@ -106,7 +92,7 @@ public class PortfolioResource {
             CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(symbol);
 
             double averageCostRaw = aggregate.netCost <= 0 ? 0 : aggregate.netCost / aggregate.netQuantity;
-            double currentPriceRaw = resolveCurrentPrice(symbol, averageCostRaw > 0 ? averageCostRaw : 1);
+            double currentPriceRaw = resolveCurrentPrice(symbol, aggregate.lastKnownPrice > 0 ? aggregate.lastKnownPrice : averageCostRaw);
 
             double averageCost = currencyConversionService.convertAmount(averageCostRaw, sourceCurrency, displayCurrency, now);
             double currentPrice = currencyConversionService.convertAmount(currentPriceRaw, sourceCurrency, displayCurrency, now);
@@ -144,29 +130,92 @@ public class PortfolioResource {
         return summary;
     }
 
-    private List<PortfolioHistoryPointDto> buildSampleHistory(double currentValue, Instant now) {
+    private List<PortfolioHistoryPointDto> buildHistoryFromEvents(List<PositionEvent> positionEvents, CurrencyCode displayCurrency, Instant now) {
         List<PortfolioHistoryPointDto> history = new ArrayList<>();
-        double safeCurrentValue = currentValue <= 0 ? 10000 : currentValue;
-        Instant start = now.minus(24, ChronoUnit.MONTHS);
-
-        for (int i = 0; i <= 24; i++) {
-            double growth = (double) i / 24.0;
-            double seasonal = Math.sin(i * 0.9) * 0.06;
-            double value = safeCurrentValue * (0.35 + (growth * 0.65) + seasonal);
-            history.add(new PortfolioHistoryPointDto(start.plus(i, ChronoUnit.MONTHS).toEpochMilli(), Math.max(250, value)));
+        if (positionEvents.isEmpty()) {
+            return history;
         }
 
+        Map<String, PositionAggregate> rollingPositions = new HashMap<>();
+
+        for (PositionEvent event : positionEvents) {
+            PositionAggregate aggregate = rollingPositions.computeIfAbsent(event.symbol, ignored -> new PositionAggregate());
+            applyTrade(aggregate, event.quantityDelta, event.price);
+            aggregate.lastKnownPrice = event.price;
+
+            double accountValue = calculateAccountValue(rollingPositions, displayCurrency, event.timestamp, false);
+            history.add(new PortfolioHistoryPointDto(event.timestamp.toEpochMilli(), accountValue));
+        }
+
+        double currentAccountValue = calculateAccountValue(rollingPositions, displayCurrency, now, true);
+        history.add(new PortfolioHistoryPointDto(now.toEpochMilli(), currentAccountValue));
         return history;
     }
 
-    private List<PortfolioHistoryPointDto> buildSimpleHistory(double currentValue, Instant now) {
-        List<PortfolioHistoryPointDto> history = new ArrayList<>();
-        double safeCurrentValue = currentValue <= 0 ? 1000 : currentValue;
+    private double calculateAccountValue(Map<String, PositionAggregate> positions, CurrencyCode displayCurrency, Instant timestamp, boolean useLivePrice) {
+        double totalValue = 0;
 
-        history.add(new PortfolioHistoryPointDto(now.minus(30, ChronoUnit.DAYS).toEpochMilli(), safeCurrentValue * 0.92));
-        history.add(new PortfolioHistoryPointDto(now.minus(14, ChronoUnit.DAYS).toEpochMilli(), safeCurrentValue * 0.96));
-        history.add(new PortfolioHistoryPointDto(now.toEpochMilli(), safeCurrentValue));
-        return history;
+        for (Map.Entry<String, PositionAggregate> entry : positions.entrySet()) {
+            PositionAggregate aggregate = entry.getValue();
+            if (aggregate.netQuantity <= 0) {
+                continue;
+            }
+
+            String symbol = entry.getKey();
+            double fallbackPrice = aggregate.lastKnownPrice > 0 ? aggregate.lastKnownPrice : (aggregate.netCost / aggregate.netQuantity);
+            double priceRaw = useLivePrice ? resolveCurrentPrice(symbol, fallbackPrice) : fallbackPrice;
+
+            CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(symbol);
+            double convertedPrice = currencyConversionService.convertAmount(priceRaw, sourceCurrency, displayCurrency, timestamp);
+            totalValue += aggregate.netQuantity * convertedPrice;
+        }
+
+        return totalValue;
+    }
+
+    private List<PositionEvent> buildPositionEvents(List<OrderEntity> orders, Instant fallbackTime) {
+        List<PositionEvent> events = new ArrayList<>();
+
+        for (OrderEntity order : orders) {
+            if (order == null || order.getSymbol() == null || order.getSymbol().isBlank()) {
+                continue;
+            }
+
+            String symbol = order.getSymbol().trim().toUpperCase(Locale.ROOT);
+            double signedQuantity = order.getSide() == OrderEntity.Side.BUY ? order.getQuantity() : -order.getQuantity();
+            Instant openTimestamp = order.getCreatedAt() != null ? order.getCreatedAt() : fallbackTime;
+
+            events.add(new PositionEvent(symbol, signedQuantity, order.getPrice(), openTimestamp));
+
+            boolean isClosed = OrderService.CLOSED_STATUS.equals(order.getStatus()) && order.getClosePrice() != null;
+            if (isClosed) {
+                Instant closeTimestamp = order.getClosedAt() != null ? order.getClosedAt() : openTimestamp;
+                events.add(new PositionEvent(symbol, -signedQuantity, order.getClosePrice(), closeTimestamp));
+            }
+        }
+
+        events.sort(Comparator.comparing(event -> event.timestamp));
+        return events;
+    }
+
+    private void applyTrade(PositionAggregate aggregate, double quantityDelta, double tradePrice) {
+        if (quantityDelta > 0) {
+            aggregate.netCost += quantityDelta * tradePrice;
+            aggregate.netQuantity += quantityDelta;
+            return;
+        }
+
+        if (quantityDelta < 0 && aggregate.netQuantity > 0) {
+            double quantityToSell = Math.min(aggregate.netQuantity, Math.abs(quantityDelta));
+            double averageCost = aggregate.netQuantity == 0 ? 0 : (aggregate.netCost / aggregate.netQuantity);
+            aggregate.netQuantity -= quantityToSell;
+            aggregate.netCost -= quantityToSell * averageCost;
+
+            if (Math.abs(aggregate.netQuantity) < 1e-9) {
+                aggregate.netQuantity = 0;
+                aggregate.netCost = 0;
+            }
+        }
     }
 
     private double resolveCurrentPrice(String symbol, double fallbackPrice) {
@@ -180,5 +229,20 @@ public class PortfolioResource {
     private static class PositionAggregate {
         private double netQuantity;
         private double netCost;
+        private double lastKnownPrice;
+    }
+
+    private static class PositionEvent {
+        private final String symbol;
+        private final double quantityDelta;
+        private final double price;
+        private final Instant timestamp;
+
+        private PositionEvent(String symbol, double quantityDelta, double price, Instant timestamp) {
+            this.symbol = symbol;
+            this.quantityDelta = quantityDelta;
+            this.price = price;
+            this.timestamp = timestamp;
+        }
     }
 }
