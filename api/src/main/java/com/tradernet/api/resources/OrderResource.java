@@ -163,17 +163,19 @@ public class OrderResource {
         double rawEntry = order.getPrice();
         double quantity = order.getQuantity();
 
+        Instant entryTimestamp = order.getCreatedAt() == null ? Instant.now() : order.getCreatedAt();
         Instant currentTimestamp = closed && order.getClosedAt() != null ? order.getClosedAt() : Instant.now();
 
-        double entry = currencyConversionService.convertAmount(rawEntry, sourceCurrency, displayCurrency, currentTimestamp);
+        double entry = currencyConversionService.convertAmount(rawEntry, sourceCurrency, displayCurrency, entryTimestamp);
         double currentPrice = currencyConversionService.convertAmount(rawCurrentPrice, sourceCurrency, displayCurrency, currentTimestamp);
         Double closePrice = order.getClosePrice() == null ? null
             : currencyConversionService.convertAmount(order.getClosePrice(), sourceCurrency, displayCurrency, currentTimestamp);
 
-        double pnlPerUnit = order.getSide() == OrderEntity.Side.BUY ? (currentPrice - entry) : (entry - currentPrice);
+        double rawPnlPerUnit = order.getSide() == OrderEntity.Side.BUY ? (rawCurrentPrice - rawEntry) : (rawEntry - rawCurrentPrice);
+        double pnlPerUnit = currencyConversionService.convertAmount(rawPnlPerUnit, sourceCurrency, displayCurrency, currentTimestamp);
         double pnl = pnlPerUnit * quantity;
-        double pnlPercent = entry == 0 ? 0 : (pnlPerUnit / entry) * 100.0;
-        double netValue = (entry * quantity) + pnl;
+        double pnlPercent = rawEntry == 0 ? 0 : (rawPnlPerUnit / rawEntry) * 100.0;
+        double netValue = currentPrice * quantity;
 
         responseDto.setPrice(entry);
         responseDto.setCurrentPrice(currentPrice);
