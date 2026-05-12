@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -104,12 +106,12 @@ public class PortfolioResource {
             PortfolioAssetDto asset = new PortfolioAssetDto();
             asset.setSymbol(symbol);
             asset.setQuantity(aggregate.netQuantity);
-            asset.setAverageCost(averageCost);
-            asset.setCurrentPrice(currentPrice);
-            asset.setTotalCost(assetCost);
-            asset.setMarketValue(marketValue);
-            asset.setProfitLoss(pnl);
-            asset.setProfitLossPercent(pnlPercent);
+            asset.setAverageCost(roundCurrency(averageCost));
+            asset.setCurrentPrice(roundCurrency(currentPrice));
+            asset.setTotalCost(roundCurrency(assetCost));
+            asset.setMarketValue(roundCurrency(marketValue));
+            asset.setProfitLoss(roundCurrency(pnl));
+            asset.setProfitLossPercent(roundCurrency(pnlPercent));
 
             assets.add(asset);
             totalCost += assetCost;
@@ -121,12 +123,12 @@ public class PortfolioResource {
         PortfolioSummaryDto summary = new PortfolioSummaryDto();
         summary.setCurrency(displayCurrency.name());
         summary.setAssets(assets);
-        summary.setTotalCost(totalCost);
-        summary.setTotalMarketValue(totalMarketValue);
+        summary.setTotalCost(roundCurrency(totalCost));
+        summary.setTotalMarketValue(roundCurrency(totalMarketValue));
 
         double totalPnl = totalMarketValue - totalCost;
-        summary.setTotalProfitLoss(totalPnl);
-        summary.setTotalProfitLossPercent(totalCost == 0 ? 0 : (totalPnl / totalCost) * 100.0);
+        summary.setTotalProfitLoss(roundCurrency(totalPnl));
+        summary.setTotalProfitLossPercent(roundCurrency(totalCost == 0 ? 0 : (totalPnl / totalCost) * 100.0));
         return summary;
     }
 
@@ -144,11 +146,11 @@ public class PortfolioResource {
             aggregate.lastKnownPrice = event.price;
 
             double accountValue = calculateAccountValue(rollingPositions, displayCurrency, event.timestamp, false);
-            history.add(new PortfolioHistoryPointDto(event.timestamp.toEpochMilli(), accountValue));
+            history.add(new PortfolioHistoryPointDto(event.timestamp.toEpochMilli(), roundCurrency(accountValue)));
         }
 
         double currentAccountValue = calculateAccountValue(rollingPositions, displayCurrency, now, true);
-        history.add(new PortfolioHistoryPointDto(now.toEpochMilli(), currentAccountValue));
+        history.add(new PortfolioHistoryPointDto(now.toEpochMilli(), roundCurrency(currentAccountValue)));
         return history;
     }
 
@@ -230,6 +232,10 @@ public class PortfolioResource {
 
         aggregate.netQuantity = newQuantity;
         aggregate.netCost = newQuantity * tradePrice;
+    }
+
+    private double roundCurrency(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private boolean hasSameSign(double left, double right) {
