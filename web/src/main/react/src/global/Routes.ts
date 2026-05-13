@@ -8,6 +8,7 @@ const Routes = {
   AdminGroups: "/admin/groups",
   AdminSecurityRoles: "/admin/security-roles",
   Orders: "/orders",
+  Portfolio: "/portfolio",
 } as const
 
 export default Routes

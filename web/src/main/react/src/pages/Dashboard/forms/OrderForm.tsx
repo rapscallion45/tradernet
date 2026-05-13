@@ -49,6 +49,16 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     refetchInterval: 3000,
   })
 
+
+  const { data: currentUnitPriceRaw = 0 } = useQuery({
+    queryKey: [QueryClientKeys.MarketBars, symbol, "RAW"],
+    queryFn: async () => {
+      const bars = await getRestClient().marketResource.getBars(symbol, "1S", 1)
+      return bars[0]?.close ?? 0
+    },
+    refetchInterval: 3000,
+  })
+
   useEffect(() => {
     const quantity = toNumeric(quantityValue)
     const amount = toNumeric(priceValue)
@@ -86,7 +96,7 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
   }, [setValue, symbol, symbolOptions])
 
   const handleOrderSubmit = (data: OrderData) => {
-    const resolvedUnitPrice = currentUnitPrice > 0 ? currentUnitPrice : data.quantity > 0 ? data.price / data.quantity : 0
+    const resolvedUnitPrice = currentUnitPriceRaw > 0 ? currentUnitPriceRaw : data.quantity > 0 ? data.price / data.quantity : 0
 
     onSubmit({
       ...data,

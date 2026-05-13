@@ -25,6 +25,9 @@ export enum QueryClientKeys {
   /** Orders */
   Orders = "Orders",
 
+  /** Portfolio */
+  Portfolio = "Portfolio",
+
   /** Market Bars */
   MarketBars = "MarketBars",
 

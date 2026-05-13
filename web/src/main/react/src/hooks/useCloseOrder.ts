@@ -57,6 +57,7 @@ export const useCloseOrder = () => {
     onSuccess: (data, orderId) => {
       handleSuccess(data, { ...defaultHandlers(orderId) }, orderId)
       void queryClient.invalidateQueries({ queryKey: [QueryClientKeys.Orders] })
+      void queryClient.invalidateQueries({ queryKey: [QueryClientKeys.Portfolio] })
     },
     onError: (error, orderId) => {
       handleError(error, { ...defaultHandlers(orderId) }, orderId)

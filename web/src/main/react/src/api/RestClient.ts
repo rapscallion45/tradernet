@@ -8,6 +8,7 @@ import { RolesResource } from "api/Roles"
 import { UsersResource } from "api/Users"
 import { OrdersResource } from "api/Orders"
 import { MarketResource } from "api/Market"
+import { PortfolioResource } from "api/Portfolio"
 
 let client: RestClient | null = null
 
@@ -39,6 +40,7 @@ export class RestClient {
   usersResource: UsersResource
   ordersResource: OrdersResource
   marketResource: MarketResource
+  portfolioResource: PortfolioResource
 
   constructor(apiInterface: ApiInterface) {
     this.apiInterface = apiInterface
@@ -49,5 +51,6 @@ export class RestClient {
     this.usersResource = new UsersResource(this.apiInterface)
     this.ordersResource = new OrdersResource(this.apiInterface)
     this.marketResource = new MarketResource(this.apiInterface)
+    this.portfolioResource = new PortfolioResource(this.apiInterface)
   }
 }
