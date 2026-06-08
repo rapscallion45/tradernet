@@ -200,3 +200,31 @@ export type OrderSummary = {
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
 }
+
+/** Portfolio */
+
+export type PortfolioAsset = {
+  symbol: string
+  quantity: number
+  averageCost: number
+  currentPrice: number
+  totalCost: number
+  marketValue: number
+  profitLoss: number
+  profitLossPercent: number
+}
+
+export type PortfolioHistoryPoint = {
+  timestamp: number
+  accountValue: number
+}
+
+export type PortfolioSummary = {
+  currency: string
+  totalMarketValue: number
+  totalCost: number
+  totalProfitLoss: number
+  totalProfitLossPercent: number
+  assets: PortfolioAsset[]
+  history: PortfolioHistoryPoint[]
+}

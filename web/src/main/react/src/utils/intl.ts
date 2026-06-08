@@ -98,6 +98,6 @@ export const formatCurrency = (value: number, currency = getUserCurrency(), loca
     style: "currency",
     currency: resolvedCurrency,
     minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
+    maximumFractionDigits: 2,
   }).format(value)
 }

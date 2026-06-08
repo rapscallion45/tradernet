@@ -26,6 +26,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
@@ -171,29 +173,34 @@ public class OrderResource {
         Double closePrice = order.getClosePrice() == null ? null
             : currencyConversionService.convertAmount(order.getClosePrice(), sourceCurrency, displayCurrency, currentTimestamp);
 
-        double pnlPerUnit = order.getSide() == OrderEntity.Side.BUY ? (currentPrice - entry) : (entry - currentPrice);
+        double rawPnlPerUnit = order.getSide() == OrderEntity.Side.BUY ? (rawCurrentPrice - rawEntry) : (rawEntry - rawCurrentPrice);
+        double pnlPerUnit = currencyConversionService.convertAmount(rawPnlPerUnit, sourceCurrency, displayCurrency, currentTimestamp);
         double pnl = pnlPerUnit * quantity;
-        double pnlPercent = entry == 0 ? 0 : (pnlPerUnit / entry) * 100.0;
-        double netValue = (entry * quantity) + pnl;
+        double pnlPercent = rawEntry == 0 ? 0 : (rawPnlPerUnit / rawEntry) * 100.0;
+        double netValue = currentPrice * quantity;
 
-        responseDto.setPrice(entry);
-        responseDto.setCurrentPrice(currentPrice);
-        responseDto.setPnl(pnl);
-        responseDto.setPnlPercent(pnlPercent);
-        responseDto.setNetValue(netValue);
+        responseDto.setPrice(roundCurrency(entry));
+        responseDto.setCurrentPrice(roundCurrency(currentPrice));
+        responseDto.setPnl(roundCurrency(pnl));
+        responseDto.setPnlPercent(roundCurrency(pnlPercent));
+        responseDto.setNetValue(roundCurrency(netValue));
         responseDto.setTiming(closed ? "CLOSED" : (pnlPerUnit > 0 ? "GOOD" : (pnlPerUnit < 0 ? "BAD" : "NEUTRAL")));
         responseDto.setClosedAt(order.getClosedAt());
-        responseDto.setClosePrice(closePrice);
+        responseDto.setClosePrice(closePrice == null ? null : roundCurrency(closePrice));
 
         responseDto.setCreatedAtDisplay(responseDto.getCreatedAt() == null ? "" : responseDto.getCreatedAt().toString());
-        responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.4f", currentPrice));
-        responseDto.setPnlDisplay(String.format(Locale.US, "%.4f", pnl));
-        responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", pnlPercent));
-        responseDto.setNetValueDisplay(String.format(Locale.US, "%.4f", netValue));
+        responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.2f", responseDto.getCurrentPrice()));
+        responseDto.setPnlDisplay(String.format(Locale.US, "%.2f", responseDto.getPnl()));
+        responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", responseDto.getPnlPercent()));
+        responseDto.setNetValueDisplay(String.format(Locale.US, "%.2f", responseDto.getNetValue()));
 
         return responseDto;
     }
 
+
+    private double roundCurrency(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
 
     private String resolveAiPrediction(String symbol) {
         List<AiSignal> signals = marketAiService.getSignals(200);

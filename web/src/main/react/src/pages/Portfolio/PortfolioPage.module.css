@@ -1,0 +1,19 @@
+.chartSvg {
+  width: 100%;
+  height: 220px;
+}
+
+.chartAxis {
+  stroke: var(--mantine-color-gray-3);
+  stroke-width: 1;
+}
+
+.chartArea {
+  fill: color-mix(in srgb, var(--mantine-color-blue-4) 20%, transparent);
+}
+
+.chartLine {
+  stroke: var(--mantine-color-blue-6);
+  stroke-width: 3;
+  fill: none;
+}
