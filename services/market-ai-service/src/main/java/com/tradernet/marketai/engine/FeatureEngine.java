@@ -1,5 +1,6 @@
 package com.tradernet.marketai.engine;
 
+import com.tradernet.marketai.context.MarketContextRegistry;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
 
@@ -12,11 +13,21 @@ public class FeatureEngine {
     private static final double ALPHA_FAST = 2.0 / (9.0 + 1.0);
     private static final double ALPHA_SLOW = 2.0 / (21.0 + 1.0);
 
+    private final MarketContextRegistry marketContextRegistry;
+
     private Double emaFast;
     private Double emaSlow;
     private Double avgGain;
     private Double avgLoss;
     private Double lastClose;
+
+    public FeatureEngine() {
+        this(new MarketContextRegistry());
+    }
+
+    public FeatureEngine(MarketContextRegistry marketContextRegistry) {
+        this.marketContextRegistry = marketContextRegistry == null ? new MarketContextRegistry() : marketContextRegistry;
+    }
 
     public synchronized FeatureSnapshot onClosedBar(MarketBar bar) {
         if (lastClose == null) {
@@ -25,7 +36,7 @@ public class FeatureEngine {
             emaSlow = bar.getClose();
             avgGain = 0.0;
             avgLoss = 0.0;
-            return new FeatureSnapshot(bar.getSymbol(), bar.getBucketStart(), bar.getClose(), emaFast, emaSlow, 50.0);
+            return withMarketContext(new FeatureSnapshot(bar.getSymbol(), bar.getBucketStart(), bar.getClose(), emaFast, emaSlow, 50.0));
         }
 
         final double change = bar.getClose() - lastClose;
@@ -41,6 +52,10 @@ public class FeatureEngine {
         final double rs = avgLoss == 0.0 ? 100.0 : avgGain / avgLoss;
         final double rsi = avgLoss == 0.0 ? 100.0 : 100.0 - (100.0 / (1.0 + rs));
 
-        return new FeatureSnapshot(bar.getSymbol(), bar.getBucketStart(), bar.getClose(), emaFast, emaSlow, rsi);
+        return withMarketContext(new FeatureSnapshot(bar.getSymbol(), bar.getBucketStart(), bar.getClose(), emaFast, emaSlow, rsi));
+    }
+
+    private FeatureSnapshot withMarketContext(FeatureSnapshot features) {
+        return marketContextRegistry.enrich(features);
     }
 }

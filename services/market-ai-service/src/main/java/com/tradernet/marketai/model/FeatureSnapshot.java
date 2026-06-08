@@ -11,14 +11,26 @@ public class FeatureSnapshot {
     private final double emaFast;
     private final double emaSlow;
     private final double rsi;
+    private final MarketContextSnapshot marketContext;
 
     public FeatureSnapshot(String symbol, long eventTime, double close, double emaFast, double emaSlow, double rsi) {
+        this(symbol, eventTime, close, emaFast, emaSlow, rsi, MarketContextSnapshot.neutral());
+    }
+
+    public FeatureSnapshot(String symbol,
+                           long eventTime,
+                           double close,
+                           double emaFast,
+                           double emaSlow,
+                           double rsi,
+                           MarketContextSnapshot marketContext) {
         this.symbol = symbol;
         this.eventTime = eventTime;
         this.close = close;
         this.emaFast = emaFast;
         this.emaSlow = emaSlow;
         this.rsi = rsi;
+        this.marketContext = marketContext == null ? MarketContextSnapshot.neutral() : marketContext;
     }
 
     public String getSymbol() {
@@ -43,5 +55,9 @@ public class FeatureSnapshot {
 
     public double getRsi() {
         return rsi;
+    }
+
+    public MarketContextSnapshot getMarketContext() {
+        return marketContext;
     }
 }

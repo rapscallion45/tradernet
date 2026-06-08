@@ -2,6 +2,7 @@ package com.tradernet.marketai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.context.MarketContextRegistry;
 import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
 import com.tradernet.marketai.engine.FeatureEngine;
@@ -10,6 +11,7 @@ import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketTrade;
 import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
@@ -29,9 +31,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -48,7 +51,8 @@ public class MarketAiService {
 
     private final BinanceTradeStreamClient binanceClient = new BinanceTradeStreamClient();
     private final BarAggregator barAggregator = new BarAggregator(1_000L);
-    private final FeatureEngine featureEngine = new FeatureEngine();
+    private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
+    private final FeatureEngine featureEngine = new FeatureEngine(marketContextRegistry);
     private final AiSignalEngine signalEngine = new AiSignalEngine();
     private final MarketEventPublisher publisher = new MarketEventPublisher();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -94,6 +98,16 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
+    public synchronized List<AiSignal> getSignals(String symbol, int limit) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final List<AiSignal> matchingSignals = signals.stream()
+                .filter(signal -> signal.getSymbol() != null)
+                .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
+                .collect(Collectors.toList());
+        return takeLast(matchingSignals, limit);
+    }
+
+    @Lock(LockType.READ)
     public List<String> getSupportedSymbols(String quoteCurrency) {
         final long now = System.currentTimeMillis();
         if (now - cachedSymbolsAtMs > Duration.ofMinutes(15).toMillis()) {
@@ -121,6 +135,16 @@ public class MarketAiService {
                 .filter(symbol -> symbol.endsWith("USDT"))
                 .collect(Collectors.toList());
         return usdTFallback.isEmpty() ? List.of("BTCUSDT") : usdTFallback;
+    }
+
+    @Lock(LockType.READ)
+    public MarketContextSnapshot getMarketContext(String symbol) {
+        return marketContextRegistry.get(normalizeSymbol(symbol));
+    }
+
+    @Lock(LockType.WRITE)
+    public void updateMarketContext(String symbol, MarketContextSnapshot snapshot) {
+        marketContextRegistry.update(normalizeSymbol(symbol), snapshot);
     }
 
     @Lock(LockType.READ)
@@ -285,12 +309,16 @@ public class MarketAiService {
     }
 
     private <T> List<T> takeLast(Deque<T> deque, int limit) {
-        final int size = deque.size();
+        return takeLast(new ArrayList<>(deque), limit);
+    }
+
+    private <T> List<T> takeLast(List<T> values, int limit) {
+        final int size = values.size();
         final int effectiveLimit = Math.max(1, limit);
         final int skip = Math.max(0, size - effectiveLimit);
         final List<T> snapshot = new ArrayList<>(size);
         int index = 0;
-        for (T item : deque) {
+        for (T item : values) {
             if (index++ >= skip) {
                 snapshot.add(item);
             }

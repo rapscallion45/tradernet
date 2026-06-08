@@ -1,7 +1,7 @@
 package com.tradernet.marketai.scoring;
 
 /**
- * Creates scorer implementation based on runtime configuration.
+ * Creates scorer implementation based on runtime configuration. Defaults to context-aware scoring.
  */
 public final class SignalScorerFactory {
 
@@ -9,10 +9,13 @@ public final class SignalScorerFactory {
     }
 
     public static SignalScorer create() {
-        final String scorerType = System.getProperty("market.ai.scorer", "linear").trim().toLowerCase();
+        final String scorerType = System.getProperty("market.ai.scorer", "context").trim().toLowerCase();
         if ("rules".equals(scorerType)) {
             return new RuleBasedSignalScorer();
         }
-        return new LinearModelSignalScorer();
+        if ("linear".equals(scorerType)) {
+            return new LinearModelSignalScorer();
+        }
+        return new ContextAwareSignalScorer();
     }
 }

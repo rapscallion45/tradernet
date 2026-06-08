@@ -5,9 +5,12 @@ import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.marketai.model.MarketContextSnapshot;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
  */
 @Path("/market")
 @Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class MarketResource {
 
     @Inject
@@ -62,7 +66,24 @@ public class MarketResource {
 
     @GET
     @Path("/signals")
-    public List<AiSignal> getSignals(@DefaultValue("200") @QueryParam("limit") int limit) {
-        return marketAiService.getSignals(limit);
+    public List<AiSignal> getSignals(
+            @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @DefaultValue("200") @QueryParam("limit") int limit) {
+        return marketAiService.getSignals(symbol, limit);
+    }
+
+    @GET
+    @Path("/context")
+    public MarketContextSnapshot getMarketContext(@DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol) {
+        return marketAiService.getMarketContext(symbol);
+    }
+
+    @POST
+    @Path("/context")
+    public MarketContextSnapshot updateMarketContext(
+            @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            MarketContextSnapshot snapshot) {
+        marketAiService.updateMarketContext(symbol, snapshot);
+        return marketAiService.getMarketContext(symbol);
     }
 }
