@@ -1,5 +1,5 @@
 import { ApiInterface } from "api/ApiInterface"
-import { List, MarketBar } from "api/types"
+import { Get, List, MarketBar, MarketContextSnapshot } from "api/types"
 import { RestResource } from "api/RestResource"
 
 /**
@@ -27,5 +27,13 @@ export class MarketResource extends RestResource<MarketBar> {
 
   getCurrencies(): List<string> {
     return this.typedSubPath<string>("currencies")._list()
+  }
+
+  getMarketContext(symbol: string): Get<MarketContextSnapshot> {
+    return this.typedSubPath<MarketContextSnapshot>("context")._get({
+      queryParams: {
+        symbol,
+      },
+    })
   }
 }
