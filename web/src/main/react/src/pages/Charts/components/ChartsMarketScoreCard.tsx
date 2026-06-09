@@ -1,5 +1,5 @@
 import { FC, useMemo } from "react"
-import { Badge, Divider, Group, Loader, Paper, Progress, Stack, Text } from "@mantine/core"
+import { Badge, Box, Divider, Group, Loader, Paper, Progress, Stack, Text } from "@mantine/core"
 import { IconActivityHeartbeat } from "@tabler/icons-react"
 import { MarketContextSnapshot } from "api/types"
 
@@ -81,8 +81,8 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
   )
 
   return (
-    <Paper withBorder radius="md" p="md" style={{ flex: 1, minHeight: 320 }}>
-      <Group justify="space-between" mb="xs">
+    <Paper withBorder radius="md" p="md" style={{ display: "flex", flex: "1 1 0", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+      <Group justify="space-between" mb="xs" style={{ flexShrink: 0 }}>
         <Group gap="xs">
           <IconActivityHeartbeat size={16} />
           <div>
@@ -92,34 +92,36 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
         </Group>
         <Badge variant="light">{populatedFigureCount}/{scoreFigures.length}</Badge>
       </Group>
-      <Divider mb="xs" />
+      <Divider mb="xs" style={{ flexShrink: 0 }} />
 
       {isLoading ? (
-        <Group justify="center" py="xl">
+        <Group justify="center" py="xl" style={{ flex: 1 }}>
           <Loader size="sm" />
         </Group>
       ) : (
-        <Stack gap="sm">
-          {scoreFigures.map((figure) => {
-            const value = resolvedContext[figure.key] ?? 0
-            const boundedValue = clamp(value, -2, 2)
-            const progressValue = ((boundedValue + 2) / 4) * 100
-            const color = getScoreColor(value)
+        <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+          <Stack gap="sm">
+            {scoreFigures.map((figure) => {
+              const value = resolvedContext[figure.key] ?? 0
+              const boundedValue = clamp(value, -2, 2)
+              const progressValue = ((boundedValue + 2) / 4) * 100
+              const color = getScoreColor(value)
 
-            return (
-              <Stack key={figure.key} gap={4}>
-                <Group justify="space-between" gap="xs" wrap="nowrap">
-                  <div>
-                    <Text size="sm" fw={600}>{figure.label}</Text>
-                    <Text size="xs" c="dimmed">{figure.description}</Text>
-                  </div>
-                  <Badge color={color} variant="light">{formatScore(value)}</Badge>
-                </Group>
-                <Progress value={progressValue} color={color} size="sm" radius="xl" />
-              </Stack>
-            )
-          })}
-        </Stack>
+              return (
+                <Stack key={figure.key} gap={4}>
+                  <Group justify="space-between" gap="xs" wrap="nowrap">
+                    <div>
+                      <Text size="sm" fw={600}>{figure.label}</Text>
+                      <Text size="xs" c="dimmed">{figure.description}</Text>
+                    </div>
+                    <Badge color={color} variant="light">{formatScore(value)}</Badge>
+                  </Group>
+                  <Progress value={progressValue} color={color} size="sm" radius="xl" />
+                </Stack>
+              )
+            })}
+          </Stack>
+        </Box>
       )}
     </Paper>
   )
