@@ -5,6 +5,7 @@ import com.tradernet.marketai.model.MarketContextSnapshot;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -27,6 +28,10 @@ public class MarketContextRegistry {
 
     public MarketContextSnapshot get(String symbol) {
         return snapshotsBySymbol.getOrDefault(normalize(symbol), MarketContextSnapshot.neutral());
+    }
+
+    public Set<String> symbols() {
+        return Set.copyOf(snapshotsBySymbol.keySet());
     }
 
     public FeatureSnapshot enrich(FeatureSnapshot features) {
