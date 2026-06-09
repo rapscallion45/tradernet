@@ -12,18 +12,22 @@ import { ChartsMarketScoreCard } from "pages/Charts/components/ChartsMarketScore
 /**
  * Dedicated chart-focused page with market details and score inputs.
  */
+const APP_CONTENT_VERTICAL_OFFSET = 113
+const CHART_TOOLBAR_VERTICAL_OFFSET = 48
+
 const ChartsPage: FC = () => {
   const { currency } = useCurrencyPreference()
   const { height: viewportHeight } = useViewportSize()
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT")
-  const chartHeight = Math.max(320, viewportHeight - 220)
+  const pageHeight = Math.max(420, viewportHeight - APP_CONTENT_VERTICAL_OFFSET)
+  const chartHeight = Math.max(320, pageHeight - CHART_TOOLBAR_VERTICAL_OFFSET)
 
   const { data: selectedBars = [], isLoading: isSelectedBarsLoading } = useChartDetailBars(selectedSymbol, currency)
   const { data: marketContext, isLoading: isMarketContextLoading } = useMarketContext(selectedSymbol)
   const detailMetrics = useMemo(() => getSymbolMetrics(selectedBars), [selectedBars])
 
   return (
-    <Stack gap="md" h={`calc(100dvh - 120px)`} mah={`calc(100dvh - 120px)`} style={{ overflow: "hidden" }}>
+    <Stack gap="md" h={pageHeight} mah={pageHeight} style={{ overflow: "hidden" }}>
       <Grid gutter="md" align="stretch" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <Grid.Col span={{ base: 12, lg: 9 }} style={{ minHeight: 0, overflow: "hidden" }}>
           <TradingChartPanel onSymbolChange={setSelectedSymbol} height={chartHeight} />

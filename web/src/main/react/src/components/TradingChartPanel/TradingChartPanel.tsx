@@ -944,7 +944,6 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
         <canvas
           ref={overlayRef}
           className={classes.overlayCanvas}
-          style={{ height: resolvedChartHeight }}
           onClick={handleOverlayClick}
           onMouseMove={handleOverlayMouseMove}
           onMouseLeave={handleOverlayMouseLeave}
