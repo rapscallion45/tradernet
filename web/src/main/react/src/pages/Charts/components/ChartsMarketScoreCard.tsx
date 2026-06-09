@@ -68,7 +68,7 @@ const neutralContext: MarketContextSnapshot = {
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
-const formatScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`
+const formatScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(3)}`
 
 const getScoreColor = (value: number) => {
   if (value > 0.25) return "green"
@@ -120,12 +120,18 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
 
               return (
                 <Stack key={figure.key} gap={4}>
-                  <Group justify="space-between" gap="xs" wrap="nowrap">
-                    <div>
-                      <Text size="sm" fw={600}>{figure.label}</Text>
-                      <Text size="xs" c="dimmed">{figure.description}</Text>
-                    </div>
-                    <Badge color={color} variant="light">{hasMarketContext ? formatScore(value) : "—"}</Badge>
+                  <Group justify="space-between" align="flex-start" gap="xs" wrap="nowrap">
+                    <Box style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden" }}>
+                      <Text size="sm" fw={600} truncate>
+                        {figure.label}
+                      </Text>
+                      <Text size="xs" c="dimmed" lineClamp={2}>
+                        {figure.description}
+                      </Text>
+                    </Box>
+                    <Badge color={color} variant="light" style={{ flex: "0 0 auto", minWidth: 68, textAlign: "center" }}>
+                      {hasMarketContext ? formatScore(value) : "—"}
+                    </Badge>
                   </Group>
                   <Progress value={hasMarketContext ? progressValue : 50} color={color} size="sm" radius="xl" />
                 </Stack>
