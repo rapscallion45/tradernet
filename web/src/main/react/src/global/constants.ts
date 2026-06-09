@@ -36,6 +36,9 @@ export enum QueryClientKeys {
 
   /** Market currencies */
   MarketCurrencies = "MarketCurrencies",
+
+  /** Market context scores */
+  MarketContext = "MarketContext",
 }
 
 /** Default chart/order symbol */

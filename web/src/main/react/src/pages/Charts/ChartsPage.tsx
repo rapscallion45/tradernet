@@ -1,51 +1,54 @@
-import { FC, useMemo, useState } from "react"
-import { Grid, Stack } from "@mantine/core"
+import { FC, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Box, Grid, Stack } from "@mantine/core"
 import { useViewportSize } from "@mantine/hooks"
 import { TradingChartPanel } from "components/TradingChartPanel/TradingChartPanel"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { useChartDetailBars } from "hooks/useChartDetailBars"
 import { getSymbolMetrics } from "utils/metrics"
-import { useWatchlistSymbolMetrics } from "hooks/useWatchlistSymbolMetrics"
-import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { ChartDetailCard } from "pages/Charts/components/ChartDetailCard"
-import { ChartsWatchlistCard } from "pages/Charts/components/ChartsWatchlistCard"
-
-const watchlistLimit = 8
+import { useMarketContext } from "hooks/useMarketContext"
+import { ChartsMarketScoreCard } from "pages/Charts/components/ChartsMarketScoreCard"
 
 /**
- * Dedicated chart-focused page with market details and watchlist.
+ * Dedicated chart-focused page with market details and score inputs.
  */
+const APP_CONTENT_BOTTOM_PADDING = 16
+const CHART_TOOLBAR_VERTICAL_OFFSET = 48
+
 const ChartsPage: FC = () => {
   const { currency } = useCurrencyPreference()
   const { height: viewportHeight } = useViewportSize()
+  const pageRef = useRef<HTMLDivElement>(null)
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT")
-  const { data: symbolOptions = [] } = useMarketSymbols()
-  const chartHeight = Math.max(520, viewportHeight - 180)
+  const [pageHeight, setPageHeight] = useState(420)
+  const chartHeight = Math.max(320, pageHeight - CHART_TOOLBAR_VERTICAL_OFFSET)
 
-  const watchlistSymbols = useMemo(() => {
-    const symbols = symbolOptions.length > 0 ? symbolOptions.slice(0, watchlistLimit) : [selectedSymbol]
-    return symbols.includes(selectedSymbol) ? symbols : [selectedSymbol, ...symbols].slice(0, watchlistLimit)
-  }, [selectedSymbol, symbolOptions])
+  useLayoutEffect(() => {
+    const pageTop = pageRef.current?.getBoundingClientRect().top ?? 0
+    setPageHeight(Math.max(420, viewportHeight - pageTop - APP_CONTENT_BOTTOM_PADDING))
+  }, [viewportHeight])
 
   const { data: selectedBars = [], isLoading: isSelectedBarsLoading } = useChartDetailBars(selectedSymbol, currency)
-  const watchlistRows = useWatchlistSymbolMetrics(watchlistSymbols, currency)
+  const { data: marketContext, isLoading: isMarketContextLoading } = useMarketContext(selectedSymbol)
   const detailMetrics = useMemo(() => getSymbolMetrics(selectedBars), [selectedBars])
 
   return (
-    <Stack gap="md" h={`calc(100dvh - 120px)`}>
-      <Grid gutter="md" align="stretch" style={{ flex: 1 }}>
-        <Grid.Col span={{ base: 12, lg: 9 }}>
+    <Box ref={pageRef} h={pageHeight} mah={pageHeight} style={{ overflow: "hidden" }}>
+      <Grid gutter="md" align="stretch" style={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+        <Grid.Col span={{ base: 12, lg: 9 }} style={{ minHeight: 0, overflow: "hidden" }}>
           <TradingChartPanel onSymbolChange={setSelectedSymbol} height={chartHeight} />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, lg: 3 }}>
-          <Stack gap="md" h="100%">
-            <ChartDetailCard selectedSymbol={selectedSymbol} currency={currency} isLoading={isSelectedBarsLoading} metrics={detailMetrics} />
-            <ChartsWatchlistCard rows={watchlistRows} selectedSymbol={selectedSymbol} currency={currency} onSelectSymbol={setSelectedSymbol} />
+        <Grid.Col span={{ base: 12, lg: 3 }} style={{ minHeight: 0, overflow: "hidden" }}>
+          <Stack gap="md" h="100%" mih={0} style={{ overflow: "hidden" }}>
+            <Box style={{ flexShrink: 0 }}>
+              <ChartDetailCard selectedSymbol={selectedSymbol} currency={currency} isLoading={isSelectedBarsLoading} metrics={detailMetrics} />
+            </Box>
+            <ChartsMarketScoreCard selectedSymbol={selectedSymbol} context={marketContext} isLoading={isMarketContextLoading} />
           </Stack>
         </Grid.Col>
       </Grid>
-    </Stack>
+    </Box>
   )
 }
 

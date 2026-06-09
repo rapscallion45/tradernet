@@ -2,6 +2,8 @@ package com.tradernet.marketai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.context.MarketContextDataIngestionClient;
+import com.tradernet.marketai.context.MarketContextRegistry;
 import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
 import com.tradernet.marketai.engine.FeatureEngine;
@@ -10,12 +12,14 @@ import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketTrade;
 import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.ejb.Lock;
 import jakarta.ejb.LockType;
+import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 
@@ -29,9 +33,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -48,10 +55,13 @@ public class MarketAiService {
 
     private final BinanceTradeStreamClient binanceClient = new BinanceTradeStreamClient();
     private final BarAggregator barAggregator = new BarAggregator(1_000L);
-    private final FeatureEngine featureEngine = new FeatureEngine();
+    private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
+    private final FeatureEngine featureEngine = new FeatureEngine(marketContextRegistry);
     private final AiSignalEngine signalEngine = new AiSignalEngine();
     private final MarketEventPublisher publisher = new MarketEventPublisher();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final MarketContextDataIngestionClient contextDataIngestionClient = new MarketContextDataIngestionClient(httpClient, OBJECT_MAPPER);
+    private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
 
     private final Deque<MarketBar> bars = new ArrayDeque<>();
     private final Deque<AiSignal> signals = new ArrayDeque<>();
@@ -62,7 +72,10 @@ public class MarketAiService {
     @PostConstruct
     public void start() {
         final String symbol = System.getProperty("market.ai.symbol", "btcusdt");
+        registerContextRefreshSymbols(symbol);
+        registerContextRefreshSymbols(System.getProperty("market.ai.context.symbols", symbol));
         binanceClient.start(symbol, this::onTrade);
+        refreshMarketContexts();
     }
 
     @PreDestroy
@@ -91,6 +104,16 @@ public class MarketAiService {
     @Lock(LockType.READ)
     public synchronized List<AiSignal> getSignals(int limit) {
         return takeLast(signals, limit);
+    }
+
+    @Lock(LockType.READ)
+    public synchronized List<AiSignal> getSignals(String symbol, int limit) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final List<AiSignal> matchingSignals = signals.stream()
+                .filter(signal -> signal.getSymbol() != null)
+                .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
+                .collect(Collectors.toList());
+        return takeLast(matchingSignals, limit);
     }
 
     @Lock(LockType.READ)
@@ -124,6 +147,36 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
+    public MarketContextSnapshot getMarketContext(String symbol) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        contextRefreshSymbols.add(normalizedSymbol);
+        final MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
+        if (!snapshot.isAvailable()) {
+            hydrateMarketContext(normalizedSymbol);
+            return marketContextRegistry.get(normalizedSymbol);
+        }
+        return snapshot;
+    }
+
+    @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)
+    @Lock(LockType.READ)
+    public void refreshMarketContexts() {
+        if (!Boolean.parseBoolean(System.getProperty("market.ai.context.ingestion.enabled", "true"))) {
+            return;
+        }
+
+        contextRefreshSymbols.addAll(marketContextRegistry.symbols());
+        contextRefreshSymbols.forEach(this::hydrateMarketContext);
+    }
+
+    @Lock(LockType.WRITE)
+    public void updateMarketContext(String symbol, MarketContextSnapshot snapshot) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        contextRefreshSymbols.add(normalizedSymbol);
+        marketContextRegistry.update(normalizedSymbol, snapshot);
+    }
+
+    @Lock(LockType.READ)
     public AutoCloseable subscribeBars(Consumer<MarketBar> consumer) {
         return publisher.onBar(consumer);
     }
@@ -131,6 +184,31 @@ public class MarketAiService {
     @Lock(LockType.READ)
     public AutoCloseable subscribeSignals(Consumer<AiSignal> consumer) {
         return publisher.onSignal(consumer);
+    }
+
+    private void hydrateMarketContext(String symbol) {
+        if (symbol == null || symbol.isBlank()) {
+            return;
+        }
+
+        final MarketContextSnapshot current = marketContextRegistry.get(symbol);
+        final MarketContextSnapshot hydrated = contextDataIngestionClient.fetch(symbol, current);
+        if (hydrated.isAvailable()) {
+            marketContextRegistry.update(symbol, hydrated);
+        }
+    }
+
+    private void registerContextRefreshSymbols(String symbols) {
+        if (symbols == null || symbols.isBlank()) {
+            return;
+        }
+
+        for (String symbol : symbols.split(",")) {
+            final String normalizedSymbol = normalizeSymbol(symbol);
+            if (!normalizedSymbol.isBlank()) {
+                contextRefreshSymbols.add(normalizedSymbol);
+            }
+        }
     }
 
     private void onTrade(MarketTrade trade) {
@@ -285,12 +363,16 @@ public class MarketAiService {
     }
 
     private <T> List<T> takeLast(Deque<T> deque, int limit) {
-        final int size = deque.size();
+        return takeLast(new ArrayList<>(deque), limit);
+    }
+
+    private <T> List<T> takeLast(List<T> values, int limit) {
+        final int size = values.size();
         final int effectiveLimit = Math.max(1, limit);
         final int skip = Math.max(0, size - effectiveLimit);
         final List<T> snapshot = new ArrayList<>(size);
         int index = 0;
-        for (T item : deque) {
+        for (T item : values) {
             if (index++ >= skip) {
                 snapshot.add(item);
             }

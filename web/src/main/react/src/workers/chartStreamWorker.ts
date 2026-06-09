@@ -182,12 +182,13 @@ const resolveWebsocketUrl = () => {
     const url = new URL(wsPath)
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
     url.searchParams.set("currency", currency)
+    url.searchParams.set("symbol", symbol)
     return url.toString()
   }
 
   const origin = self.location.origin
   const wsProtocol = origin.startsWith("https") ? "wss" : "ws"
-  return `${wsProtocol}://${self.location.host}${wsPath}?currency=${encodeURIComponent(currency)}`
+  return `${wsProtocol}://${self.location.host}${wsPath}?currency=${encodeURIComponent(currency)}&symbol=${encodeURIComponent(symbol)}`
 }
 
 const preload = async (sessionId: number) => {
@@ -195,7 +196,7 @@ const preload = async (sessionId: number) => {
   const barsFetchLimit = Math.max(historySize * 4, 2_000)
   const [barsResponse, signalResponse] = await Promise.all([
     fetch(`${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}&currency=${encodeURIComponent(currency)}`),
-    fetch(`${apiBase}/market/signals?limit=1`),
+    fetch(`${apiBase}/market/signals?symbol=${encodeURIComponent(symbol)}&limit=1`),
   ])
 
   if (sessionId !== streamSession) {

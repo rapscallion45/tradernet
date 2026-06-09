@@ -91,6 +91,17 @@ export type MarketBar = {
   volume: number
 }
 
+export type MarketContextSnapshot = {
+  etfFlowZScore: number
+  exchangeOutflowZScore: number
+  fundingRateZScore: number
+  openInterestChangeZScore: number
+  mvrvZScore: number
+  liquidityGrowthZScore: number
+  sentimentZScore: number
+  available?: boolean
+}
+
 /**
  * Auth
  */

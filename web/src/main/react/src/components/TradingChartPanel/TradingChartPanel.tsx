@@ -935,20 +935,20 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
             {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
           </Text>
         </div>
-        <div ref={chartHostRef} className={classes.plotHost} style={{ minHeight: resolvedChartHeight }} />
-        {showStreamSpinner && (
-          <div className={classes.centeredSpinner} aria-live="polite" aria-label="Waiting for market stream">
-            <Loader size="md" />
-          </div>
-        )}
-        <canvas
-          ref={overlayRef}
-          className={classes.overlayCanvas}
-          style={{ height: resolvedChartHeight }}
-          onClick={handleOverlayClick}
-          onMouseMove={handleOverlayMouseMove}
-          onMouseLeave={handleOverlayMouseLeave}
-        />
+        <div ref={chartHostRef} className={classes.plotHost} style={{ height: resolvedChartHeight }}>
+          {showStreamSpinner && (
+            <div className={classes.centeredSpinner} aria-live="polite" aria-label="Waiting for market stream">
+              <Loader size="md" />
+            </div>
+          )}
+          <canvas
+            ref={overlayRef}
+            className={classes.overlayCanvas}
+            onClick={handleOverlayClick}
+            onMouseMove={handleOverlayMouseMove}
+            onMouseLeave={handleOverlayMouseLeave}
+          />
+        </div>
       </Paper>
       <ConfirmationModal
         opened={currencyModalOpened}
