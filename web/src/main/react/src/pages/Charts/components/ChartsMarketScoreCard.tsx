@@ -3,8 +3,10 @@ import { Badge, Box, Divider, Group, Loader, Paper, Progress, Stack, Text } from
 import { IconActivityHeartbeat } from "@tabler/icons-react"
 import { MarketContextSnapshot } from "api/types"
 
+type ScoreFigureKey = Exclude<keyof MarketContextSnapshot, "available">
+
 type ScoreFigure = {
-  key: keyof MarketContextSnapshot
+  key: ScoreFigureKey
   label: string
   description: string
 }
@@ -61,6 +63,7 @@ const neutralContext: MarketContextSnapshot = {
   mvrvZScore: 0,
   liquidityGrowthZScore: 0,
   sentimentZScore: 0,
+  available: false,
 }
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
@@ -79,6 +82,7 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
     () => scoreFigures.filter((figure) => Math.abs(resolvedContext[figure.key] ?? 0) > 0.001).length,
     [resolvedContext]
   )
+  const hasMarketContext = resolvedContext.available ?? populatedFigureCount > 0
 
   return (
     <Paper withBorder radius="md" p="md" style={{ display: "flex", flex: "1 1 0", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
@@ -90,7 +94,9 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             <Text size="xs" c="dimmed">{selectedSymbol}</Text>
           </div>
         </Group>
-        <Badge variant="light">{populatedFigureCount}/{scoreFigures.length}</Badge>
+        <Badge color={hasMarketContext ? "blue" : "gray"} variant="light">
+          {hasMarketContext ? `${populatedFigureCount}/${scoreFigures.length}` : "Awaiting data"}
+        </Badge>
       </Group>
       <Divider mb="xs" style={{ flexShrink: 0 }} />
 
@@ -101,11 +107,16 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
       ) : (
         <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
           <Stack gap="sm">
+            {!hasMarketContext && (
+              <Text size="xs" c="dimmed">
+                No market context has been loaded for this symbol yet. Signal scoring will treat these inputs as neutral until ingestion posts data.
+              </Text>
+            )}
             {scoreFigures.map((figure) => {
               const value = resolvedContext[figure.key] ?? 0
               const boundedValue = clamp(value, -2, 2)
               const progressValue = ((boundedValue + 2) / 4) * 100
-              const color = getScoreColor(value)
+              const color = hasMarketContext ? getScoreColor(value) : "gray"
 
               return (
                 <Stack key={figure.key} gap={4}>
@@ -114,9 +125,9 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
                       <Text size="sm" fw={600}>{figure.label}</Text>
                       <Text size="xs" c="dimmed">{figure.description}</Text>
                     </div>
-                    <Badge color={color} variant="light">{formatScore(value)}</Badge>
+                    <Badge color={color} variant="light">{hasMarketContext ? formatScore(value) : "—"}</Badge>
                   </Group>
-                  <Progress value={progressValue} color={color} size="sm" radius="xl" />
+                  <Progress value={hasMarketContext ? progressValue : 50} color={color} size="sm" radius="xl" />
                 </Stack>
               )
             })}

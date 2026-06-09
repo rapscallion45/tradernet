@@ -99,6 +99,7 @@ export type MarketContextSnapshot = {
   mvrvZScore: number
   liquidityGrowthZScore: number
   sentimentZScore: number
+  available?: boolean
 }
 
 /**

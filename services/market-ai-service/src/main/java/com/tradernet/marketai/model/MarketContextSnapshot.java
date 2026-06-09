@@ -16,9 +16,10 @@ public class MarketContextSnapshot {
     private double mvrvZScore;
     private double liquidityGrowthZScore;
     private double sentimentZScore;
+    private boolean available;
 
     public MarketContextSnapshot() {
-        this(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        this(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
     }
 
     public MarketContextSnapshot(double etfFlowZScore,
@@ -28,6 +29,17 @@ public class MarketContextSnapshot {
                                  double mvrvZScore,
                                  double liquidityGrowthZScore,
                                  double sentimentZScore) {
+        this(etfFlowZScore, exchangeOutflowZScore, fundingRateZScore, openInterestChangeZScore, mvrvZScore, liquidityGrowthZScore, sentimentZScore, true);
+    }
+
+    public MarketContextSnapshot(double etfFlowZScore,
+                                 double exchangeOutflowZScore,
+                                 double fundingRateZScore,
+                                 double openInterestChangeZScore,
+                                 double mvrvZScore,
+                                 double liquidityGrowthZScore,
+                                 double sentimentZScore,
+                                 boolean available) {
         this.etfFlowZScore = etfFlowZScore;
         this.exchangeOutflowZScore = exchangeOutflowZScore;
         this.fundingRateZScore = fundingRateZScore;
@@ -35,10 +47,11 @@ public class MarketContextSnapshot {
         this.mvrvZScore = mvrvZScore;
         this.liquidityGrowthZScore = liquidityGrowthZScore;
         this.sentimentZScore = sentimentZScore;
+        this.available = available;
     }
 
     public static MarketContextSnapshot neutral() {
-        return new MarketContextSnapshot(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        return new MarketContextSnapshot(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
     }
 
     public double getEtfFlowZScore() {
@@ -69,6 +82,10 @@ public class MarketContextSnapshot {
         return sentimentZScore;
     }
 
+    public boolean isAvailable() {
+        return available;
+    }
+
     public void setEtfFlowZScore(double etfFlowZScore) {
         this.etfFlowZScore = etfFlowZScore;
     }
@@ -95,5 +112,9 @@ public class MarketContextSnapshot {
 
     public void setSentimentZScore(double sentimentZScore) {
         this.sentimentZScore = sentimentZScore;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
     }
 }

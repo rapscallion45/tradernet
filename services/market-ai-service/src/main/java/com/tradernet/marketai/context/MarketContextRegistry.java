@@ -21,6 +21,7 @@ public class MarketContextRegistry {
         if (snapshot == null) {
             throw new IllegalArgumentException("snapshot is required");
         }
+        snapshot.setAvailable(true);
         snapshotsBySymbol.put(normalize(symbol), snapshot);
     }
 
