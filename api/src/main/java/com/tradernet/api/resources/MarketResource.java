@@ -3,6 +3,7 @@ package com.tradernet.api.resources;
 import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
+import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
@@ -76,6 +77,14 @@ public class MarketResource {
     @Path("/context")
     public MarketContextSnapshot getMarketContext(@DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol) {
         return marketAiService.getMarketContext(symbol);
+    }
+
+    @GET
+    @Path("/forecast")
+    public MarketForecast getForecast(
+            @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @DefaultValue("30") @QueryParam("horizonDays") int horizonDays) {
+        return marketAiService.getForecast(symbol, horizonDays);
     }
 
     @POST

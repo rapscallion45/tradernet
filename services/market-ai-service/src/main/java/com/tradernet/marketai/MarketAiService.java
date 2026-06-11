@@ -8,6 +8,9 @@ import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
 import com.tradernet.marketai.engine.FeatureEngine;
 import com.tradernet.marketai.engine.MarketEventPublisher;
+import com.tradernet.marketai.forecast.ForecastingClient;
+import com.tradernet.marketai.forecast.MarketForecast;
+import com.tradernet.marketai.forecast.OllamaNarrativeClient;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
@@ -22,7 +25,9 @@ import jakarta.ejb.LockType;
 import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
+import jakarta.annotation.Resource;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -30,6 +35,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -50,6 +59,8 @@ import java.util.stream.Collectors;
 public class MarketAiService {
 
     private static final int DEFAULT_HISTORY_SIZE = 2_000;
+    private static final String INSERT_MARKET_BAR_SQL = "INSERT INTO market_bars "
+            + "(symbol, bucket, open, high, low, close, volume, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -61,7 +72,12 @@ public class MarketAiService {
     private final MarketEventPublisher publisher = new MarketEventPublisher();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final MarketContextDataIngestionClient contextDataIngestionClient = new MarketContextDataIngestionClient(httpClient, OBJECT_MAPPER);
+    private final ForecastingClient forecastingClient = new ForecastingClient(httpClient, OBJECT_MAPPER);
+    private final OllamaNarrativeClient ollamaNarrativeClient = new OllamaNarrativeClient(httpClient, OBJECT_MAPPER);
     private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
+
+    @Resource(lookup = "java:/jdbc/TradernetDS")
+    private DataSource dataSource;
 
     private final Deque<MarketBar> bars = new ArrayDeque<>();
     private final Deque<AiSignal> signals = new ArrayDeque<>();
@@ -158,6 +174,21 @@ public class MarketAiService {
         return snapshot;
     }
 
+    @Lock(LockType.READ)
+    public MarketForecast getForecast(String symbol, int horizonDays) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        contextRefreshSymbols.add(normalizedSymbol);
+        MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
+        if (!snapshot.isAvailable()) {
+            hydrateMarketContext(normalizedSymbol);
+            snapshot = marketContextRegistry.get(normalizedSymbol);
+        }
+
+        final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
+        forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
+        return forecast;
+    }
+
     @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)
     @Lock(LockType.READ)
     public void refreshMarketContexts() {
@@ -225,6 +256,7 @@ public class MarketAiService {
         synchronized (this) {
             appendBounded(bars, closed, DEFAULT_HISTORY_SIZE);
         }
+        storeMarketBar(closed);
 
         final FeatureSnapshot features = featureEngine.onClosedBar(closed);
         final AiSignal signal = signalEngine.evaluate(features);
@@ -236,6 +268,27 @@ public class MarketAiService {
             appendBounded(signals, signal, DEFAULT_HISTORY_SIZE);
         }
         publisher.publishSignal(signal);
+    }
+
+    private void storeMarketBar(MarketBar bar) {
+        if (dataSource == null || bar == null) {
+            return;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_MARKET_BAR_SQL)) {
+            statement.setString(1, normalizeSymbol(bar.getSymbol()));
+            statement.setTimestamp(2, new Timestamp(bar.getBucketStart()));
+            statement.setDouble(3, bar.getOpen());
+            statement.setDouble(4, bar.getHigh());
+            statement.setDouble(5, bar.getLow());
+            statement.setDouble(6, bar.getClose());
+            statement.setDouble(7, bar.getVolume());
+            statement.setString(8, "binance-trade-stream");
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            // Forecasting should degrade gracefully if persistence is unavailable or a duplicate bar arrives.
+        }
     }
 
     private List<String> fetchExchangeSymbols() {
