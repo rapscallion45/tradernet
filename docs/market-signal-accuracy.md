@@ -46,3 +46,24 @@ The default scorer is now context-aware. Existing scorers are still available:
 - `-Dmarket.ai.scorer=context` for context-aware scoring.
 - `-Dmarket.ai.scorer=linear` for the previous lightweight logistic model.
 - `-Dmarket.ai.scorer=rules` for the original EMA/RSI threshold rules.
+
+## Forecasting and Gemma 4 narrative layer
+
+Tradernet also exposes a longer-horizon forecast path through `GET /api/market/forecast?symbol=BTCUSDT&horizonDays=30`.
+
+1. The Java market AI service hydrates the same market context used by the real-time signal scorer.
+2. `ForecastingClient` calls the Python forecasting service (`market.ai.forecasting.url`, default `http://forecasting-service:8000`).
+3. The Python service reads recent bars from Postgres/TimescaleDB and returns a probability of positive return, expected return, bull score, model name, and drivers. It ships with a statistical fallback and stable adapter hooks for `FORECAST_BACKEND=timesfm` or `FORECAST_BACKEND=chronos` custom images.
+4. `OllamaNarrativeClient` sends the structured forecast to Ollama (`market.ai.ollama.url`, default `http://ollama:11434`) using Gemma 4 (`market.ai.ollama.model`, default `gemma4:e4b`).
+5. If Ollama or the Python service is unavailable, the API returns a deterministic fallback sentence so the UI can continue rendering.
+
+Example narrative shape:
+
+> Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 30-day return: 64%.
+
+Runtime switches:
+
+- `-Dmarket.ai.forecasting.url=http://forecasting-service:8000` points Java at the Python service.
+- `-Dmarket.ai.ollama.enabled=false` disables LLM narratives and uses deterministic text.
+- `-Dmarket.ai.ollama.url=http://ollama:11434` points Java at Ollama.
+- `-Dmarket.ai.ollama.model=gemma4:e4b` selects the local Gemma 4 tag.

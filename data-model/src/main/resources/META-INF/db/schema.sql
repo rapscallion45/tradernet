@@ -127,3 +127,17 @@ CREATE TABLE IF NOT EXISTS tblUserProperties (
     PRIMARY KEY (userId, propertyName),
     FOREIGN KEY (userId) REFERENCES tblUsers(id)
 );
+
+CREATE TABLE IF NOT EXISTS market_bars (
+    symbol VARCHAR(32) NOT NULL,
+    bucket TIMESTAMP NOT NULL,
+    open DOUBLE PRECISION NOT NULL,
+    high DOUBLE PRECISION NOT NULL,
+    low DOUBLE PRECISION NOT NULL,
+    close DOUBLE PRECISION NOT NULL,
+    volume DOUBLE PRECISION NOT NULL,
+    source VARCHAR(64) NOT NULL DEFAULT 'tradernet',
+    PRIMARY KEY (symbol, bucket)
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_bars_symbol_bucket_desc ON market_bars (symbol, bucket DESC);

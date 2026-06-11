@@ -125,7 +125,30 @@ DB_USER=tradernet
 DB_PASSWORD=tradernet
 ```
 
-The provided Docker Compose file includes a PostgreSQL service with matching defaults.
+The provided Docker Compose file includes a PostgreSQL-compatible TimescaleDB service with matching defaults, plus optional forecasting and Ollama services for market narratives. TimescaleDB/Postgres data is stored in the named Docker volume `timescaledb_data`, so order history, trades, market bars, and forecasting data persist across normal container recreation. Do not run `docker compose down -v` unless you intentionally want to delete that database volume.
+
+### Forecasting + Ollama/Gemma 4
+
+Docker Compose now includes:
+
+- `postgres` running TimescaleDB for time-series bars.
+- `forecasting-service`, a FastAPI Python service with TimesFM/Chronos adapter hooks and a statistical fallback.
+- `ollama`, used by the Java backend to ask Gemma 4 for short forecast commentary.
+
+Pull the local Gemma 4 model once with:
+
+```bash
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml --profile model-init run --rm ollama-model
+```
+
+Then run the stack and request a 30-day Bitcoin forecast:
+
+```bash
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
+curl 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+```
+
+The response includes `bullScore`, `probabilityPositiveReturn`, forecast drivers, and a Gemma-generated narrative such as: `Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 30-day return: 64%.`
 
 ### Admin user password
 
