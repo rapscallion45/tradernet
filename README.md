@@ -76,12 +76,18 @@ curl http://localhost:8000/health
 
 Application endpoints such as `/api/market/forecast` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
 
-PowerShell:
+PowerShell (run these as three separate commands, or keep the semicolons if you paste them as one line):
 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
 Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+```
+
+One-line PowerShell form:
+
+```powershell
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
 ```
 
 Bash/curl:
