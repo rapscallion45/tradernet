@@ -1,258 +1,122 @@
 # Tradernet
 
-Tradernet is a multi-module project with a Java backend (WAR) and a Vite-based web UI. The Maven build can package the web build output into the backend WAR for deployment, and it supports running the web UI as a standalone WAR as well.
-
-## Project layout
-
-- `web/` — Vite + React web UI, built with Yarn and bundled into `dist/`.
-- `data-model/`, `services/`, `api/` — Jakarta EE/Spring-based backend modules (the `api` module produces the WAR).
-- `pom.xml` — Maven parent project that aggregates modules and aligns WildFly versions.
+Tradernet is a multi-module trading desk application with a Jakarta EE/WildFly backend, a Vite + React frontend, shared JPA persistence, Docker packaging, and an optional TimescaleDB-backed market forecasting stack with Ollama/Gemma narratives.
 
 ## Documentation
 
-For module-by-module explanations, see [`docs/README.md`](docs/README.md).
+Use this README as the quickstart. Full details live in `/docs`:
+
+- [Documentation index](docs/README.md) — all application docs and suggested reading order.
+- [Application guide](docs/application-guide.md) — full-stack operator/developer handbook covering APIs, persistence, deployment, forecasting, configuration, and safeguards.
+- [Architecture overview](docs/architecture-overview.md) — module map and request/data flow.
+- [Backend services](docs/backend-services.md) — domain services and market AI package layout.
+- [API layer](docs/api-layer.md) — REST resources, auth filter, and websocket boundary.
+- [Frontend web app](docs/frontend-web.md) — React/Vite structure and runtime flow.
+- [Data + deployment](docs/data-and-deployment.md) — persistence, packaging, and runtime infrastructure.
+- [Market signal accuracy](docs/market-signal-accuracy.md) — market context scoring, forecasting, and Ollama/Gemma behavior.
 
 ## Requirements
 
 - Java 11 (the Maven build targets Java 11).
 - Maven 3.8.1+.
-- Node.js 20.19.4 (managed in the Maven frontend plugin).
-- Yarn 1.22.10 for the Maven build (bootstrapped by the frontend plugin; the app can still use project-local Yarn via Corepack).
+- Docker Desktop or Docker Engine + Compose for the containerized stack.
+- Node.js 20.19.4 and Yarn 1.22.10 are bootstrapped by the Maven frontend plugin for normal builds.
 
-## Setup & build
+## Project layout
 
-### Build the full project (web build profile enabled)
+- `web/` — Vite + React UI.
+- `api/` — Jakarta REST API WAR and websocket endpoint.
+- `services/` — domain services, including market AI and forecasting integration.
+- `data-model/` — JPA entities, DAOs, persistence config, schema, and seed SQL.
+- `deployment/` — EAR assembly, WildFly modules, Docker image, Docker Compose, and entry scripts.
+- `python-services/forecasting/` — FastAPI forecasting adapter with a statistical fallback and TimesFM/Chronos hooks.
+
+## Quickstart: build the application
 
 ```bash
 mvn clean package
 ```
 
-## Run with Docker
-
-The Docker image is built via Maven from the `deployment/docker-image` module, which assembles the WAR and Docker build context.
-
-### Build and run with Docker (standalone container)
+To skip the React build when frontend artifacts already exist:
 
 ```bash
-mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local package
-docker run --rm -p 8080:8080 \
-  -e DB_HOST=host.docker.internal \
-  tradernet/tradernet:local
+mvn -DdontBuildReact clean package
 ```
 
-When you run the container by itself, the default database type is H2 (in-memory) for local testing.
-If you switch to Postgres, `DB_HOST` must be a hostname/IP that the container can resolve outside of
-Docker Compose (for example `host.docker.internal` on Docker Desktop). The Postgres server does **not**
-live inside the Tradernet image; it runs as a separate service (for example via Docker Compose or a
-managed database). Use Docker Compose if you want the `postgres` DNS name to resolve automatically
-inside the container network.
+## Quickstart: run with Docker Compose
 
-### Build and run the test container (Docker Desktop run configuration)
-
-Use this configuration to build the image and run it locally with explicit env vars (including the required admin password).
-
-**Build command (Rebuild Test Container)**
+Build the Tradernet image expected by Compose:
 
 ```bash
 mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
 ```
 
-**Build command (Rebuild Test Container (No React), reuses existing frontend artifacts)**
+Pull the local Ollama/Gemma model once:
 
 ```bash
-mvn -pl data-model,services/order-service,services/trade-service,services/user-service,services/signal-service,services/facade-service,api,deployment/tradernet-ear,deployment/wildfly-modules,deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test -DdontBuildReact clean package
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml --profile model-init run --rm ollama-model
 ```
 
-This variant intentionally excludes `web` so `clean` does not delete existing frontend artifacts; with `-DdontBuildReact`, existing `web/target/sources/dist` files are reused by `api` packaging.
-
-**Build command (Rebuild Test Container (No Backend))**
-
-```bash
-mvn -pl web,deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
-```
-
-This variant now adds `-am` so Maven also builds required dependent modules in the same reactor, preventing missing-artifact failures during EAR/image assembly.
-
-**Maven run command (Run Test Container)**
-
-```bash
-mvn -pl deployment/docker-image -Pbuild-image -Ddocker.image.tag=local-test io.fabric8:docker-maven-plugin:start
-```
-
-In IntelliJ, the run configurations are named **Rebuild Test Container** (build only), **Rebuild Test Container (No React)** (build only, skips React rebuild and uses existing `web/target` artifacts), **Rebuild Test Container (No Backend)** (cleans/rebuilds frontend + test image and brings in required dependent modules via `-am` to avoid resolution errors), **Run Test Container** (run only, reuses an already-built `local-test` image), and **Run Tradernet** (run only, reuses an already-built `local` image).
-The Maven run uses the docker-maven-plugin run configuration to publish ports 8080 (app) and 9990 (admin console) and set default env vars (you can override them by editing the plugin run config in `deployment/docker-image/pom.xml`).
-
-**Run configuration**
-
-```bash
-docker run --rm \
-  --name tradernet-test \
-  -p 8080:8080 \
-  -e ADMIN_PASSWORD=local-admin-password \
-  -e DB_TYPE=POSTGRES \
-  -e DB_HOST=postgres \
-  -e DB_PORT=5432 \
-  -e DB_NAME=tradernet \
-  -e DB_USER=tradernet \
-  -e DB_PASSWORD=tradernet \
-  tradernet/tradernet:local-test
-```
-
-Then open `http://localhost:8080` or check the health endpoint at `http://localhost:8080/api/health`.
-
-### Run with Docker Compose
+Start the stack:
 
 ```bash
 docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
 ```
 
-These commands work with Docker Desktop (which includes Docker Engine and Compose).
+Compose starts Tradernet, TimescaleDB/Postgres, the Python forecasting service, and Ollama. TimescaleDB/Postgres data is stored in the named Docker volume `timescaledb_data`, so order history, trades, market bars, users, and forecasting inputs persist across normal container recreation. Do not run `docker compose down -v` unless you intentionally want to delete those volumes.
 
-The backend WAR includes the web `dist/` output (wired via the `maven-war-plugin`).
+## Smoke checks
 
-### Database configuration (Docker)
-
-The container configures a WildFly datasource on startup. By default it uses H2 (in-memory).
-Set `DB_TYPE=POSTGRES` to use PostgreSQL, then provide connection details:
-Set environment variables to override connection details:
-
+```bash
+curl http://localhost:8080/api/health
+curl 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+curl http://localhost:8000/health
 ```
+
+Open the app at:
+
+```text
+http://localhost:8080
+```
+
+## Local development shortcuts
+
+Build just the backend API module:
+
+```bash
+mvn -pl api -am package
+```
+
+Run the frontend dev server:
+
+```bash
+cd web/src/main/react
+corepack enable
+yarn install
+yarn dev
+```
+
+Useful frontend scripts are defined in `web/src/main/react/package.json`:
+
+- `yarn dev`
+- `yarn build`
+- `yarn lint`
+- `yarn format`
+
+## Runtime configuration highlights
+
+Docker Compose provides working defaults for local development. The most commonly changed values are:
+
+```text
 DB_TYPE=POSTGRES
 DB_HOST=postgres
 DB_PORT=5432
 DB_NAME=tradernet
 DB_USER=tradernet
 DB_PASSWORD=tradernet
+market.ai.forecasting.url=http://forecasting-service:8000
+market.ai.ollama.url=http://ollama:11434
+market.ai.ollama.model=gemma4:e4b
 ```
 
-The provided Docker Compose file includes a PostgreSQL-compatible TimescaleDB service with matching defaults, plus optional forecasting and Ollama services for market narratives. TimescaleDB/Postgres data is stored in the named Docker volume `timescaledb_data`, so order history, trades, market bars, and forecasting data persist across normal container recreation. Do not run `docker compose down -v` unless you intentionally want to delete that database volume.
-
-### Forecasting + Ollama/Gemma 4
-
-Docker Compose now includes:
-
-- `postgres` running TimescaleDB for time-series bars.
-- `forecasting-service`, a FastAPI Python service with TimesFM/Chronos adapter hooks and a statistical fallback.
-- `ollama`, used by the Java backend to ask Gemma 4 for short forecast commentary.
-
-Pull the local Gemma 4 model once with:
-
-```bash
-docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml --profile model-init run --rm ollama-model
-```
-
-Then run the stack and request a 30-day Bitcoin forecast:
-
-```bash
-docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
-curl 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
-```
-
-The response includes `bullScore`, `probabilityPositiveReturn`, forecast drivers, and a Gemma-generated narrative such as: `Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 30-day return: 64%.`
-
-### Admin user password
-
-On startup the container creates a WildFly admin user. `ADMIN_PASSWORD` is optional; if not set, it defaults to `ChangeMe`.
-
-### Build without running the web Maven profile
-
-```bash
-mvn -DdontBuildReact clean package
-```
-
-This skips the web Maven profile (useful in CI when web artifacts are prebuilt).
-
-### Build just the web UI
-
-```bash
-cd web
-corepack enable
-yarn install
-yarn build
-```
-
-### Run the web UI locally (development)
-
-```bash
-cd web
-corepack enable
-yarn install
-yarn dev
-```
-
-The `dev` script starts the Vite dev server.
-
-### Build just the backend API module
-
-```bash
-mvn -pl api -am package
-```
-
-The backend API module produces a WAR file that can be deployed to your application server (for example, WildFly).
-
-### Health check endpoint
-
-When deployed, the backend exposes a JAX-RS health check at:
-
-```
-GET /api/health
-```
-
-It returns `{"status":"ok"}` for a basic smoke check.
-
-## Notes
-
-- The web module uses a Maven build profile (`build-react`) to install Node/Yarn and to run `yarn install` and `yarn build` during the Maven lifecycle.
-- The backend API WAR packaging pulls the web build output from `web/target/sources/dist` into the WAR.
-- The parent POM imports the WildFly BOM to align Jakarta EE / RESTEasy versions for WildFly deployments.
-- If Maven reports cached resolution failures for the WildFly BOM, re-run the build/import with `-U` to force dependency updates (for example: `mvn -U -pl api -am package`).
-
-## How the application works
-
-- The web UI is a Vite + React app that builds static assets into `web/target/sources/dist`.
-- The backend API module is a Jakarta EE WAR that exposes JAX-RS endpoints (including `GET /api/health`) and can be deployed on WildFly.
-- During a full Maven build (with the web profile enabled), the web assets are packaged into the backend WAR so a single deployment serves both API and UI.
-
-## Useful scripts
-
-From `web/src/main/react/package.json`:
-
-- `yarn dev` — run the dev server.
-- `yarn build` — build production assets.
-- `yarn lint` — lint the web UI.
-- `yarn format` — check formatting.
-
-## Market AI engine architecture (Binance -> Java backend -> React)
-
-A new backend module (`services/market-ai-service`) provides a reference implementation for real-time market intelligence:
-
-- **Ingestion**: consumes Binance trade stream (`wss://stream.binance.com:9443/ws/{symbol}@trade`).
-- **Aggregation**: builds 1-second OHLCV bars from trades.
-- **Feature engine**: computes incremental EMA/RSI features on bar close.
-- **AI signal engine**: emits BUY/SELL/HOLD-style signal events with confidence and model metadata.
-- **Backend fanout**: in-memory publisher lets REST and WebSocket layers consume the same stream.
-
-### API surface for frontend integration
-
-- `GET /api/market/bars?limit=500` returns recent chart bars.
-- `GET /api/market/signals?limit=200` returns recent AI signals.
-- `WS /api/ws/market` streams envelope events:
-  - `{ "type": "bar", "payload": { ... } }`
-  - `{ "type": "signal", "payload": { ... } }`
-
-This is designed to fit the React + uPlot chart workflow where bars are streamed in near-real time and signal overlays are rendered from the same timeline.
-
-
-### Scoring modes (rules vs model)
-
-The Market AI engine now supports pluggable scoring via system properties:
-
-- `-Dmarket.ai.scorer=linear` (default): uses a lightweight linear-logit model scorer.
-- `-Dmarket.ai.scorer=rules`: uses rule thresholds as a fallback strategy.
-
-Optional thresholds for the linear scorer:
-
-- `-Dmarket.ai.model.buyThreshold=0.62`
-- `-Dmarket.ai.model.sellThreshold=0.38`
-
-This design allows introducing a dedicated AI runtime (for example ONNX Runtime, XGBoost, or DJL) without changing the API or chart integration layer.
+See the [Application guide](docs/application-guide.md#6-runtime-configuration-reference) for the full configuration reference.
