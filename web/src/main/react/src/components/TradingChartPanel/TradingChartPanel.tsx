@@ -64,6 +64,25 @@ type ChartSignal = {
   notes: string[]
 }
 
+const getSignalColor = (side: SignalSide) => {
+  if (side === "BUY") return "green"
+  if (side === "SELL") return "red"
+  return "gray"
+}
+
+const getSignalStrength = (confidence?: number) => {
+  if (confidence == null) {
+    return { label: "No signal", color: "gray" }
+  }
+  if (confidence >= 0.85) {
+    return { label: "Strong", color: "green" }
+  }
+  if (confidence >= 0.7) {
+    return { label: "Medium", color: "blue" }
+  }
+  return { label: "Weak", color: "yellow" }
+}
+
 type WorkerPayload = {
   type: "bars"
   payload: {
@@ -319,6 +338,8 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
+  const signalSide = signal?.side ?? "HOLD"
+  const signalStrength = getSignalStrength(signal?.confidence)
   const resolvedChartHeight = Math.max(320, height ?? chartHeight)
 
   useEffect(() => {
@@ -923,8 +944,11 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice, currency)}`}</Badge>
-          <Badge color={signal?.side === "BUY" ? "green" : signal?.side === "SELL" ? "red" : "gray"} variant="filled">
-            {signal ? `${signal.side} ${(signal.confidence * 100).toFixed(0)}%` : "HOLD"}
+          <Badge color={getSignalColor(signalSide)} variant="filled">
+            {signalSide}
+          </Badge>
+          <Badge color={signalStrength.color} variant="light">
+            {signalStrength.label}
           </Badge>
         </Group>
       </Group>
@@ -932,7 +956,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
+            {streamError ? `${summary} · ${streamError}` : `${summary} · Signal ${signalSide} · Confidence ${signalStrength.label}`}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} style={{ height: resolvedChartHeight }}>
