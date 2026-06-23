@@ -8,6 +8,8 @@ import { getSymbolMetrics } from "utils/metrics"
 import { ChartDetailCard } from "pages/Charts/components/ChartDetailCard"
 import { useMarketContext } from "hooks/useMarketContext"
 import { ChartsMarketScoreCard } from "pages/Charts/components/ChartsMarketScoreCard"
+import { useMarketForecast } from "hooks/useMarketForecast"
+import { ChartsForecastCard } from "pages/Charts/components/ChartsForecastCard"
 
 /**
  * Dedicated chart-focused page with market details and score inputs.
@@ -30,6 +32,7 @@ const ChartsPage: FC = () => {
 
   const { data: selectedBars = [], isLoading: isSelectedBarsLoading } = useChartDetailBars(selectedSymbol, currency)
   const { data: marketContext, isLoading: isMarketContextLoading } = useMarketContext(selectedSymbol)
+  const { data: marketForecast, isLoading: isMarketForecastLoading, isError: isMarketForecastError } = useMarketForecast(selectedSymbol)
   const detailMetrics = useMemo(() => getSymbolMetrics(selectedBars), [selectedBars])
 
   return (
@@ -43,6 +46,14 @@ const ChartsPage: FC = () => {
           <Stack gap="md" h="100%" mih={0} style={{ overflow: "hidden" }}>
             <Box style={{ flexShrink: 0 }}>
               <ChartDetailCard selectedSymbol={selectedSymbol} currency={currency} isLoading={isSelectedBarsLoading} metrics={detailMetrics} />
+            </Box>
+            <Box style={{ flexShrink: 0 }}>
+              <ChartsForecastCard
+                selectedSymbol={selectedSymbol}
+                forecast={marketForecast}
+                isLoading={isMarketForecastLoading}
+                isError={isMarketForecastError}
+              />
             </Box>
             <ChartsMarketScoreCard selectedSymbol={selectedSymbol} context={marketContext} isLoading={isMarketContextLoading} />
           </Stack>

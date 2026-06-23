@@ -102,6 +102,17 @@ export type MarketContextSnapshot = {
   available?: boolean
 }
 
+export type MarketForecast = {
+  symbol: string
+  horizonDays: number
+  probabilityPositiveReturn: number
+  expectedReturn: number
+  bullScore: number
+  model: string
+  drivers: string[]
+  narrative?: string
+}
+
 /**
  * Auth
  */
