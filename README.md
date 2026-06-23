@@ -67,10 +67,28 @@ Compose starts Tradernet, TimescaleDB/Postgres, the Python forecasting service, 
 
 ## Smoke checks
 
+The health endpoints are public:
+
 ```bash
 curl http://localhost:8080/api/health
-curl 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 curl http://localhost:8000/health
+```
+
+Application endpoints such as `/api/market/forecast` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
+
+PowerShell:
+
+```powershell
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+```
+
+Bash/curl:
+
+```bash
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 ```
 
 Open the app at:

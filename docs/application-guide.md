@@ -27,6 +27,8 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 
 ## 3. Main API surfaces
 
+Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
+
 | API | Resource | Purpose |
 | --- | --- | --- |
 | `GET /api/health` | `HealthResource` | Basic application smoke check. |
@@ -118,8 +120,22 @@ Smoke checks:
 
 ```bash
 curl http://localhost:8080/api/health
-curl 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 curl http://localhost:8000/health
+```
+
+Authenticated forecast smoke check with Bash/curl:
+
+```bash
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+```
+
+Authenticated forecast smoke check with PowerShell:
+
+```powershell
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
 ```
 
 ## 6. Runtime configuration reference
