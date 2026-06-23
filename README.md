@@ -103,10 +103,11 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 ```
 
-PowerShell with real curl executable, if you prefer curl syntax:
+PowerShell with real curl executable, if you prefer curl syntax. Put JSON in a variable so PowerShell does not strip the JSON quotes before `curl.exe` receives the body:
 
 ```powershell
-curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+$loginBody = '{"username":"superuser","password":"changeme"}'
+curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" --data-raw $loginBody http://localhost:8080/api/auth/login
 curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 ```
 
