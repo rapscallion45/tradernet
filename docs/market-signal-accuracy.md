@@ -13,7 +13,7 @@ Tradernet's market AI service now supports a context-aware signal path that can 
 2. Each ingestion job writes normalized features as z-scores or bounded directional scores.
 3. `MarketContextRegistry` stores the latest normalized context by symbol and enriches the technical feature snapshot.
 4. `MarketRegimeScoreEngine` converts technical, ETF, on-chain, derivatives, valuation, macro, and sentiment features into a 0-100 score.
-5. `ContextAwareSignalScorer` emits buy/sell signals only when the technical model and the broader market regime score agree, or when the broader score reaches an extreme.
+5. `ContextAwareSignalScorer` emits buy/sell signals when the technical model and the broader market regime score agree, emits strong directional signals when the broader score reaches an extreme, and emits `HOLD` when the combined evidence is neutral or contradictory.
 
 ## Built-in Java ingestion
 
@@ -38,6 +38,15 @@ Runtime switches:
 - `25-49`: Weak or uncertain regime.
 - `50-74`: Bullish regime.
 - `75-100`: Strong but potentially overheated regime.
+
+## Real-time signal confidence
+
+The WebSocket signal payload carries two related but separate ideas:
+
+- `side`: `BUY`, `SELL`, or `HOLD`. The backend now emits `HOLD` as a first-class signal when the scorer is inside the neutral band or when technical and context inputs conflict.
+- `confidence`: conviction in that side, not a raw buy probability. Directional `BUY`/`SELL` confidence is widened from threshold-level weak signals toward high-conviction signals as the technical probability and market-regime score move farther from neutral. `HOLD` confidence is highest when the evidence is close to neutral and drops as the market becomes more directional.
+
+This lets the UI render direction and strength independently, for example `BUY` + `Weak`, `HOLD` + `Strong`, or `SELL` + `Medium`, instead of showing every threshold-crossing signal as roughly 60-65%.
 
 ## Runtime configuration
 

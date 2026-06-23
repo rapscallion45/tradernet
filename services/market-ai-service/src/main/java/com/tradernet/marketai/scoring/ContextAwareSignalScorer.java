@@ -81,21 +81,30 @@ public class ContextAwareSignalScorer implements SignalScorer {
     }
 
     private ScoreResult hold(ScoreResult technical, MarketRegimeScore regimeScore, List<String> notes) {
-        return new ScoreResult(SignalSide.HOLD, Math.max(technical.getConfidence(), scoreConfidence(Math.abs(regimeScore.getValue() - 50) + 50)), "context-v1", notes);
+        final int distanceFromNeutral = Math.abs(regimeScore.getValue() - 50);
+        final double contextHoldConfidence = Math.max(0.50, 0.98 - (distanceFromNeutral / 50.0));
+        final double confidence = technical.getSide() == SignalSide.HOLD
+                ? Math.max(technical.getConfidence(), contextHoldConfidence)
+                : Math.min(technical.getConfidence(), contextHoldConfidence);
+        return new ScoreResult(SignalSide.HOLD, clamp(confidence, 0.50, 0.98), "context-v1", notes);
     }
 
     private double contextualConfidence(ScoreResult technical, int directionalScore) {
-        if (directionalScore >= 58) {
+        if (directionalScore >= BUY_SCORE_THRESHOLD) {
             return blendConfidence(technical.getConfidence(), directionalScore);
         }
-        return Math.max(0.60, technical.getConfidence() * 0.95);
+        return clamp(technical.getConfidence() * 0.95, 0.50, 0.98);
     }
 
     private double blendConfidence(double technicalConfidence, int directionalScore) {
-        return Math.min(0.97, (technicalConfidence * 0.60) + (scoreConfidence(directionalScore) * 0.40));
+        return clamp((technicalConfidence * 0.55) + (scoreConfidence(directionalScore) * 0.45), 0.50, 0.98);
     }
 
     private double scoreConfidence(int directionalScore) {
-        return Math.min(0.97, 0.50 + (Math.max(0, directionalScore - 50) / 100.0));
+        return clamp(0.50 + (Math.max(0, directionalScore - 50) / 50.0), 0.50, 0.98);
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 }
