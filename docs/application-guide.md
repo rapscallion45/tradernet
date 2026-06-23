@@ -144,6 +144,16 @@ One-line PowerShell form:
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
 ```
 
+If a persistent local database returns `INCORRECT_CREDENTIALS`, reset the bootstrap application user's password and retry login:
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}'
+```
+
+```bash
+curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+```
+
 ## 6. Runtime configuration reference
 
 ### Database/container variables
