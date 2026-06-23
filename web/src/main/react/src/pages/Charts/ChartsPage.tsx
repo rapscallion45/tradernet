@@ -47,15 +47,17 @@ const ChartsPage: FC = () => {
             <Box style={{ flexShrink: 0 }}>
               <ChartDetailCard selectedSymbol={selectedSymbol} currency={currency} isLoading={isSelectedBarsLoading} metrics={detailMetrics} />
             </Box>
-            <Box style={{ flexShrink: 0 }}>
-              <ChartsForecastCard
-                selectedSymbol={selectedSymbol}
-                forecast={marketForecast}
-                isLoading={isMarketForecastLoading}
-                isError={isMarketForecastError}
-              />
+            <Box style={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+              <Stack gap="md">
+                <ChartsForecastCard
+                  selectedSymbol={selectedSymbol}
+                  forecast={marketForecast}
+                  isLoading={isMarketForecastLoading}
+                  isError={isMarketForecastError}
+                />
+                <ChartsMarketScoreCard selectedSymbol={selectedSymbol} context={marketContext} isLoading={isMarketContextLoading} fillAvailable={false} />
+              </Stack>
             </Box>
-            <ChartsMarketScoreCard selectedSymbol={selectedSymbol} context={marketContext} isLoading={isMarketContextLoading} />
           </Stack>
         </Grid.Col>
       </Grid>

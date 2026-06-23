@@ -15,6 +15,7 @@ type ChartsMarketScoreCardProps = {
   selectedSymbol: string
   context?: MarketContextSnapshot
   isLoading: boolean
+  fillAvailable?: boolean
 }
 
 const scoreFigures: ScoreFigure[] = [
@@ -76,7 +77,7 @@ const getScoreColor = (value: number) => {
   return "gray"
 }
 
-export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selectedSymbol, context, isLoading }) => {
+export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selectedSymbol, context, isLoading, fillAvailable = true }) => {
   const resolvedContext = context ?? neutralContext
   const populatedFigureCount = useMemo(
     () => scoreFigures.filter((figure) => Math.abs(resolvedContext[figure.key] ?? 0) > 0.001).length,
@@ -84,8 +85,15 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
   )
   const hasMarketContext = resolvedContext.available ?? populatedFigureCount > 0
 
+  const paperStyle = fillAvailable
+    ? { display: "flex", flex: "1 1 0", flexDirection: "column" as const, minHeight: 0, overflow: "hidden" }
+    : { display: "flex", flexDirection: "column" as const }
+  const contentStyle = fillAvailable
+    ? { flex: 1, minHeight: 0, overflowY: "auto" as const, paddingRight: 4 }
+    : { overflow: "visible" as const }
+
   return (
-    <Paper withBorder radius="md" p="md" style={{ display: "flex", flex: "1 1 0", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+    <Paper withBorder radius="md" p="md" style={paperStyle}>
       <Group justify="space-between" mb="xs" style={{ flexShrink: 0 }}>
         <Group gap="xs">
           <IconActivityHeartbeat size={16} />
@@ -105,7 +113,7 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
           <Loader size="sm" />
         </Group>
       ) : (
-        <Box style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+        <Box style={contentStyle}>
           <Stack gap="sm">
             {!hasMarketContext && (
               <Text size="xs" c="dimmed">
