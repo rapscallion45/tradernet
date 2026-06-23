@@ -96,11 +96,18 @@ If login returns `INCORRECT_CREDENTIALS` in a reused persistent database, reset 
 Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}'
 ```
 
-Bash/curl:
+Bash/curl (run this in Bash, Git Bash, WSL, macOS/Linux shells, or use `curl.exe` in PowerShell because PowerShell aliases `curl` to `Invoke-WebRequest`):
 
 ```bash
 curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
 curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+```
+
+PowerShell with real curl executable, if you prefer curl syntax:
+
+```powershell
+curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 ```
 
 Bash/curl password reset, if needed:

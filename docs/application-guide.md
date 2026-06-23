@@ -123,11 +123,18 @@ curl http://localhost:8080/api/health
 curl http://localhost:8000/health
 ```
 
-Authenticated forecast smoke check with Bash/curl:
+Authenticated forecast smoke check with Bash/curl. Run this in Bash, Git Bash, WSL, macOS/Linux shells, or use `curl.exe` in PowerShell because PowerShell aliases `curl` to `Invoke-WebRequest`:
 
 ```bash
 curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
 curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+```
+
+PowerShell with real curl executable, if you prefer curl syntax:
+
+```powershell
+curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
 ```
 
 Authenticated forecast smoke check with PowerShell. Run these as three separate commands, or keep the semicolons if you paste the one-line form:
