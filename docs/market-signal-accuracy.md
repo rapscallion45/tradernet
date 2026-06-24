@@ -48,6 +48,8 @@ The WebSocket signal payload carries two related but separate ideas:
 
 This lets the UI render direction and strength independently, for example `BUY` + `Weak`, `HOLD` + `Strong`, or `SELL` + `Medium`, instead of showing every threshold-crossing signal as roughly 60-65%.
 
+A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus up to three notes to the legend for debugging and operator context.
+
 ## Runtime configuration
 
 The default scorer is now context-aware. Existing scorers are still available:

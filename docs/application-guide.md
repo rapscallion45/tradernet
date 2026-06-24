@@ -261,6 +261,20 @@ Market UI features can consume:
 - Websocket bars/signals via `/api/ws/market`.
 - Forecast cards/summaries via `/api/market/forecast`.
 
+### Chart signal display
+
+The chart signal badges intentionally distinguish a real backend `HOLD` from the absence of a received signal:
+
+- `No signal` means the chart has not received a signal payload for the selected symbol yet.
+- `BUY`, `SELL`, or `HOLD` means the backend emitted an `AiSignal` over `/api/ws/market`.
+- The adjacent confidence badge shows strength labels (`No signal`, `Weak`, `Medium`, or `Strong`) derived from the latest signal confidence.
+- The chart legend appends the latest signal model version and up to three signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available.
+
+### Forecast and order history display
+
+- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, and narrative text.
+- The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured at order creation time; older rows created before the `bullScore` migration display a muted dash until they have a stored value.
+
 ## 9. Operational safeguards
 
 - Keep `timescaledb_data` backups if local order/trade history matters.
