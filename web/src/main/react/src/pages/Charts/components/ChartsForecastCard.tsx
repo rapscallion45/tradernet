@@ -34,7 +34,7 @@ export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol
               <IconSparkles size={18} />
             </ThemeIcon>
             <div>
-              <Text fw={700}>Forecast</Text>
+              <Text fw={700}>TradernetAI Forecast</Text>
               <Text size="xs" c="dimmed">{selectedSymbol}</Text>
             </div>
           </Group>
