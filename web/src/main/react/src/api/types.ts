@@ -221,6 +221,7 @@ export type OrderSummary = {
   netValueDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
+  bullScore?: number
 }
 
 /** Portfolio */

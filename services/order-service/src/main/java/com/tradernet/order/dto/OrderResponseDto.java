@@ -29,6 +29,7 @@ public class OrderResponseDto implements Serializable {
     private String pnlPercentDisplay;
     private String timing;
     private String aiPrediction;
+    private Double bullScore;
     private Double closePrice;
     private Double netValue;
     private String netValueDisplay;
@@ -53,6 +54,7 @@ public class OrderResponseDto implements Serializable {
         dto.createdAt = order.getCreatedAt();
         dto.closedAt = order.getClosedAt();
         dto.aiPrediction = order.getAiPrediction();
+        dto.bullScore = order.getBullScore();
         dto.closePrice = order.getClosePrice();
         return dto;
     }
@@ -95,6 +97,8 @@ public class OrderResponseDto implements Serializable {
     public void setTiming(String timing) { this.timing = timing; }
     public String getAiPrediction() { return aiPrediction; }
     public void setAiPrediction(String aiPrediction) { this.aiPrediction = aiPrediction; }
+    public Double getBullScore() { return bullScore; }
+    public void setBullScore(Double bullScore) { this.bullScore = bullScore; }
     public Double getClosePrice() { return closePrice; }
     public void setClosePrice(Double closePrice) { this.closePrice = closePrice; }
     public Double getNetValue() { return netValue; }
@@ -117,6 +121,7 @@ public class OrderResponseDto implements Serializable {
             && Objects.equals(pnlPercent, that.pnlPercent) && Objects.equals(pnlPercentDisplay, that.pnlPercentDisplay)
             && Objects.equals(timing, that.timing)
             && Objects.equals(aiPrediction, that.aiPrediction)
+            && Objects.equals(bullScore, that.bullScore)
             && Objects.equals(closePrice, that.closePrice)
             && Objects.equals(netValue, that.netValue)
             && Objects.equals(netValueDisplay, that.netValueDisplay);
@@ -125,6 +130,6 @@ public class OrderResponseDto implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, orderId, userId, symbol, side, quantity, price, status, createdAt, closedAt, createdAtDisplay, currentPrice,
-            currentPriceDisplay, pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction, closePrice, netValue, netValueDisplay);
+            currentPriceDisplay, pnl, pnlDisplay, pnlPercent, pnlPercentDisplay, timing, aiPrediction, bullScore, closePrice, netValue, netValueDisplay);
     }
 }

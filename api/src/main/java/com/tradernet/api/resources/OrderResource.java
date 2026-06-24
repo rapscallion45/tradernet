@@ -113,6 +113,7 @@ public class OrderResource {
 
         OrderEntity order = new OrderEntity(symbol.trim(), request.getQuantity(), request.getPrice(), side);
         order.setAiPrediction(resolveAiPrediction(symbol));
+        order.setBullScore(resolveBullScore(symbol));
         OrderEntity savedOrder = orderService.createOrder(authUser.get().getId(), order);
 
         return Response.status(Response.Status.CREATED)
@@ -200,6 +201,10 @@ public class OrderResource {
 
     private double roundCurrency(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private Double resolveBullScore(String symbol) {
+        return roundCurrency(marketAiService.getBullScore(symbol, 30));
     }
 
     private String resolveAiPrediction(String symbol) {

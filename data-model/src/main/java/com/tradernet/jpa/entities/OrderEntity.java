@@ -35,6 +35,7 @@ public class OrderEntity {
     private Instant closedAt;
     private Double closePrice;
     private String aiPrediction;
+    private Double bullScore;
 
     public OrderEntity() {
     }
@@ -127,6 +128,14 @@ public class OrderEntity {
 
     public void setAiPrediction(String aiPrediction) {
         this.aiPrediction = aiPrediction;
+    }
+
+    public Double getBullScore() {
+        return bullScore;
+    }
+
+    public void setBullScore(Double bullScore) {
+        this.bullScore = bullScore;
     }
 
     @Override

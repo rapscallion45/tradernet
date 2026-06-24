@@ -177,16 +177,27 @@ public class MarketAiService {
     @Lock(LockType.READ)
     public MarketForecast getForecast(String symbol, int horizonDays) {
         final String normalizedSymbol = normalizeSymbol(symbol);
+        final MarketContextSnapshot snapshot = getHydratedMarketContext(normalizedSymbol);
+        final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
+        forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
+        return forecast;
+    }
+
+    @Lock(LockType.READ)
+    public double getBullScore(String symbol, int horizonDays) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final MarketContextSnapshot snapshot = getHydratedMarketContext(normalizedSymbol);
+        return forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot).getBullScore();
+    }
+
+    private MarketContextSnapshot getHydratedMarketContext(String normalizedSymbol) {
         contextRefreshSymbols.add(normalizedSymbol);
         MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
         if (!snapshot.isAvailable()) {
             hydrateMarketContext(normalizedSymbol);
             snapshot = marketContextRegistry.get(normalizedSymbol);
         }
-
-        final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
-        forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
-        return forecast;
+        return snapshot;
     }
 
     @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)

@@ -134,6 +134,24 @@ docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml bui
 docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up -d --no-deps --force-recreate forecasting-service
 ```
 
+### Apply database migrations without losing data
+
+Schema changes that affect an existing named volume are shipped as SQL files under `data-model/src/main/resources/META-INF/db/migrations`. Apply them by piping the migration into the already-running `postgres` service, then recreate only the app container:
+
+```bash
+cat data-model/src/main/resources/META-INF/db/migrations/20260624-add-order-bull-score.sql | docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml exec -T postgres psql -U tradernet -d tradernet
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up -d --no-deps --force-recreate tradernet
+```
+
+PowerShell equivalent for applying the migration:
+
+```powershell
+Get-Content .\data-model\src\main\resources\META-INF\db\migrations\20260624-add-order-bull-score.sql | docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml exec -T postgres psql -U tradernet -d tradernet
+```
+
+This keeps the `timescaledb_data` volume intact. Avoid `docker compose down -v` unless intentionally wiping local orders, trades, users, market bars, and Ollama model data.
+
 Smoke checks:
 
 ```bash

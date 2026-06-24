@@ -151,6 +151,22 @@ const OderHistoryTable: FC = () => {
         },
       },
       {
+        accessorKey: "bullScore",
+        header: "Bull Score",
+        cell: ({ row }) => {
+          const bullScore = row.original.bullScore
+          if (bullScore == null) {
+            return <Text c={"dimmed"}>—</Text>
+          }
+          const bullScoreColor = bullScore >= 70 ? "green" : bullScore <= 30 ? "red" : "yellow"
+          return (
+            <Badge color={bullScoreColor} variant={"light"}>
+              {formatNumber(bullScore, { maximumFractionDigits: 0 })}
+            </Badge>
+          )
+        },
+      },
+      {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => <Badge variant={"outline"}>{row.original.status}</Badge>,
