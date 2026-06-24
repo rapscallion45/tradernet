@@ -116,6 +116,24 @@ docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml --p
 docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
 ```
 
+### Rebuild the test image while leaving the database running
+
+When `postgres` is already running and you only want to rebuild/redeploy the Tradernet `local-test` image, do not run `docker compose down` and do not run `docker compose down -v`. Rebuild the image, then recreate only the `tradernet` service without restarting dependencies:
+
+```bash
+mvn -pl deployment/docker-image -am -Pbuild-image -Ddocker.image.tag=local-test clean package
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up -d --no-deps --force-recreate tradernet
+```
+
+The `--no-deps` flag prevents Compose from recreating dependent services such as `postgres`, `forecasting-service`, and `ollama`; `timescaledb_data` remains attached to the running database container.
+
+If you changed only the Python forecasting service, rebuild and recreate that service instead, again without restarting Postgres:
+
+```bash
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml build forecasting-service
+docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up -d --no-deps --force-recreate forecasting-service
+```
+
 Smoke checks:
 
 ```bash
