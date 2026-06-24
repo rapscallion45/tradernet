@@ -64,7 +64,7 @@ type ChartSignal = {
   notes: string[]
 }
 
-const getSignalColor = (side: SignalSide) => {
+const getSignalColor = (side?: SignalSide) => {
   if (side === "BUY") return "green"
   if (side === "SELL") return "red"
   return "gray"
@@ -338,8 +338,13 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
-  const signalSide = signal?.side ?? "HOLD"
+  const signalSide = signal?.side
+  const signalSideLabel = signalSide ?? "No signal"
   const signalStrength = getSignalStrength(signal?.confidence)
+  const signalNotes = signal?.notes?.length ? ` · Notes ${signal.notes.slice(0, 3).join(", ")}` : ""
+  const signalDetails = signal
+    ? `Signal ${signal.side} · Confidence ${signalStrength.label} · Model ${signal.modelVersion}${signalNotes}`
+    : `Signal No signal · Confidence ${signalStrength.label}`
   const resolvedChartHeight = Math.max(320, height ?? chartHeight)
 
   useEffect(() => {
@@ -945,7 +950,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
           </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice, currency)}`}</Badge>
           <Badge color={getSignalColor(signalSide)} variant="filled">
-            {signalSide}
+            {signalSideLabel}
           </Badge>
           <Badge color={signalStrength.color} variant="light">
             {signalStrength.label}
@@ -956,7 +961,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {streamError ? `${summary} · ${streamError}` : `${summary} · Signal ${signalSide} · Confidence ${signalStrength.label}`}
+            {streamError ? `${summary} · ${streamError} · ${signalDetails}` : `${summary} · ${signalDetails}`}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} style={{ height: resolvedChartHeight }}>
