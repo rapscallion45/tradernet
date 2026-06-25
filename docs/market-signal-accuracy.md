@@ -50,7 +50,7 @@ This lets the UI render direction and strength independently, for example `BUY` 
 
 The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context and the cached forecast bull score then confirm, block, or only at extremes promote that decision. A high bull score pulls the effective context toward BUY, a low bull score pulls it toward SELL, and a bull score near 50 triggers a neutral forecast filter that biases directional technical votes back to HOLD.
 
-A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus up to three notes to the legend for debugging and operator context.
+A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus prioritized notes to the legend for debugging and operator context. If the selected symbol is not the configured live stream symbol, `GET /api/market/signals` generates an initial signal from recent Binance klines so non-BTC charts can still display a signal.
 
 ## Runtime configuration
 

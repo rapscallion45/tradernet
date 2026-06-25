@@ -128,13 +128,41 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
-    public synchronized List<AiSignal> getSignals(String symbol, int limit) {
+    public List<AiSignal> getSignals(String symbol, int limit) {
         final String normalizedSymbol = normalizeSymbol(symbol);
-        final List<AiSignal> matchingSignals = signals.stream()
-                .filter(signal -> signal.getSymbol() != null)
-                .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
-                .collect(Collectors.toList());
-        return takeLast(matchingSignals, limit);
+        final List<AiSignal> matchingSignals;
+        synchronized (this) {
+            matchingSignals = signals.stream()
+                    .filter(signal -> signal.getSymbol() != null)
+                    .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
+                    .collect(Collectors.toList());
+        }
+
+        if (!matchingSignals.isEmpty()) {
+            return takeLast(matchingSignals, limit);
+        }
+
+        return generateSignalsFromRemoteBars(normalizedSymbol, limit);
+    }
+
+    private List<AiSignal> generateSignalsFromRemoteBars(String normalizedSymbol, int limit) {
+        getHydratedMarketContext(normalizedSymbol);
+        final List<MarketBar> remoteBars = fetchKlines(normalizedSymbol, ChartInterval.parse("1MIN"), Math.max(50, Math.min(500, limit * 20)));
+        if (remoteBars.isEmpty()) {
+            return List.of();
+        }
+
+        final FeatureEngine remoteFeatureEngine = new FeatureEngine(marketContextRegistry);
+        final AiSignalEngine remoteSignalEngine = new AiSignalEngine();
+        final List<AiSignal> generatedSignals = new ArrayList<>();
+        for (MarketBar bar : remoteBars) {
+            final FeatureSnapshot features = enrichWithSignalBullScore(remoteFeatureEngine.onClosedBar(bar));
+            final AiSignal signal = remoteSignalEngine.evaluate(features);
+            if (signal != null) {
+                generatedSignals.add(signal);
+            }
+        }
+        return takeLast(generatedSignals, limit);
     }
 
     @Lock(LockType.READ)

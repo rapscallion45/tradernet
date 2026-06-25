@@ -286,6 +286,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - `BUY`, `SELL`, or `HOLD` means the backend emitted an `AiSignal` over `/api/ws/market`.
 - The adjacent confidence badge shows strength labels (`No signal`, `Weak`, `Medium`, or `Strong`) derived from the latest signal confidence.
 - The chart legend appends the latest signal model version and up to five prioritized signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context notes such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
+- For symbols that are not the configured live Binance stream symbol, the initial chart signal is generated on demand from recent Binance klines via `GET /api/market/signals`; live WebSocket bar/signal updates still come from the configured stream symbol.
 
 ### Forecast and order history display
 
