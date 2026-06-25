@@ -260,7 +260,7 @@ The forecasting path is designed to degrade gracefully:
 1. Java requests a forecast from the Python service.
 2. If Python is unavailable or returns an error, Java returns a context-based fallback forecast.
 3. Java sends structured forecast data to Ollama/Gemma.
-4. If Ollama is disabled, unavailable, or returns an empty/error response, Java returns deterministic narrative text.
+4. If Ollama is disabled, unavailable, or returns an empty/error response, Java returns deterministic narrative text. If Ollama returns hardcoded Bitcoin wording, Java normalizes the narrative back to the selected forecast symbol before returning it.
 
 The default Python service is intentionally lightweight. It reads recent closes from `market_bars`, computes a momentum/volatility fallback forecast, and exposes stable hooks for production images that install TimesFM or Chronos.
 

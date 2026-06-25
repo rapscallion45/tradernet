@@ -68,7 +68,7 @@ Tradernet also exposes a forecast path through `GET /api/market/forecast?symbol=
 2. `ForecastingClient` calls the Python forecasting service (`market.ai.forecasting.url`, default `http://forecasting-service:8000`).
 3. The Python service reads recent bars from Postgres/TimescaleDB and returns a probability of positive return, expected return, bull score, model name, and drivers. It ships with a statistical fallback and stable adapter hooks for `FORECAST_BACKEND=timesfm` or `FORECAST_BACKEND=chronos` custom images.
 4. `OllamaNarrativeClient` sends the structured forecast to Ollama (`market.ai.ollama.url`, default `http://ollama:11434`) using Gemma 4 (`market.ai.ollama.model`, default `gemma4:e4b`).
-5. If Ollama or the Python service is unavailable, the API returns a deterministic fallback sentence so the UI can continue rendering.
+5. If Ollama or the Python service is unavailable, the API returns a deterministic fallback sentence so the UI can continue rendering. Java also normalizes Ollama text back to the selected symbol if the model emits hardcoded Bitcoin wording.
 
 Example narrative shape:
 

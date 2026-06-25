@@ -59,7 +59,7 @@ public class OllamaNarrativeClient {
             }
             final JsonNode root = objectMapper.readTree(response.body());
             final String narrative = root.path("response").asText("").trim();
-            return narrative.isBlank() ? fallbackNarrative(forecast) : narrative;
+            return narrative.isBlank() ? fallbackNarrative(forecast) : enforceSelectedSymbol(narrative, forecast);
         } catch (IOException ex) {
             LOG.warn("Unable to call Ollama Gemma 4 narrative service", ex);
             return fallbackNarrative(forecast);
@@ -94,6 +94,16 @@ public class OllamaNarrativeClient {
 
     private List<String> safeDrivers(List<String> drivers) {
         return drivers == null ? List.of() : drivers.stream().limit(5).collect(java.util.stream.Collectors.toList());
+    }
+
+    private String enforceSelectedSymbol(String narrative, MarketForecast forecast) {
+        final String symbol = displaySymbol(forecast);
+        return narrative
+                .replace("Today's Bitcoin Bull Score", "Today's " + symbol + " Bull Score")
+                .replace("Today’s Bitcoin Bull Score", "Today’s " + symbol + " Bull Score")
+                .replace("Bitcoin Bull Score", symbol + " Bull Score")
+                .replace("Bitcoin", symbol)
+                .replace("bitcoin", symbol);
     }
 
     private String fallbackNarrative(MarketForecast forecast) {
