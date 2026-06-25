@@ -67,11 +67,11 @@ public class MarketAiService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final BinanceTradeStreamClient binanceClient = new BinanceTradeStreamClient();
-    private final BarAggregator barAggregator = new BarAggregator(1_000L);
     private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
-    private final FeatureEngine featureEngine = new FeatureEngine(marketContextRegistry);
-    private final AiSignalEngine signalEngine = new AiSignalEngine();
+    private final Map<String, BinanceTradeStreamClient> binanceClientsBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, AiSignalEngine> signalEnginesBySymbol = new ConcurrentHashMap<>();
     private final MarketEventPublisher publisher = new MarketEventPublisher();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final MarketContextDataIngestionClient contextDataIngestionClient = new MarketContextDataIngestionClient(httpClient, OBJECT_MAPPER);
@@ -95,13 +95,35 @@ public class MarketAiService {
         final String symbol = System.getProperty("market.ai.symbol", "btcusdt");
         registerContextRefreshSymbols(symbol);
         registerContextRefreshSymbols(System.getProperty("market.ai.context.symbols", symbol));
-        binanceClient.start(symbol, this::onTrade);
+        ensureLiveSymbol(symbol);
         refreshMarketContexts();
     }
 
     @PreDestroy
     public void stop() {
-        binanceClient.stop();
+        binanceClientsBySymbol.values().forEach(BinanceTradeStreamClient::stop);
+        binanceClientsBySymbol.clear();
+        barAggregatorsBySymbol.clear();
+        featureEnginesBySymbol.clear();
+        signalEnginesBySymbol.clear();
+    }
+
+    @Lock(LockType.WRITE)
+    public void ensureLiveSymbol(String symbol) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        if (normalizedSymbol.isBlank()) {
+            return;
+        }
+
+        contextRefreshSymbols.add(normalizedSymbol);
+        barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
+        featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContextRegistry));
+        signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
+        binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, key -> {
+            final BinanceTradeStreamClient client = new BinanceTradeStreamClient();
+            client.start(key.toLowerCase(Locale.ROOT), this::onTrade);
+            return client;
+        });
     }
 
     @Lock(LockType.READ)
@@ -287,8 +309,12 @@ public class MarketAiService {
     }
 
     private void onTrade(MarketTrade trade) {
-        final MarketBar closed = barAggregator.ingest(trade);
-        final MarketBar forming = barAggregator.snapshotForming();
+        final String normalizedSymbol = normalizeSymbol(trade.getSymbol());
+        final BarAggregator symbolBarAggregator = barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
+        final FeatureEngine symbolFeatureEngine = featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContextRegistry));
+        final AiSignalEngine symbolSignalEngine = signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
+        final MarketBar closed = symbolBarAggregator.ingest(trade);
+        final MarketBar forming = symbolBarAggregator.snapshotForming();
         if (forming != null) {
             publisher.publishBar(forming);
         }
@@ -302,8 +328,8 @@ public class MarketAiService {
         }
         storeMarketBar(closed);
 
-        final FeatureSnapshot features = enrichWithSignalBullScore(featureEngine.onClosedBar(closed));
-        final AiSignal signal = signalEngine.evaluate(features);
+        final FeatureSnapshot features = enrichWithSignalBullScore(symbolFeatureEngine.onClosedBar(closed));
+        final AiSignal signal = symbolSignalEngine.evaluate(features);
         if (signal == null) {
             return;
         }

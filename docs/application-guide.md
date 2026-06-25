@@ -218,7 +218,7 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `market.ai.symbol` | `btcusdt` | Binance stream symbol for live ingestion. |
+| `market.ai.symbol` | `btcusdt` | Default Binance stream symbol started at application boot. Additional chart symbols become live dynamically when a user opens a chart websocket for that symbol. |
 | `market.ai.context.symbols` | active symbol | Comma-separated symbols for scheduled context hydration. |
 | `market.ai.context.ingestion.enabled` | `true` | Enables/disables scheduled no-key market context ingestion. |
 | `market.ai.scorer` | `context` | Selects `context`, `linear`, or `rules` signal scorer. |
@@ -286,7 +286,9 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - `BUY`, `SELL`, or `HOLD` means the backend emitted an `AiSignal` over `/api/ws/market`.
 - The adjacent confidence badge shows strength labels (`No signal`, `Weak`, `Medium`, or `Strong`) derived from the latest signal confidence.
 - The chart legend appends the latest signal model version and up to five prioritized signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context notes such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
-- For symbols that are not the configured live Binance stream symbol, the initial chart signal is generated on demand from recent Binance klines via `GET /api/market/signals`; live WebSocket bar/signal updates still come from the configured stream symbol.
+- Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change.
+- Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
+- Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.
 
 ### Forecast and order history display
 

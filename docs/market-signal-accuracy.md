@@ -17,7 +17,7 @@ Tradernet's market AI service now supports a context-aware signal path that can 
 
 ## Built-in Java ingestion
 
-`MarketAiService` now schedules in-app market context refreshes every 15 minutes. The scheduler hydrates symbols listed in `market.ai.context.symbols`, the active `market.ai.symbol`, and any symbol requested through `GET /market/context`.
+`MarketAiService` now schedules in-app market context refreshes every 15 minutes. The scheduler hydrates symbols listed in `market.ai.context.symbols`, the boot-time default `market.ai.symbol`, any symbol requested through `GET /market/context`, and any symbol made live by opening its chart websocket.
 
 The no-key default ingestion currently fetches:
 
@@ -50,7 +50,7 @@ This lets the UI render direction and strength independently, for example `BUY` 
 
 The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context and the cached forecast bull score then confirm, block, or only at extremes promote that decision. A high bull score pulls the effective context toward BUY, a low bull score pulls it toward SELL, and a bull score near 50 triggers a neutral forecast filter that biases directional technical votes back to HOLD.
 
-A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus prioritized notes to the legend for debugging and operator context. If the selected symbol is not the configured live stream symbol, `GET /api/market/signals` generates an initial signal from recent Binance klines so non-BTC charts can still display a signal.
+A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus prioritized notes to the legend for debugging and operator context. Opening a chart websocket dynamically starts a live Binance trade stream for the selected symbol, and each live symbol has its own bar aggregator, feature engine, and signal engine. Until the first live signal arrives, `GET /api/market/signals` can still generate an initial signal from recent Binance klines so non-BTC charts do not remain blank.
 
 ## Runtime configuration
 
