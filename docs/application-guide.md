@@ -232,7 +232,7 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 | `market.ai.context.forecastNeutralBand` | `8` | Treats forecast bull scores within `50 +/- this value` as neutral, which biases directional technical signals back to HOLD. |
 | `market.ai.signalBullScore.enabled` | `true` | Enables forecast bull-score enrichment for chart BUY/HOLD/SELL signals. |
 | `market.ai.signalBullScoreHorizonDays` | `1` | Forecast horizon used when feeding bull score into chart signal generation. |
-| `market.ai.signalBullScoreTtlMs` | `300000` | Cache TTL for signal bull-score lookups so every closed bar does not call the Python forecasting service. |
+| `market.ai.signalBullScoreTtlMs` | `60000` | Cache TTL for signal bull-score lookups so every closed bar does not call the Python forecasting service. |
 | `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured as `bullScore` when an order is created. |
 | `market.ai.forecasting.url` | `http://forecasting-service:8000` | Python forecasting service base URL. |
 | `market.ai.ollama.enabled` | `true` | Enables LLM-generated forecast narratives. |

@@ -86,7 +86,7 @@ Runtime switches:
 - `-Dmarket.ai.context.forecastNeutralBand=8` treats bull scores from 42 to 58 as neutral and biases signals to HOLD.
 - `-Dmarket.ai.signalBullScore.enabled=true` enables bull-score enrichment for chart signals.
 - `-Dmarket.ai.signalBullScoreHorizonDays=1` chooses the forecast horizon used by chart signals.
-- `-Dmarket.ai.signalBullScoreTtlMs=300000` caches bull-score lookups for five minutes.
+- `-Dmarket.ai.signalBullScoreTtlMs=60000` caches bull-score lookups for one minute.
 - `-Dmarket.ai.forecasting.url=http://forecasting-service:8000` points Java at the Python service.
 - `-Dmarket.ai.ollama.enabled=false` disables LLM narratives and uses deterministic text.
 - `-Dmarket.ai.ollama.url=http://ollama:11434` points Java at Ollama.

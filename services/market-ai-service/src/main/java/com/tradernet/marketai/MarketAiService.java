@@ -63,7 +63,7 @@ public class MarketAiService {
     private static final String INSERT_MARKET_BAR_SQL = "INSERT INTO market_bars "
             + "(symbol, bucket, open, high, low, close, volume, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     private static final int DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS = 1;
-    private static final long DEFAULT_SIGNAL_BULL_SCORE_TTL_MS = Duration.ofMinutes(5).toMillis();
+    private static final long DEFAULT_SIGNAL_BULL_SCORE_TTL_MS = Duration.ofMinutes(1).toMillis();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

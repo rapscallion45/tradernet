@@ -15,7 +15,7 @@ services:
         -Dmarket.ai.orderBullScoreHorizonDays=1
         -Dmarket.ai.signalBullScore.enabled=true
         -Dmarket.ai.signalBullScoreHorizonDays=1
-        -Dmarket.ai.signalBullScoreTtlMs=300000
+        -Dmarket.ai.signalBullScoreTtlMs=60000
         -Dmarket.ai.model.buyThreshold=0.56
         -Dmarket.ai.model.sellThreshold=0.44
         -Dmarket.ai.context.buyScoreThreshold=54
