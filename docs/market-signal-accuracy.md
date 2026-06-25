@@ -48,6 +48,8 @@ The WebSocket signal payload carries two related but separate ideas:
 
 This lets the UI render direction and strength independently, for example `BUY` + `Weak`, `HOLD` + `Strong`, or `SELL` + `Medium`, instead of showing every threshold-crossing signal as roughly 60-65%.
 
+The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context then confirms, blocks, or only at extremes promotes that decision. The forecast horizon is not directly weighted in the chart BUY/HOLD/SELL signal, so changing from a 30-day to 1-day forecast changes the forecast card/order bull score but not the realtime signal vote.
+
 A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus up to three notes to the legend for debugging and operator context.
 
 ## Runtime configuration
@@ -60,7 +62,7 @@ The default scorer is now context-aware. Existing scorers are still available:
 
 ## Forecasting and Gemma 4 narrative layer
 
-Tradernet also exposes a longer-horizon forecast path through `GET /api/market/forecast?symbol=BTCUSDT&horizonDays=30`.
+Tradernet also exposes a forecast path through `GET /api/market/forecast?symbol=BTCUSDT&horizonDays=1` for the default daily-trading view; callers can still request longer horizons with `horizonDays`.
 
 1. The Java market AI service hydrates the same market context used by the real-time signal scorer.
 2. `ForecastingClient` calls the Python forecasting service (`market.ai.forecasting.url`, default `http://forecasting-service:8000`).
@@ -70,10 +72,16 @@ Tradernet also exposes a longer-horizon forecast path through `GET /api/market/f
 
 Example narrative shape:
 
-> Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 30-day return: 64%.
+> Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 1-day return: 64%.
 
 Runtime switches:
 
+- `-Dmarket.ai.model.buyThreshold=0.56` controls how easily the technical model emits BUY.
+- `-Dmarket.ai.model.sellThreshold=0.44` controls how easily the technical model emits SELL.
+- `-Dmarket.ai.context.buyScoreThreshold=54` confirms/blocks BUY with market context.
+- `-Dmarket.ai.context.sellScoreThreshold=46` confirms/blocks SELL with market context.
+- `-Dmarket.ai.context.buyExtremeThreshold=64` allows strong bullish context to promote HOLD to BUY.
+- `-Dmarket.ai.context.sellExtremeThreshold=36` allows strong bearish context to promote HOLD to SELL.
 - `-Dmarket.ai.forecasting.url=http://forecasting-service:8000` points Java at the Python service.
 - `-Dmarket.ai.ollama.enabled=false` disables LLM narratives and uses deterministic text.
 - `-Dmarket.ai.ollama.url=http://ollama:11434` points Java at Ollama.

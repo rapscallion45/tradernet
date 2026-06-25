@@ -13,8 +13,8 @@ import java.util.List;
  */
 public class LinearModelSignalScorer implements SignalScorer {
 
-    private static final double DEFAULT_BUY_THRESHOLD = 0.62;
-    private static final double DEFAULT_SELL_THRESHOLD = 0.38;
+    private static final double DEFAULT_BUY_THRESHOLD = 0.56;
+    private static final double DEFAULT_SELL_THRESHOLD = 0.44;
 
     private final double buyThreshold;
     private final double sellThreshold;

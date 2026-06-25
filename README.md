@@ -81,13 +81,13 @@ PowerShell (run these as three separate commands, or keep the semicolons if you 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
-Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
 One-line PowerShell form:
 
 ```powershell
-$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
 If login returns `INCORRECT_CREDENTIALS` in a reused persistent database, reset the bootstrap application user's password and try the login again:
@@ -100,7 +100,7 @@ Bash/curl (run this in Bash, Git Bash, WSL, macOS/Linux shells, or use `curl.exe
 
 ```bash
 curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
-curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
 PowerShell with real curl executable, if you prefer curl syntax. Put JSON in a variable so PowerShell does not strip the JSON quotes before `curl.exe` receives the body:
@@ -108,7 +108,7 @@ PowerShell with real curl executable, if you prefer curl syntax. Put JSON in a v
 ```powershell
 $loginBody = '{"username":"superuser","password":"changeme"}'
 curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" --data-raw $loginBody http://localhost:8080/api/auth/login
-curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
 Bash/curl password reset, if needed:
@@ -159,6 +159,13 @@ DB_NAME=tradernet
 DB_USER=tradernet
 DB_PASSWORD=tradernet
 market.ai.forecasting.url=http://forecasting-service:8000
+market.ai.orderBullScoreHorizonDays=1
+market.ai.model.buyThreshold=0.56
+market.ai.model.sellThreshold=0.44
+market.ai.context.buyScoreThreshold=54
+market.ai.context.sellScoreThreshold=46
+market.ai.context.buyExtremeThreshold=64
+market.ai.context.sellExtremeThreshold=36
 market.ai.ollama.url=http://ollama:11434
 market.ai.ollama.model=gemma4:e4b
 ```

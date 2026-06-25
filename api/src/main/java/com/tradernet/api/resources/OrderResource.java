@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
+    private static final int DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS = 1;
+
     @Inject
     private OrderService orderService;
 
@@ -204,7 +206,8 @@ public class OrderResource {
     }
 
     private Double resolveBullScore(String symbol) {
-        return roundCurrency(marketAiService.getBullScore(symbol, 30));
+        final int horizonDays = Integer.parseInt(System.getProperty("market.ai.orderBullScoreHorizonDays", String.valueOf(DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS)));
+        return roundCurrency(marketAiService.getBullScore(symbol, horizonDays));
     }
 
     private String resolveAiPrediction(String symbol) {

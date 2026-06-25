@@ -37,7 +37,7 @@ export class MarketResource extends RestResource<MarketBar> {
     })
   }
 
-  getForecast(symbol: string, horizonDays = 30): Get<MarketForecast> {
+  getForecast(symbol: string, horizonDays = 1): Get<MarketForecast> {
     return this.typedSubPath<MarketForecast>("forecast")._get({
       queryParams: {
         symbol,

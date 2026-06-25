@@ -52,7 +52,7 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 Request:
 
 ```http
-GET /api/market/forecast?symbol=BTCUSDT&horizonDays=30
+GET /api/market/forecast?symbol=BTCUSDT&horizonDays=1
 ```
 
 Response fields:
@@ -60,7 +60,7 @@ Response fields:
 | Field | Meaning |
 | --- | --- |
 | `symbol` | Normalized market symbol. |
-| `horizonDays` | Forecast horizon, bounded by the Java client. |
+| `horizonDays` | Forecast horizon, bounded by the Java client. Defaults to 1 day for the daily-trading UI and API default. |
 | `probabilityPositiveReturn` | Probability estimate that return over the horizon is positive. |
 | `expectedReturn` | Expected return over the horizon as a decimal. |
 | `bullScore` | 0-100 bullishness score derived from forecast/model output. |
@@ -73,13 +73,13 @@ Example response shape:
 ```json
 {
   "symbol": "BTCUSDT",
-  "horizonDays": 30,
+  "horizonDays": 1,
   "probabilityPositiveReturn": 0.64,
   "expectedReturn": 0.035,
   "bullScore": 67.5,
   "model": "statistical-fallback",
   "drivers": ["limited TimescaleDB history", "context priors active", "funding rates neutral"],
-  "narrative": "Today's Bitcoin Bull Score is 68. limited TimescaleDB history, context priors active, funding rates neutral. Probability of a positive 30-day return: 64%."
+  "narrative": "Today's Bitcoin Bull Score is 68. limited TimescaleDB history, context priors active, funding rates neutral. Probability of a positive 1-day return: 64%."
 }
 ```
 
@@ -163,7 +163,7 @@ Authenticated forecast smoke check with Bash/curl. Run this in Bash, Git Bash, W
 
 ```bash
 curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
-curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+curl -b /tmp/tradernet.cookies 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
 PowerShell with real curl executable, if you prefer curl syntax. Put JSON in a variable so PowerShell does not strip the JSON quotes before `curl.exe` receives the body:
@@ -171,7 +171,7 @@ PowerShell with real curl executable, if you prefer curl syntax. Put JSON in a v
 ```powershell
 $loginBody = '{"username":"superuser","password":"changeme"}'
 curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" --data-raw $loginBody http://localhost:8080/api/auth/login
-curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30'
+curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
 Authenticated forecast smoke check with PowerShell. Run these as three separate commands, or keep the semicolons if you paste the one-line form:
@@ -179,13 +179,13 @@ Authenticated forecast smoke check with PowerShell. Run these as three separate 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
-Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
 One-line PowerShell form:
 
 ```powershell
-$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=30' -WebSession $session
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
 If a persistent local database returns `INCORRECT_CREDENTIALS`, reset the bootstrap application user's password and retry login:
@@ -222,8 +222,13 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 | `market.ai.context.symbols` | active symbol | Comma-separated symbols for scheduled context hydration. |
 | `market.ai.context.ingestion.enabled` | `true` | Enables/disables scheduled no-key market context ingestion. |
 | `market.ai.scorer` | `context` | Selects `context`, `linear`, or `rules` signal scorer. |
-| `market.ai.model.buyThreshold` | `0.62` | Linear scorer buy threshold. |
-| `market.ai.model.sellThreshold` | `0.38` | Linear scorer sell threshold. |
+| `market.ai.model.buyThreshold` | `0.56` | Linear scorer buy threshold. Lower values emit more short-term BUY signals. |
+| `market.ai.model.sellThreshold` | `0.44` | Linear scorer sell threshold. Higher values emit more short-term SELL signals. |
+| `market.ai.context.buyScoreThreshold` | `54` | Market-context score at or above which a technical BUY is context-confirmed. |
+| `market.ai.context.sellScoreThreshold` | `46` | Market-context score at or below which a technical SELL is context-confirmed. |
+| `market.ai.context.buyExtremeThreshold` | `64` | Market-context score that can promote a technical HOLD into BUY. |
+| `market.ai.context.sellExtremeThreshold` | `36` | Market-context score that can promote a technical HOLD into SELL. |
+| `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured as `bullScore` when an order is created. |
 | `market.ai.forecasting.url` | `http://forecasting-service:8000` | Python forecasting service base URL. |
 | `market.ai.ollama.enabled` | `true` | Enables LLM-generated forecast narratives. |
 | `market.ai.ollama.url` | `http://ollama:11434` | Ollama base URL. |
@@ -237,6 +242,12 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 | `FORECAST_BACKEND` | `statistical-fallback` | Forecast backend selector; accepted adapter values are `timesfm`, `chronos`, or fallback. |
 
 ## 7. Forecasting and LLM behavior
+
+The real-time chart BUY/HOLD/SELL signal and the forecast card are related but separate:
+
+- Chart signals are generated from short-term technical features and market context; the forecast horizon does not directly vote in the BUY/HOLD/SELL decision.
+- Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order horizon is 1 day for daily trading, while callers can still request longer horizons with `horizonDays`.
+- Market context acts as a filter and confirmation layer around the technical signal: technical direction is weighted first, context can confirm it, block it into HOLD when contradictory, or promote HOLD only when context reaches an extreme.
 
 The forecasting path is designed to degrade gracefully:
 

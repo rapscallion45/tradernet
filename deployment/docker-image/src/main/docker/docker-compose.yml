@@ -12,6 +12,13 @@ services:
       DB_PASSWORD: tradernet
       JAVA_OPTS: >-
         -Dmarket.ai.forecasting.url=http://forecasting-service:8000
+        -Dmarket.ai.orderBullScoreHorizonDays=1
+        -Dmarket.ai.model.buyThreshold=0.56
+        -Dmarket.ai.model.sellThreshold=0.44
+        -Dmarket.ai.context.buyScoreThreshold=54
+        -Dmarket.ai.context.sellScoreThreshold=46
+        -Dmarket.ai.context.buyExtremeThreshold=64
+        -Dmarket.ai.context.sellExtremeThreshold=36
         -Dmarket.ai.ollama.url=http://ollama:11434
         -Dmarket.ai.ollama.model=gemma4:e4b
     depends_on:

@@ -13,11 +13,17 @@ import java.util.List;
  */
 public class ContextAwareSignalScorer implements SignalScorer {
 
-    private static final int BUY_SCORE_THRESHOLD = 58;
-    private static final int SELL_SCORE_THRESHOLD = 42;
+    private static final int DEFAULT_BUY_SCORE_THRESHOLD = 54;
+    private static final int DEFAULT_SELL_SCORE_THRESHOLD = 46;
+    private static final int DEFAULT_BUY_EXTREME_THRESHOLD = 64;
+    private static final int DEFAULT_SELL_EXTREME_THRESHOLD = 36;
 
     private final SignalScorer technicalScorer;
     private final MarketRegimeScoreEngine regimeScoreEngine;
+    private final int buyScoreThreshold;
+    private final int sellScoreThreshold;
+    private final int buyExtremeThreshold;
+    private final int sellExtremeThreshold;
 
     public ContextAwareSignalScorer() {
         this(new LinearModelSignalScorer(), new MarketRegimeScoreEngine());
@@ -26,6 +32,10 @@ public class ContextAwareSignalScorer implements SignalScorer {
     public ContextAwareSignalScorer(SignalScorer technicalScorer, MarketRegimeScoreEngine regimeScoreEngine) {
         this.technicalScorer = technicalScorer;
         this.regimeScoreEngine = regimeScoreEngine;
+        this.buyScoreThreshold = Integer.parseInt(System.getProperty("market.ai.context.buyScoreThreshold", String.valueOf(DEFAULT_BUY_SCORE_THRESHOLD)));
+        this.sellScoreThreshold = Integer.parseInt(System.getProperty("market.ai.context.sellScoreThreshold", String.valueOf(DEFAULT_SELL_SCORE_THRESHOLD)));
+        this.buyExtremeThreshold = Integer.parseInt(System.getProperty("market.ai.context.buyExtremeThreshold", String.valueOf(DEFAULT_BUY_EXTREME_THRESHOLD)));
+        this.sellExtremeThreshold = Integer.parseInt(System.getProperty("market.ai.context.sellExtremeThreshold", String.valueOf(DEFAULT_SELL_EXTREME_THRESHOLD)));
     }
 
     @Override
@@ -43,11 +53,11 @@ public class ContextAwareSignalScorer implements SignalScorer {
                 notes.add("context_filter=unavailable_passthrough");
                 return passThrough(technical, notes);
             }
-            if (regimeScore.getValue() <= SELL_SCORE_THRESHOLD) {
+            if (regimeScore.getValue() <= sellScoreThreshold) {
                 notes.add("context_filter=blocked_bearish_context");
                 return hold(technical, regimeScore, notes);
             }
-            notes.add(regimeScore.getValue() >= BUY_SCORE_THRESHOLD ? "context_filter=confirmed" : "context_filter=non_contradictory");
+            notes.add(regimeScore.getValue() >= buyScoreThreshold ? "context_filter=confirmed" : "context_filter=non_contradictory");
             return new ScoreResult(SignalSide.BUY, contextualConfidence(technical, regimeScore.getValue()), "context-v1", notes);
         }
 
@@ -56,19 +66,19 @@ public class ContextAwareSignalScorer implements SignalScorer {
                 notes.add("context_filter=unavailable_passthrough");
                 return passThrough(technical, notes);
             }
-            if (regimeScore.getValue() >= BUY_SCORE_THRESHOLD) {
+            if (regimeScore.getValue() >= buyScoreThreshold) {
                 notes.add("context_filter=blocked_bullish_context");
                 return hold(technical, regimeScore, notes);
             }
-            notes.add(regimeScore.getValue() <= SELL_SCORE_THRESHOLD ? "context_filter=confirmed" : "context_filter=non_contradictory");
+            notes.add(regimeScore.getValue() <= sellScoreThreshold ? "context_filter=confirmed" : "context_filter=non_contradictory");
             return new ScoreResult(SignalSide.SELL, contextualConfidence(technical, 100 - regimeScore.getValue()), "context-v1", notes);
         }
 
-        if (contextAvailable && regimeScore.getValue() >= 72) {
+        if (contextAvailable && regimeScore.getValue() >= buyExtremeThreshold) {
             return new ScoreResult(SignalSide.BUY, scoreConfidence(regimeScore.getValue()), "context-v1", notes);
         }
 
-        if (contextAvailable && regimeScore.getValue() <= 28) {
+        if (contextAvailable && regimeScore.getValue() <= sellExtremeThreshold) {
             return new ScoreResult(SignalSide.SELL, scoreConfidence(100 - regimeScore.getValue()), "context-v1", notes);
         }
 
@@ -90,7 +100,7 @@ public class ContextAwareSignalScorer implements SignalScorer {
     }
 
     private double contextualConfidence(ScoreResult technical, int directionalScore) {
-        if (directionalScore >= BUY_SCORE_THRESHOLD) {
+        if (directionalScore >= buyScoreThreshold) {
             return blendConfidence(technical.getConfidence(), directionalScore);
         }
         return clamp(technical.getConfidence() * 0.95, 0.50, 0.98);

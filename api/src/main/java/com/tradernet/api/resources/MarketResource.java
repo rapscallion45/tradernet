@@ -83,7 +83,7 @@ public class MarketResource {
     @Path("/forecast")
     public MarketForecast getForecast(
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
-            @DefaultValue("30") @QueryParam("horizonDays") int horizonDays) {
+            @DefaultValue("1") @QueryParam("horizonDays") int horizonDays) {
         return marketAiService.getForecast(symbol, horizonDays);
     }
 
