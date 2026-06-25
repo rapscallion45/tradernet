@@ -1,6 +1,9 @@
+import json
 import math
 import os
 from datetime import datetime, timezone
+from urllib.parse import urlencode
+from urllib.request import urlopen
 from typing import Literal
 
 import numpy as np
@@ -38,7 +41,7 @@ def configured_backend() -> ForecastBackend:
     return "statistical-fallback"
 
 
-def load_recent_closes(symbol: str, limit: int = 720) -> list[float]:
+def load_timescale_closes(symbol: str, limit: int = 720) -> list[float]:
     query = """
         SELECT close
           FROM market_bars
@@ -59,9 +62,43 @@ def load_recent_closes(symbol: str, limit: int = 720) -> list[float]:
     return closes
 
 
-def statistical_forecast(closes: list[float], horizon_days: int) -> tuple[float, float, list[str]]:
+def load_binance_closes(symbol: str, limit: int = 720) -> list[float]:
+    query = urlencode({"symbol": symbol.upper(), "interval": "1m", "limit": max(3, min(limit, 1000))})
+    url = f"https://api.binance.com/api/v3/klines?{query}"
+    try:
+        with urlopen(url, timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return []
+
+    closes: list[float] = []
+    for row in payload:
+        if not isinstance(row, list) or len(row) < 5:
+            continue
+        try:
+            close = float(row[4])
+        except (TypeError, ValueError):
+            continue
+        if close > 0:
+            closes.append(close)
+    return closes
+
+
+def load_recent_closes(symbol: str, limit: int = 720) -> tuple[list[float], str]:
+    timescale_closes = load_timescale_closes(symbol, limit)
+    if len(timescale_closes) >= 3:
+        return timescale_closes, "timescaledb"
+
+    binance_closes = load_binance_closes(symbol, limit)
+    if len(binance_closes) >= 3:
+        return binance_closes, "binance-klines"
+
+    return timescale_closes, "insufficient-history"
+
+
+def statistical_forecast(closes: list[float], horizon_days: int, source: str) -> tuple[float, float, list[str]]:
     if len(closes) < 3:
-        return 0.64, 0.035, ["limited TimescaleDB history", "context priors active"]
+        return 0.5, 0.0, ["insufficient price history", "waiting for TimescaleDB or Binance klines"]
 
     prices = np.array(closes, dtype=float)
     returns = np.diff(np.log(prices))
@@ -76,6 +113,7 @@ def statistical_forecast(closes: list[float], horizon_days: int) -> tuple[float,
     probability_positive = 1.0 / (1.0 + math.exp(-z_score))
     probability_positive = float(np.clip(probability_positive, 0.05, 0.95))
     drivers = [
+        f"price history source: {source}",
         "recent price momentum positive" if momentum >= 0 else "recent price momentum negative",
         "realized volatility elevated" if volatility > 0.025 else "realized volatility contained",
     ]
@@ -83,12 +121,12 @@ def statistical_forecast(closes: list[float], horizon_days: int) -> tuple[float,
 
 
 def run_model_forecast(symbol: str, horizon_days: int) -> ForecastResponse:
-    closes = load_recent_closes(symbol)
+    closes, source = load_recent_closes(symbol)
     backend = configured_backend()
 
     # The service is intentionally adapter-shaped: production images can install TimesFM or Chronos
     # dependencies and replace this section with the model call while keeping the HTTP contract stable.
-    probability_positive, expected_return, drivers = statistical_forecast(closes, horizon_days)
+    probability_positive, expected_return, drivers = statistical_forecast(closes, horizon_days, source)
     if backend == "timesfm":
         drivers.insert(0, "TimesFM adapter configured")
     elif backend == "chronos":

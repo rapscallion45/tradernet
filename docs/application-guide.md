@@ -74,12 +74,12 @@ Example response shape:
 {
   "symbol": "BTCUSDT",
   "horizonDays": 1,
-  "probabilityPositiveReturn": 0.64,
-  "expectedReturn": 0.035,
-  "bullScore": 67.5,
+  "probabilityPositiveReturn": 0.53,
+  "expectedReturn": 0.012,
+  "bullScore": 54.2,
   "model": "statistical-fallback",
-  "drivers": ["limited TimescaleDB history", "context priors active", "funding rates neutral"],
-  "narrative": "Today's BTCUSDT Bull Score is 68. limited TimescaleDB history, context priors active, funding rates neutral. Probability of a positive 1-day return: 64%."
+  "drivers": ["price history source: timescaledb", "recent price momentum positive", "realized volatility contained"],
+  "narrative": "Today's BTCUSDT Bull Score is 54. price history source: timescaledb, recent price momentum positive, realized volatility contained. Probability of a positive 1-day return: 53%."
 }
 ```
 
@@ -262,7 +262,7 @@ The forecasting path is designed to degrade gracefully:
 3. Java sends structured forecast data to Ollama/Gemma.
 4. If Ollama is disabled, unavailable, or returns an empty/error response, Java returns deterministic narrative text. If Ollama returns hardcoded Bitcoin wording, Java normalizes the narrative back to the selected forecast symbol before returning it.
 
-The default Python service is intentionally lightweight. It reads recent closes from `market_bars`, computes a momentum/volatility fallback forecast, and exposes stable hooks for production images that install TimesFM or Chronos.
+The default Python service is intentionally lightweight. It first reads recent closes from `market_bars`; if a selected symbol has insufficient TimescaleDB history, it falls back to recent Binance 1-minute klines for that symbol. If neither source has enough data, it returns a neutral 50 bull score instead of a hardcoded bullish forecast. It then computes a momentum/volatility fallback forecast and exposes stable hooks for production images that install TimesFM or Chronos.
 
 ## 8. Frontend notes
 
