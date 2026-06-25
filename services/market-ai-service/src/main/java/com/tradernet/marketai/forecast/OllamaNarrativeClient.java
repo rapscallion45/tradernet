@@ -74,14 +74,22 @@ public class OllamaNarrativeClient {
     }
 
     private String prompt(MarketForecast forecast) {
-        return "Write one concise, compliance-safe Bitcoin market forecast sentence. "
-                + "Do not give financial advice. Use this exact shape: Today's Bitcoin Bull Score is <score>. "
+        final String symbol = displaySymbol(forecast);
+        return "Write one concise, compliance-safe market forecast sentence for " + symbol + ". "
+                + "Do not give financial advice. Use this exact shape: Today's " + symbol + " Bull Score is <score>. "
                 + "<two or three drivers>. Probability of a positive <horizon>-day return: <probability>%. "
                 + "Data: score=" + Math.round(forecast.getBullScore())
                 + ", horizon=" + forecast.getHorizonDays()
                 + ", probability=" + Math.round(forecast.getProbabilityPositiveReturn() * 100.0)
                 + ", expected_return=" + String.format("%.2f", forecast.getExpectedReturn() * 100.0) + "%"
                 + ", drivers=" + String.join(", ", safeDrivers(forecast.getDrivers())) + ".";
+    }
+
+    private String displaySymbol(MarketForecast forecast) {
+        if (forecast == null || forecast.getSymbol() == null || forecast.getSymbol().isBlank()) {
+            return "Market";
+        }
+        return forecast.getSymbol().trim().toUpperCase();
     }
 
     private List<String> safeDrivers(List<String> drivers) {
@@ -92,7 +100,7 @@ public class OllamaNarrativeClient {
         final String drivers = forecast.getDrivers() == null || forecast.getDrivers().isEmpty()
                 ? "model drivers are mixed"
                 : String.join(", ", forecast.getDrivers().stream().limit(3).collect(java.util.stream.Collectors.toList()));
-        return "Today's Bitcoin Bull Score is " + Math.round(forecast.getBullScore())
+        return "Today's " + displaySymbol(forecast) + " Bull Score is " + Math.round(forecast.getBullScore())
                 + ". " + drivers + ". Probability of a positive " + forecast.getHorizonDays()
                 + "-day return: " + Math.round(forecast.getProbabilityPositiveReturn() * 100.0) + "%.";
     }

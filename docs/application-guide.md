@@ -79,7 +79,7 @@ Example response shape:
   "bullScore": 67.5,
   "model": "statistical-fallback",
   "drivers": ["limited TimescaleDB history", "context priors active", "funding rates neutral"],
-  "narrative": "Today's Bitcoin Bull Score is 68. limited TimescaleDB history, context priors active, funding rates neutral. Probability of a positive 1-day return: 64%."
+  "narrative": "Today's BTCUSDT Bull Score is 68. limited TimescaleDB history, context priors active, funding rates neutral. Probability of a positive 1-day return: 64%."
 }
 ```
 

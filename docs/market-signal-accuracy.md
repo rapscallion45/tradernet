@@ -72,7 +72,7 @@ Tradernet also exposes a forecast path through `GET /api/market/forecast?symbol=
 
 Example narrative shape:
 
-> Today's Bitcoin Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 1-day return: 64%.
+> Today's BTCUSDT Bull Score is 74. ETF inflows remain positive, exchange balances continue declining, and funding rates remain neutral. Probability of a positive 1-day return: 64%.
 
 Runtime switches:
 
