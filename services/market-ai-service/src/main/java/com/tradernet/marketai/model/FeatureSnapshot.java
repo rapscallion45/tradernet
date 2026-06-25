@@ -12,6 +12,7 @@ public class FeatureSnapshot {
     private final double emaSlow;
     private final double rsi;
     private final MarketContextSnapshot marketContext;
+    private final Double forecastBullScore;
 
     public FeatureSnapshot(String symbol, long eventTime, double close, double emaFast, double emaSlow, double rsi) {
         this(symbol, eventTime, close, emaFast, emaSlow, rsi, MarketContextSnapshot.neutral());
@@ -24,6 +25,17 @@ public class FeatureSnapshot {
                            double emaSlow,
                            double rsi,
                            MarketContextSnapshot marketContext) {
+        this(symbol, eventTime, close, emaFast, emaSlow, rsi, marketContext, null);
+    }
+
+    public FeatureSnapshot(String symbol,
+                           long eventTime,
+                           double close,
+                           double emaFast,
+                           double emaSlow,
+                           double rsi,
+                           MarketContextSnapshot marketContext,
+                           Double forecastBullScore) {
         this.symbol = symbol;
         this.eventTime = eventTime;
         this.close = close;
@@ -31,6 +43,7 @@ public class FeatureSnapshot {
         this.emaSlow = emaSlow;
         this.rsi = rsi;
         this.marketContext = marketContext == null ? MarketContextSnapshot.neutral() : marketContext;
+        this.forecastBullScore = forecastBullScore;
     }
 
     public String getSymbol() {
@@ -59,5 +72,13 @@ public class FeatureSnapshot {
 
     public MarketContextSnapshot getMarketContext() {
         return marketContext;
+    }
+
+    public Double getForecastBullScore() {
+        return forecastBullScore;
+    }
+
+    public FeatureSnapshot withForecastBullScore(Double forecastBullScore) {
+        return new FeatureSnapshot(symbol, eventTime, close, emaFast, emaSlow, rsi, marketContext, forecastBullScore);
     }
 }

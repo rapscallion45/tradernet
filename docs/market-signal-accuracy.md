@@ -13,7 +13,7 @@ Tradernet's market AI service now supports a context-aware signal path that can 
 2. Each ingestion job writes normalized features as z-scores or bounded directional scores.
 3. `MarketContextRegistry` stores the latest normalized context by symbol and enriches the technical feature snapshot.
 4. `MarketRegimeScoreEngine` converts technical, ETF, on-chain, derivatives, valuation, macro, and sentiment features into a 0-100 score.
-5. `ContextAwareSignalScorer` emits buy/sell signals when the technical model and the broader market regime score agree, emits strong directional signals when the broader score reaches an extreme, and emits `HOLD` when the combined evidence is neutral or contradictory.
+5. `ContextAwareSignalScorer` blends the broader market regime score with the cached forecast bull score, emits buy/sell signals when that effective context agrees with the technical model, emits strong directional signals when the effective score reaches an extreme, and emits `HOLD` when the combined evidence is neutral or contradictory.
 
 ## Built-in Java ingestion
 
@@ -48,7 +48,7 @@ The WebSocket signal payload carries two related but separate ideas:
 
 This lets the UI render direction and strength independently, for example `BUY` + `Weak`, `HOLD` + `Strong`, or `SELL` + `Medium`, instead of showing every threshold-crossing signal as roughly 60-65%.
 
-The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context then confirms, blocks, or only at extremes promotes that decision. The forecast horizon is not directly weighted in the chart BUY/HOLD/SELL signal, so changing from a 30-day to 1-day forecast changes the forecast card/order bull score but not the realtime signal vote.
+The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context and the cached forecast bull score then confirm, block, or only at extremes promote that decision. A high bull score pulls the effective context toward BUY, a low bull score pulls it toward SELL, and a bull score near 50 triggers a neutral forecast filter that biases directional technical votes back to HOLD.
 
 A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus up to three notes to the legend for debugging and operator context.
 
@@ -81,7 +81,12 @@ Runtime switches:
 - `-Dmarket.ai.context.buyScoreThreshold=54` confirms/blocks BUY with market context.
 - `-Dmarket.ai.context.sellScoreThreshold=46` confirms/blocks SELL with market context.
 - `-Dmarket.ai.context.buyExtremeThreshold=64` allows strong bullish context to promote HOLD to BUY.
-- `-Dmarket.ai.context.sellExtremeThreshold=36` allows strong bearish context to promote HOLD to SELL.
+- `-Dmarket.ai.context.sellExtremeThreshold=36` allows strong bearish effective context to promote HOLD to SELL.
+- `-Dmarket.ai.context.forecastWeight=0.45` controls how strongly forecast bull score influences chart signal context.
+- `-Dmarket.ai.context.forecastNeutralBand=8` treats bull scores from 42 to 58 as neutral and biases signals to HOLD.
+- `-Dmarket.ai.signalBullScore.enabled=true` enables bull-score enrichment for chart signals.
+- `-Dmarket.ai.signalBullScoreHorizonDays=1` chooses the forecast horizon used by chart signals.
+- `-Dmarket.ai.signalBullScoreTtlMs=300000` caches bull-score lookups for five minutes.
 - `-Dmarket.ai.forecasting.url=http://forecasting-service:8000` points Java at the Python service.
 - `-Dmarket.ai.ollama.enabled=false` disables LLM narratives and uses deterministic text.
 - `-Dmarket.ai.ollama.url=http://ollama:11434` points Java at Ollama.

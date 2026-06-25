@@ -224,10 +224,15 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 | `market.ai.scorer` | `context` | Selects `context`, `linear`, or `rules` signal scorer. |
 | `market.ai.model.buyThreshold` | `0.56` | Linear scorer buy threshold. Lower values emit more short-term BUY signals. |
 | `market.ai.model.sellThreshold` | `0.44` | Linear scorer sell threshold. Higher values emit more short-term SELL signals. |
-| `market.ai.context.buyScoreThreshold` | `54` | Market-context score at or above which a technical BUY is context-confirmed. |
-| `market.ai.context.sellScoreThreshold` | `46` | Market-context score at or below which a technical SELL is context-confirmed. |
-| `market.ai.context.buyExtremeThreshold` | `64` | Market-context score that can promote a technical HOLD into BUY. |
-| `market.ai.context.sellExtremeThreshold` | `36` | Market-context score that can promote a technical HOLD into SELL. |
+| `market.ai.context.buyScoreThreshold` | `54` | Effective context score at or above which a technical BUY is context-confirmed. |
+| `market.ai.context.sellScoreThreshold` | `46` | Effective context score at or below which a technical SELL is context-confirmed. |
+| `market.ai.context.buyExtremeThreshold` | `64` | Effective context score that can promote a technical HOLD into BUY. |
+| `market.ai.context.sellExtremeThreshold` | `36` | Effective context score that can promote a technical HOLD into SELL. |
+| `market.ai.context.forecastWeight` | `0.45` | Weight given to the forecast bull score when blending it into the chart signal context score. |
+| `market.ai.context.forecastNeutralBand` | `8` | Treats forecast bull scores within `50 +/- this value` as neutral, which biases directional technical signals back to HOLD. |
+| `market.ai.signalBullScore.enabled` | `true` | Enables forecast bull-score enrichment for chart BUY/HOLD/SELL signals. |
+| `market.ai.signalBullScoreHorizonDays` | `1` | Forecast horizon used when feeding bull score into chart signal generation. |
+| `market.ai.signalBullScoreTtlMs` | `300000` | Cache TTL for signal bull-score lookups so every closed bar does not call the Python forecasting service. |
 | `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured as `bullScore` when an order is created. |
 | `market.ai.forecasting.url` | `http://forecasting-service:8000` | Python forecasting service base URL. |
 | `market.ai.ollama.enabled` | `true` | Enables LLM-generated forecast narratives. |
@@ -245,9 +250,10 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 
 The real-time chart BUY/HOLD/SELL signal and the forecast card are related but separate:
 
-- Chart signals are generated from short-term technical features and market context; the forecast horizon does not directly vote in the BUY/HOLD/SELL decision.
-- Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order horizon is 1 day for daily trading, while callers can still request longer horizons with `horizonDays`.
-- Market context acts as a filter and confirmation layer around the technical signal: technical direction is weighted first, context can confirm it, block it into HOLD when contradictory, or promote HOLD only when context reaches an extreme.
+- Chart signals are generated from short-term technical features, market context, and the cached forecast bull score.
+- The technical model still creates the first BUY/SELL/HOLD vote from EMA/RSI features. Market context and forecast bull score then form an effective context score that can confirm the technical vote, block it into HOLD when contradictory, or promote HOLD only when the effective score reaches an extreme.
+- Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order/signal horizon is 1 day for daily trading, while callers can still request longer horizons with `horizonDays`.
+- A high forecast bull score pulls the effective context score toward BUY, a low bull score pulls it toward SELL, and a score near 50 falls inside the neutral band and biases directional technical votes back to HOLD. The chart signal caches this score for `market.ai.signalBullScoreTtlMs` milliseconds to avoid calling the forecasting service on every closed bar.
 
 The forecasting path is designed to degrade gracefully:
 

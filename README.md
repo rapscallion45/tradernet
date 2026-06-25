@@ -160,12 +160,17 @@ DB_USER=tradernet
 DB_PASSWORD=tradernet
 market.ai.forecasting.url=http://forecasting-service:8000
 market.ai.orderBullScoreHorizonDays=1
+market.ai.signalBullScore.enabled=true
+market.ai.signalBullScoreHorizonDays=1
+market.ai.signalBullScoreTtlMs=300000
 market.ai.model.buyThreshold=0.56
 market.ai.model.sellThreshold=0.44
 market.ai.context.buyScoreThreshold=54
 market.ai.context.sellScoreThreshold=46
 market.ai.context.buyExtremeThreshold=64
 market.ai.context.sellExtremeThreshold=36
+market.ai.context.forecastWeight=0.45
+market.ai.context.forecastNeutralBand=8
 market.ai.ollama.url=http://ollama:11434
 market.ai.ollama.model=gemma4:e4b
 ```

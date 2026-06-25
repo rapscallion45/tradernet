@@ -46,6 +46,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -61,6 +62,8 @@ public class MarketAiService {
     private static final int DEFAULT_HISTORY_SIZE = 2_000;
     private static final String INSERT_MARKET_BAR_SQL = "INSERT INTO market_bars "
             + "(symbol, bucket, open, high, low, close, volume, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final int DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS = 1;
+    private static final long DEFAULT_SIGNAL_BULL_SCORE_TTL_MS = Duration.ofMinutes(5).toMillis();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -75,6 +78,8 @@ public class MarketAiService {
     private final ForecastingClient forecastingClient = new ForecastingClient(httpClient, OBJECT_MAPPER);
     private final OllamaNarrativeClient ollamaNarrativeClient = new OllamaNarrativeClient(httpClient, OBJECT_MAPPER);
     private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
+    private final Map<String, Double> signalBullScoresBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, Long> signalBullScoreRefreshBySymbol = new ConcurrentHashMap<>();
 
     @Resource(lookup = "java:/jdbc/TradernetDS")
     private DataSource dataSource;
@@ -269,7 +274,7 @@ public class MarketAiService {
         }
         storeMarketBar(closed);
 
-        final FeatureSnapshot features = featureEngine.onClosedBar(closed);
+        final FeatureSnapshot features = enrichWithSignalBullScore(featureEngine.onClosedBar(closed));
         final AiSignal signal = signalEngine.evaluate(features);
         if (signal == null) {
             return;
@@ -279,6 +284,31 @@ public class MarketAiService {
             appendBounded(signals, signal, DEFAULT_HISTORY_SIZE);
         }
         publisher.publishSignal(signal);
+    }
+
+    private FeatureSnapshot enrichWithSignalBullScore(FeatureSnapshot features) {
+        if (features == null || !Boolean.parseBoolean(System.getProperty("market.ai.signalBullScore.enabled", "true"))) {
+            return features;
+        }
+
+        final String normalizedSymbol = normalizeSymbol(features.getSymbol());
+        final long now = System.currentTimeMillis();
+        final long ttlMs = Long.parseLong(System.getProperty("market.ai.signalBullScoreTtlMs", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_TTL_MS)));
+        final Long refreshedAt = signalBullScoreRefreshBySymbol.get(normalizedSymbol);
+        final Double cachedScore = signalBullScoresBySymbol.get(normalizedSymbol);
+        if (cachedScore != null && refreshedAt != null && now - refreshedAt < ttlMs) {
+            return features.withForecastBullScore(cachedScore);
+        }
+
+        try {
+            final int horizonDays = Integer.parseInt(System.getProperty("market.ai.signalBullScoreHorizonDays", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS)));
+            final double bullScore = getBullScore(normalizedSymbol, horizonDays);
+            signalBullScoresBySymbol.put(normalizedSymbol, bullScore);
+            signalBullScoreRefreshBySymbol.put(normalizedSymbol, now);
+            return features.withForecastBullScore(bullScore);
+        } catch (RuntimeException ex) {
+            return cachedScore == null ? features : features.withForecastBullScore(cachedScore);
+        }
     }
 
     private void storeMarketBar(MarketBar bar) {
