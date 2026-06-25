@@ -83,6 +83,25 @@ const getSignalStrength = (confidence?: number) => {
   return { label: "Weak", color: "yellow" }
 }
 
+const getVisibleSignalNotes = (notes?: string[]) => {
+  if (!notes?.length) {
+    return []
+  }
+
+  const priorityPrefixes = [
+    "forecast_bull_score=",
+    "effective_context_score=",
+    "forecast_filter=",
+    "context_filter=",
+    "market_score=",
+    "market_regime=",
+  ]
+  const prioritized = notes.filter((note) => priorityPrefixes.some((prefix) => note.startsWith(prefix)))
+  const remaining = notes.filter((note) => !prioritized.includes(note))
+
+  return [...prioritized, ...remaining].slice(0, 5)
+}
+
 type WorkerPayload = {
   type: "bars"
   payload: {
@@ -341,7 +360,8 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const signalSide = signal?.side
   const signalSideLabel = signalSide ?? "No signal"
   const signalStrength = getSignalStrength(signal?.confidence)
-  const signalNotes = signal?.notes?.length ? ` · Notes ${signal.notes.slice(0, 3).join(", ")}` : ""
+  const visibleSignalNotes = getVisibleSignalNotes(signal?.notes)
+  const signalNotes = visibleSignalNotes.length ? ` · Notes ${visibleSignalNotes.join(", ")}` : ""
   const signalDetails = signal
     ? `Signal ${signal.side} · Confidence ${signalStrength.label} · Model ${signal.modelVersion}${signalNotes}`
     : `Signal No signal · Confidence ${signalStrength.label}`
