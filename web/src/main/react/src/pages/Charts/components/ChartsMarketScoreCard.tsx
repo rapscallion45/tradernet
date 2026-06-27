@@ -9,6 +9,7 @@ type ScoreFigure = {
   key: ScoreFigureKey
   label: string
   description: string
+  signalScore?: (value: number) => number
 }
 
 type ChartsMarketScoreCardProps = {
@@ -16,6 +17,29 @@ type ChartsMarketScoreCardProps = {
   context?: MarketContextSnapshot
   isLoading: boolean
   fillAvailable?: boolean
+}
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+
+const fundingSignalScore = (value: number) => {
+  if (value > 2) return -2
+  if (value < -2) return 1
+  if (value > 1) return clamp(-(value - 1), -2, 0)
+  if (value < -1) return 0.5
+  return 0
+}
+
+const valuationSignalScore = (value: number) => {
+  if (value >= 2.5) return -2
+  if (value >= 1.5) return -1
+  if (value <= -1) return 1.5
+  return 0.75
+}
+
+const sentimentSignalScore = (value: number) => {
+  if (value >= 2) return -1
+  if (value <= -2) return 1
+  return clamp(value, -1, 1)
 }
 
 const scoreFigures: ScoreFigure[] = [
@@ -32,7 +56,8 @@ const scoreFigures: ScoreFigure[] = [
   {
     key: "fundingRateZScore",
     label: "Funding Rate",
-    description: "High positive funding can warn that long positioning is crowded.",
+    description: "Crowded positive funding is bearish; very negative funding can be contrarian bullish.",
+    signalScore: fundingSignalScore,
   },
   {
     key: "openInterestChangeZScore",
@@ -42,7 +67,8 @@ const scoreFigures: ScoreFigure[] = [
   {
     key: "mvrvZScore",
     label: "MVRV / Valuation",
-    description: "Extreme positive valuation can signal overheated conditions.",
+    description: "Overheated valuation is bearish; discounted valuation is bullish.",
+    signalScore: valuationSignalScore,
   },
   {
     key: "liquidityGrowthZScore",
@@ -52,7 +78,8 @@ const scoreFigures: ScoreFigure[] = [
   {
     key: "sentimentZScore",
     label: "Sentiment",
-    description: "Extreme optimism or fear can flag crowded positioning.",
+    description: "Extreme optimism can be bearish; extreme fear can be contrarian bullish.",
+    signalScore: sentimentSignalScore,
   },
 ]
 
@@ -67,13 +94,13 @@ const neutralContext: MarketContextSnapshot = {
   available: false,
 }
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+const toBullishPercent = (signalScore: number) => Math.round(((clamp(signalScore, -2, 2) + 2) / 4) * 100)
 
-const formatScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(3)}`
+const formatRawScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}z`
 
-const getScoreColor = (value: number) => {
-  if (value > 0.25) return "green"
-  if (value < -0.25) return "red"
+const getScoreColor = (signalScore: number) => {
+  if (signalScore > 0.25) return "green"
+  if (signalScore < -0.25) return "red"
   return "gray"
 }
 
@@ -115,6 +142,10 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
       ) : (
         <Box style={contentStyle}>
           <Stack gap="sm">
+            <Text size="xs" c="dimmed">
+              Percentages show each input&apos;s bullish tilt after normalization: 50% is neutral, higher supports BUY context, and lower
+              supports SELL context. These inputs roll up into the market score used by context-v2 signal scoring.
+            </Text>
             {!hasMarketContext && (
               <Text size="xs" c="dimmed">
                 No market context has been loaded for this symbol yet. Signal scoring will treat these inputs as neutral until ingestion posts data.
@@ -122,9 +153,9 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             )}
             {scoreFigures.map((figure) => {
               const value = resolvedContext[figure.key] ?? 0
-              const boundedValue = clamp(value, -2, 2)
-              const progressValue = ((boundedValue + 2) / 4) * 100
-              const color = hasMarketContext ? getScoreColor(value) : "gray"
+              const signalScore = figure.signalScore ? figure.signalScore(value) : clamp(value, -2, 2)
+              const progressValue = toBullishPercent(signalScore)
+              const color = hasMarketContext ? getScoreColor(signalScore) : "gray"
 
               return (
                 <Stack key={figure.key} gap={4}>
@@ -137,8 +168,13 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
                         {figure.description}
                       </Text>
                     </Box>
-                    <Badge color={color} variant="light" style={{ flex: "0 0 auto", minWidth: 68, textAlign: "center" }}>
-                      {hasMarketContext ? formatScore(value) : "—"}
+                    <Badge
+                      color={color}
+                      variant="light"
+                      style={{ flex: "0 0 auto", minWidth: 86, textAlign: "center" }}
+                      title={`Raw input: ${formatRawScore(value)}`}
+                    >
+                      {hasMarketContext ? `${progressValue}% bull` : "—"}
                     </Badge>
                   </Group>
                   <Progress value={hasMarketContext ? progressValue : 50} color={color} size="sm" radius="xl" />
