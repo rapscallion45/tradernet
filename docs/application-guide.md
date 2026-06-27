@@ -43,7 +43,7 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 | `/api/portfolio` | `PortfolioResource` | Portfolio summary/history views. |
 | `/api/market/bars` | `MarketResource` | Historical/recent market bars for charts. |
 | `/api/market/signals` | `MarketResource` | Recent market AI signals. |
-| `/api/market/context` | `MarketResource` | Get/update normalized market context. |
+| `/api/market/context` | `MarketResource` | Get/update normalized market context, including backend-calculated bullish-percent display fields. |
 | `/api/market/forecast` | `MarketResource` | Longer-horizon forecast with bull score, probability, drivers, and narrative. |
 | `/api/ws/market` | `MarketStreamEndpoint` | Websocket stream of market bars and signals. |
 
@@ -289,7 +289,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.
-- The Market Score Inputs card shows each context input as a bullish-tilt percentage, not as a raw z-score. `50% bull` is neutral, values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
+- The Market Score Inputs card shows backend-calculated bullish-tilt percentages, not raw z-scores. `50% bull` is neutral, values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
 
 ### Forecast and order history display
 

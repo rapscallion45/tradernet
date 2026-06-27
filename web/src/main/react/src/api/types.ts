@@ -99,6 +99,13 @@ export type MarketContextSnapshot = {
   mvrvZScore: number
   liquidityGrowthZScore: number
   sentimentZScore: number
+  etfFlowBullishPercent: number
+  exchangeOutflowBullishPercent: number
+  fundingRateBullishPercent: number
+  openInterestChangeBullishPercent: number
+  mvrvBullishPercent: number
+  liquidityGrowthBullishPercent: number
+  sentimentBullishPercent: number
   available?: boolean
 }
 

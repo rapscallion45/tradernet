@@ -3,13 +3,14 @@ import { Badge, Box, Divider, Group, Loader, Paper, Progress, Stack, Text } from
 import { IconActivityHeartbeat } from "@tabler/icons-react"
 import { MarketContextSnapshot } from "api/types"
 
-type ScoreFigureKey = Exclude<keyof MarketContextSnapshot, "available">
+type RawScoreFigureKey = Extract<keyof MarketContextSnapshot, `${string}ZScore`>
+type BullishPercentKey = Extract<keyof MarketContextSnapshot, `${string}BullishPercent`>
 
 type ScoreFigure = {
-  key: ScoreFigureKey
+  key: RawScoreFigureKey
+  percentKey: BullishPercentKey
   label: string
   description: string
-  signalScore?: (value: number) => number
 }
 
 type ChartsMarketScoreCardProps = {
@@ -19,67 +20,48 @@ type ChartsMarketScoreCardProps = {
   fillAvailable?: boolean
 }
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
-
-const fundingSignalScore = (value: number) => {
-  if (value > 2) return -2
-  if (value < -2) return 1
-  if (value > 1) return clamp(-(value - 1), -2, 0)
-  if (value < -1) return 0.5
-  return 0
-}
-
-const valuationSignalScore = (value: number) => {
-  if (value >= 2.5) return -2
-  if (value >= 1.5) return -1
-  if (value <= -1) return 1.5
-  return 0.75
-}
-
-const sentimentSignalScore = (value: number) => {
-  if (value >= 2) return -1
-  if (value <= -2) return 1
-  return clamp(value, -1, 1)
-}
-
 const scoreFigures: ScoreFigure[] = [
   {
     key: "etfFlowZScore",
+    percentKey: "etfFlowBullishPercent",
     label: "ETF / Fund Flow",
     description: "Positive flow pressure is bullish when this asset has fund-flow data.",
   },
   {
     key: "exchangeOutflowZScore",
+    percentKey: "exchangeOutflowBullishPercent",
     label: "Exchange Outflow",
     description: "Positive values indicate net movement away from exchanges.",
   },
   {
     key: "fundingRateZScore",
+    percentKey: "fundingRateBullishPercent",
     label: "Funding Rate",
     description: "Crowded positive funding is bearish; very negative funding can be contrarian bullish.",
-    signalScore: fundingSignalScore,
   },
   {
     key: "openInterestChangeZScore",
+    percentKey: "openInterestChangeBullishPercent",
     label: "Open Interest",
     description: "Rising positioning can confirm stronger trend participation.",
   },
   {
     key: "mvrvZScore",
+    percentKey: "mvrvBullishPercent",
     label: "MVRV / Valuation",
     description: "Overheated valuation is bearish; discounted valuation is bullish.",
-    signalScore: valuationSignalScore,
   },
   {
     key: "liquidityGrowthZScore",
+    percentKey: "liquidityGrowthBullishPercent",
     label: "Macro Liquidity",
     description: "Positive liquidity growth generally supports risk assets.",
   },
   {
     key: "sentimentZScore",
+    percentKey: "sentimentBullishPercent",
     label: "Sentiment",
     description: "Extreme optimism can be bearish; extreme fear can be contrarian bullish.",
-    signalScore: sentimentSignalScore,
   },
 ]
 
@@ -91,16 +73,21 @@ const neutralContext: MarketContextSnapshot = {
   mvrvZScore: 0,
   liquidityGrowthZScore: 0,
   sentimentZScore: 0,
+  etfFlowBullishPercent: 50,
+  exchangeOutflowBullishPercent: 50,
+  fundingRateBullishPercent: 50,
+  openInterestChangeBullishPercent: 50,
+  mvrvBullishPercent: 50,
+  liquidityGrowthBullishPercent: 50,
+  sentimentBullishPercent: 50,
   available: false,
 }
 
-const toBullishPercent = (signalScore: number) => Math.round(((clamp(signalScore, -2, 2) + 2) / 4) * 100)
-
 const formatRawScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}z`
 
-const getScoreColor = (signalScore: number) => {
-  if (signalScore > 0.25) return "green"
-  if (signalScore < -0.25) return "red"
+const getScoreColor = (bullishPercent: number) => {
+  if (bullishPercent > 56) return "green"
+  if (bullishPercent < 44) return "red"
   return "gray"
 }
 
@@ -143,8 +130,8 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
         <Box style={contentStyle}>
           <Stack gap="sm">
             <Text size="xs" c="dimmed">
-              Percentages show each input&apos;s bullish tilt after normalization: 50% is neutral, higher supports BUY context, and lower
-              supports SELL context. These inputs roll up into the market score used by context-v2 signal scoring.
+              Percentages are calculated by the backend: 50% is neutral, higher supports BUY context, and lower supports SELL
+              context. These inputs roll up into the market score used by context-v2 signal scoring.
             </Text>
             {!hasMarketContext && (
               <Text size="xs" c="dimmed">
@@ -153,9 +140,8 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             )}
             {scoreFigures.map((figure) => {
               const value = resolvedContext[figure.key] ?? 0
-              const signalScore = figure.signalScore ? figure.signalScore(value) : clamp(value, -2, 2)
-              const progressValue = toBullishPercent(signalScore)
-              const color = hasMarketContext ? getScoreColor(signalScore) : "gray"
+              const progressValue = resolvedContext[figure.percentKey] ?? 50
+              const color = hasMarketContext ? getScoreColor(progressValue) : "gray"
 
               return (
                 <Stack key={figure.key} gap={4}>

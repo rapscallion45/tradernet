@@ -12,6 +12,7 @@
 
 ## Conventions
 - Keep `HOLD` and frontend `No signal` semantics distinct: backend `HOLD` is an emitted `AiSignal`; frontend `No signal` means no signal payload was received yet.
+- Keep market scoring, forecast blending, normalization, and display-ready derived market metrics in this backend module; the frontend should consume these values rather than reimplementing formulas.
 - Forecasting should degrade gracefully when Python or Ollama is unavailable.
 - Avoid adding hard dependencies on heavy ML runtimes inside Java; plug those into the Python forecasting adapter instead.
 - When changing scoring thresholds or signal semantics, update `docs/market-signal-accuracy.md`.

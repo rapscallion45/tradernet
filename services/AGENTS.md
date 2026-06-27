@@ -14,6 +14,7 @@
 
 ## Conventions
 - Keep service APIs stable for `api/` callers.
+- Own domain calculations in service/backend modules rather than duplicating formulas in API resources or frontend code.
 - Avoid coupling unrelated service modules directly unless there is an explicit orchestration reason.
 - If a service change affects persistence, coordinate with `data-model/` schema/entity/DAO changes.
 - If a service change affects UI-visible behavior, update API DTOs/types and docs.

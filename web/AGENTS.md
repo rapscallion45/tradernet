@@ -12,6 +12,7 @@
 
 ## Conventions
 - Keep backend contracts reflected in `src/api/types.ts` and resource classes.
+- Do not implement business/domain calculations in the frontend. Display backend-provided calculated values and use frontend code only for formatting, layout, and interaction state.
 - Prefer hooks for data fetching/mutations rather than embedding API calls directly in components.
 - Preserve the distinction between `No signal` fallback and backend `BUY`/`SELL`/`HOLD` signals in chart UI.
 - Use existing formatting utilities from `src/utils/intl` for currency, numbers, and dates.

@@ -14,6 +14,7 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 
 ## General conventions
 - Prefer small, focused changes that keep API/resource layers thin and push business logic into the appropriate service module.
+- Keep business calculations on the backend. Frontend code should request calculated values from APIs and limit itself to presentation, formatting, and user interaction state.
 - Keep generated or environment-specific artifacts out of version control.
 - Do not use recursive `ls -R` or `grep -R`; use `find` and `rg`.
 - Never add try/catch blocks around imports.
