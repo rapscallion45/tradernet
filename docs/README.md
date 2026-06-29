@@ -9,6 +9,7 @@ This folder documents how the major parts of Tradernet fit together.
 - [API layer](./api-layer.md) — REST resources, auth filter, and facade orchestration.
 - [Frontend web app](./frontend-web.md) — React app structure and runtime flow.
 - [Data + deployment](./data-and-deployment.md) — persistence model, packaging, and runtime infrastructure.
+- [Application guide](./application-guide.md) — full-stack operator/developer handbook covering APIs, persistence, deployment, forecasting, configuration, and safeguards.
 
 ## Suggested reading order
 
@@ -17,3 +18,4 @@ This folder documents how the major parts of Tradernet fit together.
 3. Backend services
 4. Frontend web app
 5. Data + deployment
+6. Application guide

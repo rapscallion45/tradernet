@@ -42,7 +42,8 @@ public class MarketContextRegistry {
                 features.getEmaFast(),
                 features.getEmaSlow(),
                 features.getRsi(),
-                get(features.getSymbol())
+                get(features.getSymbol()),
+                features.getForecastBullScore()
         );
     }
 

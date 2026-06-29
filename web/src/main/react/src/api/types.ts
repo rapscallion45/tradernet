@@ -99,7 +99,34 @@ export type MarketContextSnapshot = {
   mvrvZScore: number
   liquidityGrowthZScore: number
   sentimentZScore: number
+  etfFlowBullishPercent: number
+  exchangeOutflowBullishPercent: number
+  fundingRateBullishPercent: number
+  openInterestChangeBullishPercent: number
+  mvrvBullishPercent: number
+  liquidityGrowthBullishPercent: number
+  sentimentBullishPercent: number
+  anyMarketScoreInputAvailable: boolean
+  etfFlowAvailable: boolean
+  exchangeOutflowAvailable: boolean
+  fundingRateAvailable: boolean
+  openInterestChangeAvailable: boolean
+  mvrvAvailable: boolean
+  liquidityGrowthAvailable: boolean
+  sentimentAvailable: boolean
   available?: boolean
+}
+
+export type MarketForecast = {
+  symbol: string
+  horizonDays: number
+  probabilityPositiveReturn: number
+  expectedReturn: number
+  bullScore: number
+  model: string
+  drivers: string[]
+  narrative?: string
+  marketConditionSummary?: string
 }
 
 /**
@@ -210,6 +237,7 @@ export type OrderSummary = {
   netValueDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
+  bullScore?: number
 }
 
 /** Portfolio */

@@ -86,6 +86,72 @@ public class MarketContextSnapshot {
         return available;
     }
 
+    public boolean isAnyMarketScoreInputAvailable() {
+        return isEtfFlowAvailable()
+                || isExchangeOutflowAvailable()
+                || isFundingRateAvailable()
+                || isOpenInterestChangeAvailable()
+                || isMvrvAvailable()
+                || isLiquidityGrowthAvailable()
+                || isSentimentAvailable();
+    }
+
+    public boolean isEtfFlowAvailable() {
+        return hasInput(etfFlowZScore);
+    }
+
+    public boolean isExchangeOutflowAvailable() {
+        return hasInput(exchangeOutflowZScore);
+    }
+
+    public boolean isFundingRateAvailable() {
+        return hasInput(fundingRateZScore);
+    }
+
+    public boolean isOpenInterestChangeAvailable() {
+        return hasInput(openInterestChangeZScore);
+    }
+
+    public boolean isMvrvAvailable() {
+        return hasInput(mvrvZScore);
+    }
+
+    public boolean isLiquidityGrowthAvailable() {
+        return hasInput(liquidityGrowthZScore);
+    }
+
+    public boolean isSentimentAvailable() {
+        return hasInput(sentimentZScore);
+    }
+
+    public int getEtfFlowBullishPercent() {
+        return bullishPercent(clamp(etfFlowZScore, -2.0, 2.0));
+    }
+
+    public int getExchangeOutflowBullishPercent() {
+        return bullishPercent(clamp(exchangeOutflowZScore, -2.0, 2.0));
+    }
+
+    public int getFundingRateBullishPercent() {
+        return bullishPercent(fundingSignalScore(fundingRateZScore));
+    }
+
+    public int getOpenInterestChangeBullishPercent() {
+        return bullishPercent(clamp(openInterestChangeZScore, -2.0, 2.0));
+    }
+
+    public int getMvrvBullishPercent() {
+        return bullishPercent(valuationSignalScore(mvrvZScore));
+    }
+
+    public int getLiquidityGrowthBullishPercent() {
+        return bullishPercent(clamp(liquidityGrowthZScore, -2.0, 2.0));
+    }
+
+    public int getSentimentBullishPercent() {
+        return bullishPercent(sentimentSignalScore(sentimentZScore));
+    }
+
     public void setEtfFlowZScore(double etfFlowZScore) {
         this.etfFlowZScore = etfFlowZScore;
     }
@@ -116,5 +182,116 @@ public class MarketContextSnapshot {
 
     public void setAvailable(boolean available) {
         this.available = available;
+    }
+
+    public void setEtfFlowBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setExchangeOutflowBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setFundingRateBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setOpenInterestChangeBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setMvrvBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setLiquidityGrowthBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setSentimentBullishPercent(int ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setAnyMarketScoreInputAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setEtfFlowAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setExchangeOutflowAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setFundingRateAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setOpenInterestChangeAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setMvrvAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setLiquidityGrowthAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setSentimentAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    private boolean hasInput(double value) {
+        return Math.abs(value) > 0.001;
+    }
+
+    private int bullishPercent(double signalScore) {
+        return (int) Math.round(((clamp(signalScore, -2.0, 2.0) + 2.0) / 4.0) * 100.0);
+    }
+
+    private double fundingSignalScore(double fundingRate) {
+        if (fundingRate > 2.0) {
+            return -2.0;
+        }
+        if (fundingRate < -2.0) {
+            return 1.0;
+        }
+        if (fundingRate > 1.0) {
+            return clamp(-(fundingRate - 1.0), -2.0, 0.0);
+        }
+        if (fundingRate < -1.0) {
+            return 0.5;
+        }
+        return 0.0;
+    }
+
+    private double valuationSignalScore(double mvrvScore) {
+        if (mvrvScore >= 2.5) {
+            return -2.0;
+        }
+        if (mvrvScore >= 1.5) {
+            return -1.0;
+        }
+        if (mvrvScore <= -1.0) {
+            return 1.5;
+        }
+        return 0.75;
+    }
+
+    private double sentimentSignalScore(double sentimentScore) {
+        if (sentimentScore >= 2.0) {
+            return -1.0;
+        }
+        if (sentimentScore <= -2.0) {
+            return 1.0;
+        }
+        return clamp(sentimentScore, -1.0, 1.0);
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

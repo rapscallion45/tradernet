@@ -39,7 +39,13 @@ export enum QueryClientKeys {
 
   /** Market context scores */
   MarketContext = "MarketContext",
+
+  /** Market forecasts */
+  MarketForecast = "MarketForecast",
 }
 
 /** Default chart/order symbol */
 export const DEFAULT_CHART_SYMBOL = "BTCUSDT"
+
+/** Default forecast horizon for daily trading UI */
+export const DEFAULT_FORECAST_HORIZON_DAYS = 1

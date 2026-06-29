@@ -64,6 +64,46 @@ type ChartSignal = {
   notes: string[]
 }
 
+const getSignalColor = (side?: SignalSide) => {
+  if (side === "BUY") return "green"
+  if (side === "SELL") return "red"
+  return "gray"
+}
+
+const disabledBadgeStyle = { opacity: 0.55, filter: "grayscale(0.35)" }
+
+const getSignalStrength = (confidence?: number) => {
+  if (confidence == null) {
+    return { label: "No signal", color: "gray" }
+  }
+  if (confidence >= 0.85) {
+    return { label: "Strong", color: "green" }
+  }
+  if (confidence >= 0.7) {
+    return { label: "Medium", color: "blue" }
+  }
+  return { label: "Weak", color: "yellow" }
+}
+
+const getVisibleSignalNotes = (notes?: string[]) => {
+  if (!notes?.length) {
+    return []
+  }
+
+  const priorityPrefixes = [
+    "forecast_bull_score=",
+    "effective_context_score=",
+    "forecast_filter=",
+    "context_filter=",
+    "market_score=",
+    "market_regime=",
+  ]
+  const prioritized = notes.filter((note) => priorityPrefixes.some((prefix) => note.startsWith(prefix)))
+  const remaining = notes.filter((note) => !prioritized.includes(note))
+
+  return [...prioritized, ...remaining].slice(0, 5)
+}
+
 type WorkerPayload = {
   type: "bars"
   payload: {
@@ -319,6 +359,15 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const [streamStatus, setStreamStatus] = useState<"connected" | "disconnected" | "error">("disconnected")
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
+  const signalSide = signal?.side
+  const hasSignal = signal != null
+  const signalSideLabel = signalSide ?? "No signal"
+  const signalStrength = getSignalStrength(signal?.confidence)
+  const visibleSignalNotes = getVisibleSignalNotes(signal?.notes)
+  const signalNotes = visibleSignalNotes.length ? ` · Notes ${visibleSignalNotes.join(", ")}` : ""
+  const signalDetails = signal
+    ? `Signal ${signal.side} · Confidence ${signalStrength.label} · Model ${signal.modelVersion}${signalNotes}`
+    : `Signal No signal · Confidence ${signalStrength.label}`
   const resolvedChartHeight = Math.max(320, height ?? chartHeight)
 
   useEffect(() => {
@@ -923,8 +972,11 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice, currency)}`}</Badge>
-          <Badge color={signal?.side === "BUY" ? "green" : signal?.side === "SELL" ? "red" : "gray"} variant="filled">
-            {signal ? `${signal.side} ${(signal.confidence * 100).toFixed(0)}%` : "HOLD"}
+          <Badge color={getSignalColor(signalSide)} variant={hasSignal ? "filled" : "light"} style={hasSignal ? undefined : disabledBadgeStyle}>
+            {signalSideLabel}
+          </Badge>
+          <Badge color={signalStrength.color} variant="light" style={hasSignal ? undefined : disabledBadgeStyle}>
+            {signalStrength.label}
           </Badge>
         </Group>
       </Group>
@@ -932,7 +984,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
       <Paper className={classes.wrapper}>
         <div className={classes.legend}>
           <Text size="xs" c="dimmed">
-            {streamError ? `${summary} · ${streamError}` : `${summary}${signal ? ` · Signal ${signal.side} (${(signal.confidence * 100).toFixed(0)}%)` : ""}`}
+            {streamError ? `${summary} · ${streamError} · ${signalDetails}` : `${summary} · ${signalDetails}`}
           </Text>
         </div>
         <div ref={chartHostRef} className={classes.plotHost} style={{ height: resolvedChartHeight }}>

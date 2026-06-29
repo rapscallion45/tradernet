@@ -35,6 +35,7 @@ public class MarketStreamEndpoint {
         final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", java.util.List.of("USD")).stream().findFirst().orElse("USD");
         final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", java.util.List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
         final String normalizedSymbol = normalizeSymbol(requestedSymbol);
+        service.ensureLiveSymbol(normalizedSymbol);
         final CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(requestedCurrency, CurrencyCode.USD);
         barSubscription = service.subscribeBars(bar -> {
             if (matchesSymbol(bar.getSymbol(), normalizedSymbol)) {

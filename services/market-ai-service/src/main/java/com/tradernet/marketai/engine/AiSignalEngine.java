@@ -33,7 +33,7 @@ public class AiSignalEngine {
         }
 
         final ScoreResult scored = scorer.score(features);
-        if (scored.getSide() == SignalSide.HOLD || scored.getConfidence() < MIN_CONFIDENCE) {
+        if (scored.getSide() != SignalSide.HOLD && scored.getConfidence() < MIN_CONFIDENCE) {
             return null;
         }
 

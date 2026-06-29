@@ -13,8 +13,8 @@ import java.util.List;
  */
 public class LinearModelSignalScorer implements SignalScorer {
 
-    private static final double DEFAULT_BUY_THRESHOLD = 0.62;
-    private static final double DEFAULT_SELL_THRESHOLD = 0.38;
+    private static final double DEFAULT_BUY_THRESHOLD = 0.56;
+    private static final double DEFAULT_SELL_THRESHOLD = 0.44;
 
     private final double buyThreshold;
     private final double sellThreshold;
@@ -39,13 +39,27 @@ public class LinearModelSignalScorer implements SignalScorer {
         notes.add("rsi=" + String.format("%.2f", features.getRsi()));
 
         if (probabilityBuy >= buyThreshold) {
-            return new ScoreResult(SignalSide.BUY, probabilityBuy, "linear-v1", notes);
+            return new ScoreResult(SignalSide.BUY, directionalConfidence(probabilityBuy, buyThreshold, 1.0), "linear-v1", notes);
         }
 
         if (probabilityBuy <= sellThreshold) {
-            return new ScoreResult(SignalSide.SELL, 1.0 - probabilityBuy, "linear-v1", notes);
+            return new ScoreResult(SignalSide.SELL, directionalConfidence(1.0 - probabilityBuy, 1.0 - sellThreshold, 1.0), "linear-v1", notes);
         }
 
-        return new ScoreResult(SignalSide.HOLD, Math.max(probabilityBuy, 1.0 - probabilityBuy), "linear-v1", notes);
+        return new ScoreResult(SignalSide.HOLD, holdConfidence(probabilityBuy), "linear-v1", notes);
+    }
+
+    private double directionalConfidence(double directionalProbability, double threshold, double upperBound) {
+        final double normalized = (directionalProbability - threshold) / Math.max(upperBound - threshold, 0.0001);
+        return clamp(0.60 + (normalized * 0.38), 0.60, 0.98);
+    }
+
+    private double holdConfidence(double probabilityBuy) {
+        final double neutralDistance = Math.abs(probabilityBuy - 0.50);
+        return clamp(0.98 - (neutralDistance * 2.0), 0.50, 0.98);
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

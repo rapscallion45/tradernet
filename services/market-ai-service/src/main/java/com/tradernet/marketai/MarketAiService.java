@@ -8,6 +8,9 @@ import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
 import com.tradernet.marketai.engine.FeatureEngine;
 import com.tradernet.marketai.engine.MarketEventPublisher;
+import com.tradernet.marketai.forecast.ForecastingClient;
+import com.tradernet.marketai.forecast.MarketForecast;
+import com.tradernet.marketai.forecast.OllamaNarrativeClient;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
@@ -22,7 +25,9 @@ import jakarta.ejb.LockType;
 import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
+import jakarta.annotation.Resource;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -30,6 +35,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -37,6 +46,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -50,18 +60,29 @@ import java.util.stream.Collectors;
 public class MarketAiService {
 
     private static final int DEFAULT_HISTORY_SIZE = 2_000;
+    private static final String INSERT_MARKET_BAR_SQL = "INSERT INTO market_bars "
+            + "(symbol, bucket, open, high, low, close, volume, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final int DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS = 1;
+    private static final long DEFAULT_SIGNAL_BULL_SCORE_TTL_MS = Duration.ofMinutes(1).toMillis();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final BinanceTradeStreamClient binanceClient = new BinanceTradeStreamClient();
-    private final BarAggregator barAggregator = new BarAggregator(1_000L);
     private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
-    private final FeatureEngine featureEngine = new FeatureEngine(marketContextRegistry);
-    private final AiSignalEngine signalEngine = new AiSignalEngine();
+    private final Map<String, BinanceTradeStreamClient> binanceClientsBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, AiSignalEngine> signalEnginesBySymbol = new ConcurrentHashMap<>();
     private final MarketEventPublisher publisher = new MarketEventPublisher();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final MarketContextDataIngestionClient contextDataIngestionClient = new MarketContextDataIngestionClient(httpClient, OBJECT_MAPPER);
+    private final ForecastingClient forecastingClient = new ForecastingClient(httpClient, OBJECT_MAPPER);
+    private final OllamaNarrativeClient ollamaNarrativeClient = new OllamaNarrativeClient(httpClient, OBJECT_MAPPER);
     private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
+    private final Map<String, Double> signalBullScoresBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, Long> signalBullScoreRefreshBySymbol = new ConcurrentHashMap<>();
+
+    @Resource(lookup = "java:/jdbc/TradernetDS")
+    private DataSource dataSource;
 
     private final Deque<MarketBar> bars = new ArrayDeque<>();
     private final Deque<AiSignal> signals = new ArrayDeque<>();
@@ -74,13 +95,35 @@ public class MarketAiService {
         final String symbol = System.getProperty("market.ai.symbol", "btcusdt");
         registerContextRefreshSymbols(symbol);
         registerContextRefreshSymbols(System.getProperty("market.ai.context.symbols", symbol));
-        binanceClient.start(symbol, this::onTrade);
+        ensureLiveSymbol(symbol);
         refreshMarketContexts();
     }
 
     @PreDestroy
     public void stop() {
-        binanceClient.stop();
+        binanceClientsBySymbol.values().forEach(BinanceTradeStreamClient::stop);
+        binanceClientsBySymbol.clear();
+        barAggregatorsBySymbol.clear();
+        featureEnginesBySymbol.clear();
+        signalEnginesBySymbol.clear();
+    }
+
+    @Lock(LockType.WRITE)
+    public void ensureLiveSymbol(String symbol) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        if (normalizedSymbol.isBlank()) {
+            return;
+        }
+
+        contextRefreshSymbols.add(normalizedSymbol);
+        barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
+        featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContextRegistry));
+        signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
+        binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, key -> {
+            final BinanceTradeStreamClient client = new BinanceTradeStreamClient();
+            client.start(key.toLowerCase(Locale.ROOT), this::onTrade);
+            return client;
+        });
     }
 
     @Lock(LockType.READ)
@@ -107,13 +150,41 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
-    public synchronized List<AiSignal> getSignals(String symbol, int limit) {
+    public List<AiSignal> getSignals(String symbol, int limit) {
         final String normalizedSymbol = normalizeSymbol(symbol);
-        final List<AiSignal> matchingSignals = signals.stream()
-                .filter(signal -> signal.getSymbol() != null)
-                .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
-                .collect(Collectors.toList());
-        return takeLast(matchingSignals, limit);
+        final List<AiSignal> matchingSignals;
+        synchronized (this) {
+            matchingSignals = signals.stream()
+                    .filter(signal -> signal.getSymbol() != null)
+                    .filter(signal -> signal.getSymbol().trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol))
+                    .collect(Collectors.toList());
+        }
+
+        if (!matchingSignals.isEmpty()) {
+            return takeLast(matchingSignals, limit);
+        }
+
+        return generateSignalsFromRemoteBars(normalizedSymbol, limit);
+    }
+
+    private List<AiSignal> generateSignalsFromRemoteBars(String normalizedSymbol, int limit) {
+        getHydratedMarketContext(normalizedSymbol);
+        final List<MarketBar> remoteBars = fetchKlines(normalizedSymbol, ChartInterval.parse("1MIN"), Math.max(50, Math.min(500, limit * 20)));
+        if (remoteBars.isEmpty()) {
+            return List.of();
+        }
+
+        final FeatureEngine remoteFeatureEngine = new FeatureEngine(marketContextRegistry);
+        final AiSignalEngine remoteSignalEngine = new AiSignalEngine();
+        final List<AiSignal> generatedSignals = new ArrayList<>();
+        for (MarketBar bar : remoteBars) {
+            final FeatureSnapshot features = enrichWithSignalBullScore(remoteFeatureEngine.onClosedBar(bar));
+            final AiSignal signal = remoteSignalEngine.evaluate(features);
+            if (signal != null) {
+                generatedSignals.add(signal);
+            }
+        }
+        return takeLast(generatedSignals, limit);
     }
 
     @Lock(LockType.READ)
@@ -154,6 +225,32 @@ public class MarketAiService {
         if (!snapshot.isAvailable()) {
             hydrateMarketContext(normalizedSymbol);
             return marketContextRegistry.get(normalizedSymbol);
+        }
+        return snapshot;
+    }
+
+    @Lock(LockType.READ)
+    public MarketForecast getForecast(String symbol, int horizonDays) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final MarketContextSnapshot snapshot = getHydratedMarketContext(normalizedSymbol);
+        final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
+        forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
+        return forecast;
+    }
+
+    @Lock(LockType.READ)
+    public double getBullScore(String symbol, int horizonDays) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final MarketContextSnapshot snapshot = getHydratedMarketContext(normalizedSymbol);
+        return forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot).getBullScore();
+    }
+
+    private MarketContextSnapshot getHydratedMarketContext(String normalizedSymbol) {
+        contextRefreshSymbols.add(normalizedSymbol);
+        MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
+        if (!snapshot.isAvailable()) {
+            hydrateMarketContext(normalizedSymbol);
+            snapshot = marketContextRegistry.get(normalizedSymbol);
         }
         return snapshot;
     }
@@ -212,8 +309,12 @@ public class MarketAiService {
     }
 
     private void onTrade(MarketTrade trade) {
-        final MarketBar closed = barAggregator.ingest(trade);
-        final MarketBar forming = barAggregator.snapshotForming();
+        final String normalizedSymbol = normalizeSymbol(trade.getSymbol());
+        final BarAggregator symbolBarAggregator = barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
+        final FeatureEngine symbolFeatureEngine = featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContextRegistry));
+        final AiSignalEngine symbolSignalEngine = signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
+        final MarketBar closed = symbolBarAggregator.ingest(trade);
+        final MarketBar forming = symbolBarAggregator.snapshotForming();
         if (forming != null) {
             publisher.publishBar(forming);
         }
@@ -225,9 +326,10 @@ public class MarketAiService {
         synchronized (this) {
             appendBounded(bars, closed, DEFAULT_HISTORY_SIZE);
         }
+        storeMarketBar(closed);
 
-        final FeatureSnapshot features = featureEngine.onClosedBar(closed);
-        final AiSignal signal = signalEngine.evaluate(features);
+        final FeatureSnapshot features = enrichWithSignalBullScore(symbolFeatureEngine.onClosedBar(closed));
+        final AiSignal signal = symbolSignalEngine.evaluate(features);
         if (signal == null) {
             return;
         }
@@ -236,6 +338,52 @@ public class MarketAiService {
             appendBounded(signals, signal, DEFAULT_HISTORY_SIZE);
         }
         publisher.publishSignal(signal);
+    }
+
+    private FeatureSnapshot enrichWithSignalBullScore(FeatureSnapshot features) {
+        if (features == null || !Boolean.parseBoolean(System.getProperty("market.ai.signalBullScore.enabled", "true"))) {
+            return features;
+        }
+
+        final String normalizedSymbol = normalizeSymbol(features.getSymbol());
+        final long now = System.currentTimeMillis();
+        final long ttlMs = Long.parseLong(System.getProperty("market.ai.signalBullScoreTtlMs", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_TTL_MS)));
+        final Long refreshedAt = signalBullScoreRefreshBySymbol.get(normalizedSymbol);
+        final Double cachedScore = signalBullScoresBySymbol.get(normalizedSymbol);
+        if (cachedScore != null && refreshedAt != null && now - refreshedAt < ttlMs) {
+            return features.withForecastBullScore(cachedScore);
+        }
+
+        try {
+            final int horizonDays = Integer.parseInt(System.getProperty("market.ai.signalBullScoreHorizonDays", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS)));
+            final double bullScore = getBullScore(normalizedSymbol, horizonDays);
+            signalBullScoresBySymbol.put(normalizedSymbol, bullScore);
+            signalBullScoreRefreshBySymbol.put(normalizedSymbol, now);
+            return features.withForecastBullScore(bullScore);
+        } catch (RuntimeException ex) {
+            return cachedScore == null ? features : features.withForecastBullScore(cachedScore);
+        }
+    }
+
+    private void storeMarketBar(MarketBar bar) {
+        if (dataSource == null || bar == null) {
+            return;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_MARKET_BAR_SQL)) {
+            statement.setString(1, normalizeSymbol(bar.getSymbol()));
+            statement.setTimestamp(2, new Timestamp(bar.getBucketStart()));
+            statement.setDouble(3, bar.getOpen());
+            statement.setDouble(4, bar.getHigh());
+            statement.setDouble(5, bar.getLow());
+            statement.setDouble(6, bar.getClose());
+            statement.setDouble(7, bar.getVolume());
+            statement.setString(8, "binance-trade-stream");
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            // Forecasting should degrade gracefully if persistence is unavailable or a duplicate bar arrives.
+        }
     }
 
     private List<String> fetchExchangeSymbols() {
