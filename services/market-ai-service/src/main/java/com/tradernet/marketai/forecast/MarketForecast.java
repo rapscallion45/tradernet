@@ -101,4 +101,61 @@ public class MarketForecast {
     public void setNarrative(String narrative) {
         this.narrative = narrative;
     }
+
+    public String getMarketConditionSummary() {
+        final String condition = conditionLabel();
+        final String probabilityText = probabilityLabel();
+        final String expectedReturnText = expectedReturnLabel();
+        return condition + " " + probabilityText + " " + expectedReturnText;
+    }
+
+    public void setMarketConditionSummary(String ignored) {
+        // Derived read-only API field.
+    }
+
+    private String conditionLabel() {
+        if (bullScore >= 75.0) {
+            return "Conditions look strongly bullish for " + safeSymbol() + ".";
+        }
+        if (bullScore >= 60.0) {
+            return "Conditions lean bullish for " + safeSymbol() + ".";
+        }
+        if (bullScore > 45.0 && bullScore < 55.0) {
+            return "Conditions look balanced for " + safeSymbol() + ".";
+        }
+        if (bullScore >= 40.0) {
+            return "Conditions look slightly cautious for " + safeSymbol() + ".";
+        }
+        return "Conditions look bearish for " + safeSymbol() + ".";
+    }
+
+    private String probabilityLabel() {
+        final int probabilityPercent = (int) Math.round(clamp(probabilityPositiveReturn, 0.0, 1.0) * 100.0);
+        if (probabilityPercent >= 65) {
+            return "The " + horizonDays + "-day positive-return odds are elevated at " + probabilityPercent + "%.";
+        }
+        if (probabilityPercent <= 45) {
+            return "The " + horizonDays + "-day positive-return odds are weak at " + probabilityPercent + "%.";
+        }
+        return "The " + horizonDays + "-day positive-return odds are mixed at " + probabilityPercent + "%.";
+    }
+
+    private String expectedReturnLabel() {
+        final double expectedReturnPercent = expectedReturn * 100.0;
+        if (expectedReturnPercent >= 1.0) {
+            return "The model expects a modest positive move.";
+        }
+        if (expectedReturnPercent <= -1.0) {
+            return "The model expects a modest negative move.";
+        }
+        return "The model expects a mostly flat move.";
+    }
+
+    private String safeSymbol() {
+        return symbol == null || symbol.isBlank() ? "the selected market" : symbol.trim().toUpperCase();
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
 }

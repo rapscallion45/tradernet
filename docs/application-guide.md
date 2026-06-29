@@ -293,7 +293,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 
 ### Forecast and order history display
 
-- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, and narrative text.
+- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, and a backend-generated plain-language current condition summary.
 - The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured at order creation time; older rows created before the `bullScore` migration display a muted dash until they have a stored value.
 
 ## 9. Operational safeguards

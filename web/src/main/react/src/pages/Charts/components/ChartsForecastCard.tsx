@@ -57,6 +57,12 @@ export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol
             <Text size="sm" c="dimmed">
               {forecast?.narrative || `Probability of a positive ${horizonDays}-day return: ${probabilityPercent}%.`}
             </Text>
+            {forecast?.marketConditionSummary && (
+              <Text size="sm">
+                <Text span fw={700}>Current condition: </Text>
+                {forecast.marketConditionSummary}
+              </Text>
+            )}
             <Group justify="space-between" gap="xs">
               <Text size="xs" c="dimmed">Positive {horizonDays}d return</Text>
               <Text size="xs" fw={700}>{probabilityPercent}%</Text>

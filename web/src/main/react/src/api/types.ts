@@ -126,6 +126,7 @@ export type MarketForecast = {
   model: string
   drivers: string[]
   narrative?: string
+  marketConditionSummary?: string
 }
 
 /**
