@@ -70,6 +70,8 @@ const getSignalColor = (side?: SignalSide) => {
   return "gray"
 }
 
+const disabledBadgeStyle = { opacity: 0.55, filter: "grayscale(0.35)" }
+
 const getSignalStrength = (confidence?: number) => {
   if (confidence == null) {
     return { label: "No signal", color: "gray" }
@@ -358,6 +360,7 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const [streamError, setStreamError] = useState<string | null>(null)
   const [signal, setSignal] = useState<ChartSignal | null>(null)
   const signalSide = signal?.side
+  const hasSignal = signal != null
   const signalSideLabel = signalSide ?? "No signal"
   const signalStrength = getSignalStrength(signal?.confidence)
   const visibleSignalNotes = getVisibleSignalNotes(signal?.notes)
@@ -969,10 +972,10 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
             {streamStatus === "connected" ? `${ticksPerSecond} ticks/s` : streamStatus}
           </Badge>
           <Badge color="blue" variant="light">{`${symbol} ${formatCurrency(lastPrice, currency)}`}</Badge>
-          <Badge color={getSignalColor(signalSide)} variant="filled">
+          <Badge color={getSignalColor(signalSide)} variant={hasSignal ? "filled" : "light"} style={hasSignal ? undefined : disabledBadgeStyle}>
             {signalSideLabel}
           </Badge>
-          <Badge color={signalStrength.color} variant="light">
+          <Badge color={signalStrength.color} variant="light" style={hasSignal ? undefined : disabledBadgeStyle}>
             {signalStrength.label}
           </Badge>
         </Group>

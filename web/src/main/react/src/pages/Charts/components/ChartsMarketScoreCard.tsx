@@ -102,6 +102,8 @@ const neutralContext: MarketContextSnapshot = {
 
 const formatRawScore = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}z`
 
+const disabledBadgeStyle = { opacity: 0.55, filter: "grayscale(0.35)" }
+
 const getScoreColor = (bullishPercent: number) => {
   if (bullishPercent > 56) return "green"
   if (bullishPercent < 44) return "red"
@@ -149,7 +151,7 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             <Text size="xs" c="dimmed">{selectedSymbol}</Text>
           </div>
         </Group>
-        <Badge color={hasMarketScoreInputs ? "blue" : "gray"} variant="light">
+        <Badge color={hasMarketScoreInputs ? "blue" : "gray"} variant="light" style={hasMarketScoreInputs ? undefined : disabledBadgeStyle}>
           {hasMarketScoreInputs ? `${populatedFigureCount}/${scoreFigures.length}` : "No input data"}
         </Badge>
       </Group>
@@ -188,7 +190,7 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
                     <Badge
                       color={color}
                       variant="light"
-                      style={{ flex: "0 0 auto", minWidth: 86, textAlign: "center" }}
+                      style={{ flex: "0 0 auto", minWidth: 86, textAlign: "center", ...(inputAvailable ? {} : disabledBadgeStyle) }}
                       title={inputAvailable ? `Raw input: ${formatRawScore(value)}` : `No backend input data for ${figure.label}`}
                     >
                       {inputAvailable ? `${progressValue}% bull` : "No data"}

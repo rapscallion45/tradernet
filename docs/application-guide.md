@@ -282,14 +282,14 @@ Market UI features can consume:
 
 The chart signal badges intentionally distinguish a real backend `HOLD` from the absence of a received signal:
 
-- `No signal` means the chart has not received a signal payload for the selected symbol yet.
+- `No signal` means the chart has not received a signal payload for the selected symbol yet; no-signal badges are muted so they do not look equivalent to a real `HOLD`.
 - `BUY`, `SELL`, or `HOLD` means the backend emitted an `AiSignal` over `/api/ws/market`.
 - The adjacent confidence badge shows strength labels (`No signal`, `Weak`, `Medium`, or `Strong`) derived from the latest signal confidence.
 - The chart legend appends the latest signal model version and up to five prioritized signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context notes such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.
-- The Market Score Inputs card shows backend-calculated bullish-tilt percentages, not raw z-scores. `50% bull` is neutral only when backend input data is present; missing inputs show `No data` instead of a fallback percentage. The card-level explanation is available from the info icon next to the title. Values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input when data exists. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
+- The Market Score Inputs card shows backend-calculated bullish-tilt percentages, not raw z-scores. `50% bull` is neutral only when backend input data is present; missing inputs show muted `No data` badges instead of a fallback percentage. The card-level explanation is available from the info icon next to the title. Values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input when data exists. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
 
 ### Forecast and order history display
 
