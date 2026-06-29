@@ -1,6 +1,6 @@
 import { FC, useMemo } from "react"
-import { Badge, Box, Divider, Group, Loader, Paper, Progress, Stack, Text } from "@mantine/core"
-import { IconActivityHeartbeat } from "@tabler/icons-react"
+import { Badge, Box, Divider, Group, Loader, Paper, Progress, Stack, Text, Tooltip } from "@mantine/core"
+import { IconActivityHeartbeat, IconInfoCircle } from "@tabler/icons-react"
 import { MarketContextSnapshot } from "api/types"
 
 type RawScoreFigureKey = Extract<keyof MarketContextSnapshot, `${string}ZScore`>
@@ -108,6 +108,10 @@ const getScoreColor = (bullishPercent: number) => {
   return "gray"
 }
 
+const marketScoreHelp =
+  "Percentages are calculated by the backend: 50% is neutral, higher supports BUY context, and lower supports SELL context. " +
+  "These inputs roll up into the market score used by context-v2 signal scoring."
+
 export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selectedSymbol, context, isLoading, fillAvailable = true }) => {
   const resolvedContext = context ?? neutralContext
   const populatedFigureCount = useMemo(
@@ -129,7 +133,19 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
         <Group gap="xs">
           <IconActivityHeartbeat size={16} />
           <div>
-            <Text fw={700}>Market Score Inputs</Text>
+            <Group gap={4} align="center">
+              <Text fw={700}>Market Score Inputs</Text>
+              <Tooltip label={marketScoreHelp} multiline w={300} withArrow>
+                <Box
+                  component="span"
+                  c="dimmed"
+                  aria-label="Market score input help"
+                  style={{ display: "inline-flex", cursor: "help" }}
+                >
+                  <IconInfoCircle size={14} />
+                </Box>
+              </Tooltip>
+            </Group>
             <Text size="xs" c="dimmed">{selectedSymbol}</Text>
           </div>
         </Group>
@@ -146,10 +162,6 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
       ) : (
         <Box style={contentStyle}>
           <Stack gap="sm">
-            <Text size="xs" c="dimmed">
-              Percentages are calculated by the backend: 50% is neutral, higher supports BUY context, and lower supports SELL
-              context. These inputs roll up into the market score used by context-v2 signal scoring.
-            </Text>
             {!hasMarketScoreInputs && (
               <Text size="xs" c="dimmed">
                 No market score input data has been loaded for this symbol yet. The backend still treats missing inputs as neutral for
