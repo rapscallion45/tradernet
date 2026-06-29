@@ -10,6 +10,7 @@ import { useMarketContext } from "hooks/useMarketContext"
 import { ChartsMarketScoreCard } from "pages/Charts/components/ChartsMarketScoreCard"
 import { useMarketForecast } from "hooks/useMarketForecast"
 import { ChartsForecastCard } from "pages/Charts/components/ChartsForecastCard"
+import { DEFAULT_FORECAST_HORIZON_DAYS } from "global/constants"
 
 /**
  * Dedicated chart-focused page with market details and score inputs.
@@ -22,6 +23,7 @@ const ChartsPage: FC = () => {
   const { height: viewportHeight } = useViewportSize()
   const pageRef = useRef<HTMLDivElement>(null)
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT")
+  const [forecastHorizonDays, setForecastHorizonDays] = useState(DEFAULT_FORECAST_HORIZON_DAYS)
   const [pageHeight, setPageHeight] = useState(420)
   const chartHeight = Math.max(320, pageHeight - CHART_TOOLBAR_VERTICAL_OFFSET)
 
@@ -32,7 +34,7 @@ const ChartsPage: FC = () => {
 
   const { data: selectedBars = [], isLoading: isSelectedBarsLoading } = useChartDetailBars(selectedSymbol, currency)
   const { data: marketContext, isLoading: isMarketContextLoading } = useMarketContext(selectedSymbol)
-  const { data: marketForecast, isLoading: isMarketForecastLoading, isError: isMarketForecastError } = useMarketForecast(selectedSymbol)
+  const { data: marketForecast, isLoading: isMarketForecastLoading, isError: isMarketForecastError } = useMarketForecast(selectedSymbol, forecastHorizonDays)
   const detailMetrics = useMemo(() => getSymbolMetrics(selectedBars), [selectedBars])
 
   return (
@@ -51,6 +53,8 @@ const ChartsPage: FC = () => {
               <Stack gap="md">
                 <ChartsForecastCard
                   selectedSymbol={selectedSymbol}
+                  horizonDays={forecastHorizonDays}
+                  onHorizonDaysChange={setForecastHorizonDays}
                   forecast={marketForecast}
                   isLoading={isMarketForecastLoading}
                   isError={isMarketForecastError}

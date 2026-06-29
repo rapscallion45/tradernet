@@ -252,7 +252,7 @@ The real-time chart BUY/HOLD/SELL signal and the forecast card are related but s
 
 - Chart signals are generated from short-term technical features, market context, and the cached forecast bull score.
 - The technical model still creates the first BUY/SELL/HOLD vote from EMA/RSI features. Market context and forecast bull score then form an effective context score that can confirm the technical vote, block it into HOLD when contradictory, or promote HOLD only when the effective score reaches an extreme.
-- Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order/signal horizon is 1 day for daily trading, while callers can still request longer horizons with `horizonDays`.
+- Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order/signal horizon is 1 day for daily trading, and the forecast card lets the user select supported horizons such as 1, 3, 7, 14, or 30 days without changing the selected symbol.
 - A high forecast bull score pulls the effective context score toward BUY, a low bull score pulls it toward SELL, and a score near 50 falls inside the neutral band and biases directional technical votes back to HOLD. The chart signal caches this score for `market.ai.signalBullScoreTtlMs` milliseconds to avoid calling the forecasting service on every closed bar.
 
 The forecasting path is designed to degrade gracefully:
@@ -293,7 +293,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 
 ### Forecast and order history display
 
-- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, and a backend-generated plain-language current condition summary.
+- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, a backend-generated plain-language current condition summary, and a forecast horizon dropdown that refetches the backend forecast for the selected number of days.
 - The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured at order creation time; older rows created before the `bullScore` migration display a muted dash until they have a stored value.
 
 ## 9. Operational safeguards
