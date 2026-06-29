@@ -25,7 +25,7 @@ The no-key default ingestion currently fetches:
 - Binance USD-M Futures open-interest history for `openInterestChangeZScore`.
 - Alternative.me Fear & Greed data for `sentimentZScore`.
 
-Provider-backed ingestion can still update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. The backend response includes calculated bullish-percent fields for UI display so clients do not duplicate scoring formulas.
+Provider-backed ingestion can still update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. The backend response includes calculated bullish-percent fields and per-input availability flags for UI display so clients do not duplicate scoring formulas or show fallback percentages when data is missing.
 
 Runtime switches:
 
@@ -50,7 +50,7 @@ This lets the UI render direction and strength independently, for example `BUY` 
 
 The chart signal is intentionally short-term. The technical model creates the first BUY/SELL/HOLD decision from EMA/RSI features; market context and the cached forecast bull score then confirm, block, or only at extremes promote that decision. A high bull score pulls the effective context toward BUY, a low bull score pulls it toward SELL, and a bull score near 50 triggers a neutral forecast filter that biases directional technical votes back to HOLD.
 
-The Market Score Inputs card displays backend-calculated values from the same context family in a friendlier 0-100 bullish-tilt scale: 50% is neutral, higher values support bullish context, and lower values support bearish context. Internally the backend still stores normalized z-score/directional inputs, converts them into a 0-100 `market_score`, blends that score with the forecast bull score into `effective_context_score`, and then combines it with the short-term EMA/RSI technical decision.
+The Market Score Inputs card displays backend-calculated values from the same context family in a friendlier 0-100 bullish-tilt scale: 50% is neutral only when input data exists, higher values support bullish context, and lower values support bearish context. Missing inputs display `No data` in the UI rather than a fallback 50% value. Internally the backend still stores normalized z-score/directional inputs, converts available inputs into a 0-100 `market_score`, blends that score with the forecast bull score into `effective_context_score`, and then combines it with the short-term EMA/RSI technical decision.
 
 A real backend `HOLD` is different from the frontend `No signal` fallback. `No signal` means no `AiSignal` has been received for the selected chart symbol yet; once a signal arrives, the chart displays the backend side and appends the latest signal model version plus prioritized notes to the legend for debugging and operator context. Opening a chart websocket dynamically starts a live Binance trade stream for the selected symbol, and each live symbol has its own bar aggregator, feature engine, and signal engine. Until the first live signal arrives, `GET /api/market/signals` can still generate an initial signal from recent Binance klines so non-BTC charts do not remain blank.
 

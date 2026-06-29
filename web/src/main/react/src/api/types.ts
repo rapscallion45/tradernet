@@ -106,6 +106,14 @@ export type MarketContextSnapshot = {
   mvrvBullishPercent: number
   liquidityGrowthBullishPercent: number
   sentimentBullishPercent: number
+  anyMarketScoreInputAvailable: boolean
+  etfFlowAvailable: boolean
+  exchangeOutflowAvailable: boolean
+  fundingRateAvailable: boolean
+  openInterestChangeAvailable: boolean
+  mvrvAvailable: boolean
+  liquidityGrowthAvailable: boolean
+  sentimentAvailable: boolean
   available?: boolean
 }
 

@@ -5,10 +5,12 @@ import { MarketContextSnapshot } from "api/types"
 
 type RawScoreFigureKey = Extract<keyof MarketContextSnapshot, `${string}ZScore`>
 type BullishPercentKey = Extract<keyof MarketContextSnapshot, `${string}BullishPercent`>
+type InputAvailableKey = Exclude<Extract<keyof MarketContextSnapshot, `${string}Available`>, "available" | "anyMarketScoreInputAvailable">
 
 type ScoreFigure = {
   key: RawScoreFigureKey
   percentKey: BullishPercentKey
+  availableKey: InputAvailableKey
   label: string
   description: string
 }
@@ -24,42 +26,49 @@ const scoreFigures: ScoreFigure[] = [
   {
     key: "etfFlowZScore",
     percentKey: "etfFlowBullishPercent",
+    availableKey: "etfFlowAvailable",
     label: "ETF / Fund Flow",
     description: "Positive flow pressure is bullish when this asset has fund-flow data.",
   },
   {
     key: "exchangeOutflowZScore",
     percentKey: "exchangeOutflowBullishPercent",
+    availableKey: "exchangeOutflowAvailable",
     label: "Exchange Outflow",
     description: "Positive values indicate net movement away from exchanges.",
   },
   {
     key: "fundingRateZScore",
     percentKey: "fundingRateBullishPercent",
+    availableKey: "fundingRateAvailable",
     label: "Funding Rate",
     description: "Crowded positive funding is bearish; very negative funding can be contrarian bullish.",
   },
   {
     key: "openInterestChangeZScore",
     percentKey: "openInterestChangeBullishPercent",
+    availableKey: "openInterestChangeAvailable",
     label: "Open Interest",
     description: "Rising positioning can confirm stronger trend participation.",
   },
   {
     key: "mvrvZScore",
     percentKey: "mvrvBullishPercent",
+    availableKey: "mvrvAvailable",
     label: "MVRV / Valuation",
     description: "Overheated valuation is bearish; discounted valuation is bullish.",
   },
   {
     key: "liquidityGrowthZScore",
     percentKey: "liquidityGrowthBullishPercent",
+    availableKey: "liquidityGrowthAvailable",
     label: "Macro Liquidity",
     description: "Positive liquidity growth generally supports risk assets.",
   },
   {
     key: "sentimentZScore",
     percentKey: "sentimentBullishPercent",
+    availableKey: "sentimentAvailable",
     label: "Sentiment",
     description: "Extreme optimism can be bearish; extreme fear can be contrarian bullish.",
   },
@@ -80,6 +89,14 @@ const neutralContext: MarketContextSnapshot = {
   mvrvBullishPercent: 50,
   liquidityGrowthBullishPercent: 50,
   sentimentBullishPercent: 50,
+  anyMarketScoreInputAvailable: false,
+  etfFlowAvailable: false,
+  exchangeOutflowAvailable: false,
+  fundingRateAvailable: false,
+  openInterestChangeAvailable: false,
+  mvrvAvailable: false,
+  liquidityGrowthAvailable: false,
+  sentimentAvailable: false,
   available: false,
 }
 
@@ -94,10 +111,10 @@ const getScoreColor = (bullishPercent: number) => {
 export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selectedSymbol, context, isLoading, fillAvailable = true }) => {
   const resolvedContext = context ?? neutralContext
   const populatedFigureCount = useMemo(
-    () => scoreFigures.filter((figure) => Math.abs(resolvedContext[figure.key] ?? 0) > 0.001).length,
+    () => scoreFigures.filter((figure) => resolvedContext[figure.availableKey]).length,
     [resolvedContext]
   )
-  const hasMarketContext = resolvedContext.available ?? populatedFigureCount > 0
+  const hasMarketScoreInputs = resolvedContext.anyMarketScoreInputAvailable ?? populatedFigureCount > 0
 
   const paperStyle = fillAvailable
     ? { display: "flex", flex: "1 1 0", flexDirection: "column" as const, minHeight: 0, overflow: "hidden" }
@@ -116,8 +133,8 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             <Text size="xs" c="dimmed">{selectedSymbol}</Text>
           </div>
         </Group>
-        <Badge color={hasMarketContext ? "blue" : "gray"} variant="light">
-          {hasMarketContext ? `${populatedFigureCount}/${scoreFigures.length}` : "Awaiting data"}
+        <Badge color={hasMarketScoreInputs ? "blue" : "gray"} variant="light">
+          {hasMarketScoreInputs ? `${populatedFigureCount}/${scoreFigures.length}` : "No input data"}
         </Badge>
       </Group>
       <Divider mb="xs" style={{ flexShrink: 0 }} />
@@ -133,15 +150,17 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
               Percentages are calculated by the backend: 50% is neutral, higher supports BUY context, and lower supports SELL
               context. These inputs roll up into the market score used by context-v2 signal scoring.
             </Text>
-            {!hasMarketContext && (
+            {!hasMarketScoreInputs && (
               <Text size="xs" c="dimmed">
-                No market context has been loaded for this symbol yet. Signal scoring will treat these inputs as neutral until ingestion posts data.
+                No market score input data has been loaded for this symbol yet. The backend still treats missing inputs as neutral for
+                scoring, but the card does not display a bullish percentage until input data is present.
               </Text>
             )}
             {scoreFigures.map((figure) => {
               const value = resolvedContext[figure.key] ?? 0
+              const inputAvailable = resolvedContext[figure.availableKey] ?? false
               const progressValue = resolvedContext[figure.percentKey] ?? 50
-              const color = hasMarketContext ? getScoreColor(progressValue) : "gray"
+              const color = inputAvailable ? getScoreColor(progressValue) : "gray"
 
               return (
                 <Stack key={figure.key} gap={4}>
@@ -158,12 +177,12 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
                       color={color}
                       variant="light"
                       style={{ flex: "0 0 auto", minWidth: 86, textAlign: "center" }}
-                      title={`Raw input: ${formatRawScore(value)}`}
+                      title={inputAvailable ? `Raw input: ${formatRawScore(value)}` : `No backend input data for ${figure.label}`}
                     >
-                      {hasMarketContext ? `${progressValue}% bull` : "—"}
+                      {inputAvailable ? `${progressValue}% bull` : "No data"}
                     </Badge>
                   </Group>
-                  <Progress value={hasMarketContext ? progressValue : 50} color={color} size="sm" radius="xl" />
+                  <Progress value={inputAvailable ? progressValue : 50} color={color} size="sm" radius="xl" />
                 </Stack>
               )
             })}

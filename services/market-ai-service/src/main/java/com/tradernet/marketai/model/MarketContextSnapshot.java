@@ -86,6 +86,44 @@ public class MarketContextSnapshot {
         return available;
     }
 
+    public boolean isAnyMarketScoreInputAvailable() {
+        return isEtfFlowAvailable()
+                || isExchangeOutflowAvailable()
+                || isFundingRateAvailable()
+                || isOpenInterestChangeAvailable()
+                || isMvrvAvailable()
+                || isLiquidityGrowthAvailable()
+                || isSentimentAvailable();
+    }
+
+    public boolean isEtfFlowAvailable() {
+        return hasInput(etfFlowZScore);
+    }
+
+    public boolean isExchangeOutflowAvailable() {
+        return hasInput(exchangeOutflowZScore);
+    }
+
+    public boolean isFundingRateAvailable() {
+        return hasInput(fundingRateZScore);
+    }
+
+    public boolean isOpenInterestChangeAvailable() {
+        return hasInput(openInterestChangeZScore);
+    }
+
+    public boolean isMvrvAvailable() {
+        return hasInput(mvrvZScore);
+    }
+
+    public boolean isLiquidityGrowthAvailable() {
+        return hasInput(liquidityGrowthZScore);
+    }
+
+    public boolean isSentimentAvailable() {
+        return hasInput(sentimentZScore);
+    }
+
     public int getEtfFlowBullishPercent() {
         return bullishPercent(clamp(etfFlowZScore, -2.0, 2.0));
     }
@@ -172,6 +210,42 @@ public class MarketContextSnapshot {
 
     public void setSentimentBullishPercent(int ignored) {
         // Derived read-only API field.
+    }
+
+    public void setAnyMarketScoreInputAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setEtfFlowAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setExchangeOutflowAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setFundingRateAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setOpenInterestChangeAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setMvrvAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setLiquidityGrowthAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    public void setSentimentAvailable(boolean ignored) {
+        // Derived read-only API field.
+    }
+
+    private boolean hasInput(double value) {
+        return Math.abs(value) > 0.001;
     }
 
     private int bullishPercent(double signalScore) {
