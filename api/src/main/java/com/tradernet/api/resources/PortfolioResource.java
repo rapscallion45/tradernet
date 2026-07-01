@@ -1,6 +1,7 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.api.resources.dto.PortfolioAssetDto;
+import com.tradernet.api.resources.dto.PortfolioHistoryEventDto;
 import com.tradernet.api.resources.dto.PortfolioHistoryPointDto;
 import com.tradernet.api.resources.dto.PortfolioSummaryDto;
 import com.tradernet.currencyconversion.CurrencyCode;
@@ -21,15 +22,22 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * REST API for viewing portfolio holdings and performance.
@@ -37,6 +45,8 @@ import java.util.Optional;
 @Path("/portfolio")
 @Produces(MediaType.APPLICATION_JSON)
 public class PortfolioResource {
+
+    private static final int MAX_PORTFOLIO_HISTORY_DAYS = 1_000;
 
     @Inject
     private OrderService orderService;
@@ -139,22 +149,62 @@ public class PortfolioResource {
         }
 
         Map<String, PositionAggregate> rollingPositions = new HashMap<>();
+        Map<LocalDate, List<PositionEvent>> eventsByDate = new HashMap<>();
+        Set<String> symbols = new HashSet<>();
 
-        for (PositionEvent event : positionEvents) {
-            PositionAggregate aggregate = rollingPositions.computeIfAbsent(event.symbol, ignored -> new PositionAggregate());
-            applyTrade(aggregate, event.quantityDelta, event.price);
-            aggregate.lastKnownPrice = event.price;
-
-            double accountValue = calculateAccountValue(rollingPositions, displayCurrency, event.timestamp, false);
-            history.add(new PortfolioHistoryPointDto(event.timestamp.toEpochMilli(), roundCurrency(accountValue)));
+        LocalDate firstDate = toUtcDate(positionEvents.get(0).timestamp);
+        LocalDate today = toUtcDate(now);
+        if (firstDate.isAfter(today)) {
+            firstDate = today;
         }
 
-        double currentAccountValue = calculateAccountValue(rollingPositions, displayCurrency, now, true);
-        history.add(new PortfolioHistoryPointDto(now.toEpochMilli(), roundCurrency(currentAccountValue)));
+        long requestedDays = ChronoUnit.DAYS.between(firstDate, today) + 1;
+        int historyDays = (int) Math.max(1, Math.min(requestedDays, MAX_PORTFOLIO_HISTORY_DAYS));
+        LocalDate startDate = today.minusDays(historyDays - 1L);
+
+        for (PositionEvent event : positionEvents) {
+            LocalDate eventDate = toUtcDate(event.timestamp);
+            symbols.add(event.symbol);
+            eventsByDate.computeIfAbsent(eventDate, ignored -> new ArrayList<>()).add(event);
+            if (eventDate.isBefore(startDate)) {
+                applyPositionEvent(rollingPositions, event);
+            }
+        }
+
+        Map<String, NavigableMap<LocalDate, Double>> dailyClosePrices = loadDailyClosePrices(symbols, historyDays + 5);
+
+        for (int offset = 0; offset < historyDays; offset++) {
+            LocalDate date = startDate.plusDays(offset);
+            List<PositionEvent> eventsForDate = eventsByDate.getOrDefault(date, List.of());
+            for (PositionEvent event : eventsForDate) {
+                applyPositionEvent(rollingPositions, event);
+            }
+
+            boolean isToday = date.equals(today);
+            Instant valuationTime = isToday ? now : date.atStartOfDay(ZoneOffset.UTC).toInstant();
+            double accountValue = calculateAccountValue(rollingPositions, displayCurrency, valuationTime, date, isToday, dailyClosePrices);
+            history.add(new PortfolioHistoryPointDto(
+                valuationTime.toEpochMilli(),
+                roundCurrency(accountValue),
+                buildHistoryEventDtos(eventsForDate, displayCurrency)
+            ));
+        }
+
         return history;
     }
 
     private double calculateAccountValue(Map<String, PositionAggregate> positions, CurrencyCode displayCurrency, Instant timestamp, boolean useLivePrice) {
+        return calculateAccountValue(positions, displayCurrency, timestamp, toUtcDate(timestamp), useLivePrice, Map.of());
+    }
+
+    private double calculateAccountValue(
+        Map<String, PositionAggregate> positions,
+        CurrencyCode displayCurrency,
+        Instant timestamp,
+        LocalDate valuationDate,
+        boolean useLivePrice,
+        Map<String, NavigableMap<LocalDate, Double>> dailyClosePrices
+    ) {
         double totalValue = 0;
 
         for (Map.Entry<String, PositionAggregate> entry : positions.entrySet()) {
@@ -165,7 +215,9 @@ public class PortfolioResource {
 
             String symbol = entry.getKey();
             double fallbackPrice = aggregate.lastKnownPrice > 0 ? aggregate.lastKnownPrice : (aggregate.netCost / aggregate.netQuantity);
-            double priceRaw = useLivePrice ? resolveCurrentPrice(symbol, fallbackPrice) : fallbackPrice;
+            double priceRaw = useLivePrice
+                ? resolveCurrentPrice(symbol, fallbackPrice)
+                : resolveHistoricalPrice(symbol, valuationDate, fallbackPrice, dailyClosePrices);
 
             CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(symbol);
             double convertedPrice = currencyConversionService.convertAmount(priceRaw, sourceCurrency, displayCurrency, timestamp);
@@ -184,20 +236,90 @@ public class PortfolioResource {
             }
 
             String symbol = order.getSymbol().trim().toUpperCase(Locale.ROOT);
-            double signedQuantity = order.getSide() == OrderEntity.Side.BUY ? order.getQuantity() : -order.getQuantity();
+            OrderEntity.Side orderSide = order.getSide();
+            if (orderSide == null) {
+                continue;
+            }
+
+            double signedQuantity = orderSide == OrderEntity.Side.BUY ? order.getQuantity() : -order.getQuantity();
             Instant openTimestamp = order.getCreatedAt() != null ? order.getCreatedAt() : fallbackTime;
 
-            events.add(new PositionEvent(symbol, signedQuantity, order.getPrice(), openTimestamp));
+            events.add(new PositionEvent(symbol, orderSide, signedQuantity, order.getPrice(), openTimestamp));
 
             boolean isClosed = OrderService.CLOSED_STATUS.equals(order.getStatus()) && order.getClosePrice() != null;
             if (isClosed) {
                 Instant closeTimestamp = order.getClosedAt() != null ? order.getClosedAt() : openTimestamp;
-                events.add(new PositionEvent(symbol, -signedQuantity, order.getClosePrice(), closeTimestamp));
+                OrderEntity.Side closeSide = orderSide == OrderEntity.Side.BUY ? OrderEntity.Side.SELL : OrderEntity.Side.BUY;
+                events.add(new PositionEvent(symbol, closeSide, -signedQuantity, order.getClosePrice(), closeTimestamp));
             }
         }
 
         events.sort(Comparator.comparing(event -> event.timestamp));
         return events;
+    }
+
+    private void applyPositionEvent(Map<String, PositionAggregate> positions, PositionEvent event) {
+        PositionAggregate aggregate = positions.computeIfAbsent(event.symbol, ignored -> new PositionAggregate());
+        applyTrade(aggregate, event.quantityDelta, event.price);
+        aggregate.lastKnownPrice = event.price;
+    }
+
+    private List<PortfolioHistoryEventDto> buildHistoryEventDtos(List<PositionEvent> events, CurrencyCode displayCurrency) {
+        List<PortfolioHistoryEventDto> eventDtos = new ArrayList<>();
+        for (PositionEvent event : events) {
+            CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(event.symbol);
+            double convertedPrice = currencyConversionService.convertAmount(event.price, sourceCurrency, displayCurrency, event.timestamp);
+            eventDtos.add(new PortfolioHistoryEventDto(
+                event.symbol,
+                event.side.name(),
+                Math.abs(event.quantityDelta),
+                roundCurrency(convertedPrice),
+                event.timestamp.toEpochMilli()
+            ));
+        }
+        return eventDtos;
+    }
+
+    private Map<String, NavigableMap<LocalDate, Double>> loadDailyClosePrices(Set<String> symbols, int requestedDays) {
+        Map<String, NavigableMap<LocalDate, Double>> pricesBySymbol = new HashMap<>();
+        int limit = Math.max(1, Math.min(requestedDays, MAX_PORTFOLIO_HISTORY_DAYS));
+
+        for (String symbol : symbols) {
+            NavigableMap<LocalDate, Double> closesByDate = new TreeMap<>();
+            List<MarketBar> dailyBars = marketAiService.getBars(symbol, "1D", limit);
+            for (MarketBar bar : dailyBars) {
+                if (bar == null || bar.getClose() <= 0) {
+                    continue;
+                }
+                closesByDate.put(toUtcDate(Instant.ofEpochMilli(bar.getBucketStart())), bar.getClose());
+            }
+            pricesBySymbol.put(symbol, closesByDate);
+        }
+
+        return pricesBySymbol;
+    }
+
+    private double resolveHistoricalPrice(
+        String symbol,
+        LocalDate valuationDate,
+        double fallbackPrice,
+        Map<String, NavigableMap<LocalDate, Double>> dailyClosePrices
+    ) {
+        NavigableMap<LocalDate, Double> closesByDate = dailyClosePrices.get(symbol);
+        if (closesByDate == null || closesByDate.isEmpty()) {
+            return fallbackPrice;
+        }
+
+        Map.Entry<LocalDate, Double> close = closesByDate.floorEntry(valuationDate);
+        if (close == null || close.getValue() == null || close.getValue() <= 0) {
+            return fallbackPrice;
+        }
+
+        return close.getValue();
+    }
+
+    private LocalDate toUtcDate(Instant instant) {
+        return LocalDate.ofInstant(instant, ZoneOffset.UTC);
     }
 
     private void applyTrade(PositionAggregate aggregate, double quantityDelta, double tradePrice) {
@@ -258,12 +380,14 @@ public class PortfolioResource {
 
     private static class PositionEvent {
         private final String symbol;
+        private final OrderEntity.Side side;
         private final double quantityDelta;
         private final double price;
         private final Instant timestamp;
 
-        private PositionEvent(String symbol, double quantityDelta, double price, Instant timestamp) {
+        private PositionEvent(String symbol, OrderEntity.Side side, double quantityDelta, double price, Instant timestamp) {
             this.symbol = symbol;
+            this.side = side;
             this.quantityDelta = quantityDelta;
             this.price = price;
             this.timestamp = timestamp;

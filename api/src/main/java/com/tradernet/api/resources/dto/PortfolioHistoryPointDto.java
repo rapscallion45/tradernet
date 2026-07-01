@@ -1,5 +1,8 @@
 package com.tradernet.api.resources.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Single account value datapoint for the portfolio chart.
  */
@@ -7,6 +10,7 @@ public class PortfolioHistoryPointDto {
 
     private long timestamp;
     private double accountValue;
+    private List<PortfolioHistoryEventDto> events = new ArrayList<>();
 
     public PortfolioHistoryPointDto() {
     }
@@ -14,6 +18,12 @@ public class PortfolioHistoryPointDto {
     public PortfolioHistoryPointDto(long timestamp, double accountValue) {
         this.timestamp = timestamp;
         this.accountValue = accountValue;
+    }
+
+    public PortfolioHistoryPointDto(long timestamp, double accountValue, List<PortfolioHistoryEventDto> events) {
+        this.timestamp = timestamp;
+        this.accountValue = accountValue;
+        this.events = events == null ? new ArrayList<>() : events;
     }
 
     public long getTimestamp() {
@@ -30,5 +40,13 @@ public class PortfolioHistoryPointDto {
 
     public void setAccountValue(double accountValue) {
         this.accountValue = accountValue;
+    }
+
+    public List<PortfolioHistoryEventDto> getEvents() {
+        return events;
+    }
+
+    public void setEvents(List<PortfolioHistoryEventDto> events) {
+        this.events = events == null ? new ArrayList<>() : events;
     }
 }
