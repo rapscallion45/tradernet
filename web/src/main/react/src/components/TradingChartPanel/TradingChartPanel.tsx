@@ -138,6 +138,7 @@ type Indicators = {
 const chartHeight = 420
 
 const intervalPresets = ["1S", "5S", "15S", "30S", "1M", "5M", "15M", "1H", "4H", "1D", "1MO", "1Y"] as const
+const CHART_INTERVAL_STORAGE_KEY = "trading-chart-interval-token"
 
 const intervalPattern = /^(\d+)(S|M|H|D|MO|Y)$/
 
@@ -153,6 +154,19 @@ const intervalUnitMs: Record<string, number> = {
 const normalizeIntervalToken = (token: string): string => {
   const normalized = token.trim().toUpperCase()
   return intervalPattern.test(normalized) ? normalized : "1S"
+}
+
+const deserializeIntervalToken = (value?: string): string => {
+  if (!value) {
+    return "1S"
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return typeof parsed === "string" ? normalizeIntervalToken(parsed) : "1S"
+  } catch {
+    return normalizeIntervalToken(value)
+  }
 }
 
 const intervalTokenToMs = (token: string): number => {
@@ -326,7 +340,13 @@ export const TradingChartPanel: FC<TradingChartPanelProps> = ({ onSymbolChange, 
   const [symbol, setSymbol] = useState(DEFAULT_CHART_SYMBOL)
   const { currency, setCurrency, currencyOptions } = useCurrencyPreference()
   const { data: symbolOptions = [DEFAULT_CHART_SYMBOL] } = useMarketSymbols()
-  const [intervalToken, setIntervalToken] = useState("1S")
+  const [intervalToken, setIntervalToken] = useLocalStorage<string>({
+    key: CHART_INTERVAL_STORAGE_KEY,
+    defaultValue: "1S",
+    getInitialValueInEffect: false,
+    serialize: (value) => JSON.stringify(normalizeIntervalToken(value)),
+    deserialize: deserializeIntervalToken,
+  })
   const [intervalModalOpened, setIntervalModalOpened] = useState(false)
   const [currencyModalOpened, setCurrencyModalOpened] = useState(false)
   const [symbolModalOpened, setSymbolModalOpened] = useState(false)

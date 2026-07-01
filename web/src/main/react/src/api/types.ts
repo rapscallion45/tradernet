@@ -256,6 +256,15 @@ export type PortfolioAsset = {
 export type PortfolioHistoryPoint = {
   timestamp: number
   accountValue: number
+  events?: PortfolioHistoryEvent[]
+}
+
+export type PortfolioHistoryEvent = {
+  symbol: string
+  side: OrderSide | string
+  quantity: number
+  price: number
+  timestamp: number
 }
 
 export type PortfolioSummary = {
