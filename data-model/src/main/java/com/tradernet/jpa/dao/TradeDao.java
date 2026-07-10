@@ -31,6 +31,12 @@ public interface TradeDao {
      */
     List<TradeEntity> findBySymbol(String symbol);
 
+    List<TradeEntity> findByUserId(long userId);
+
+    List<TradeEntity> findByUserIdAndSymbol(long userId, String symbol);
+
+    boolean existsByOrderIdAndExecutionType(long orderId, String executionType);
+
     /**
      * Deletes all trades.
      */

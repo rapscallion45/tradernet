@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * REST API for creating and listing persisted mock orders.
+ * REST API for creating and listing persisted orders.
  */
 @Path("/orders")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -58,14 +58,21 @@ public class OrderResource {
         @QueryParam("userId") Long userId,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        List<OrderEntity> orders;
-        if (userId != null && userId > 0) {
-            orders = orderService.getOrdersByUserId(userId);
-        } else {
-            Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
-            orders = authUser.map(user -> orderService.getOrdersByUserId(user.getId())).orElseGet(orderService::getOrders);
+        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        if (authUser.isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity("Not authenticated")
+                .build();
         }
 
+        long authenticatedUserId = authUser.get().getId();
+        if (userId != null && userId != authenticatedUserId) {
+            return Response.status(Response.Status.FORBIDDEN)
+                .entity("Cannot list orders for another user")
+                .build();
+        }
+
+        List<OrderEntity> orders = orderService.getOrdersByUserId(authenticatedUserId);
         List<OrderResponseDto> response = orders.stream()
                         .map(order -> toResponse(order, CurrencyCode.parseOrDefault(currency, CurrencyCode.USD)))
             .collect(Collectors.toList());

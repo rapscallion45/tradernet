@@ -49,6 +49,8 @@ public interface OrderDao {
      */
     Optional<OrderEntity> findById(long orderId);
 
+    Optional<OrderEntity> findByIdForUpdate(long orderId);
+
     /**
      * Deletes all orders (useful for testing or resetting state).
      */

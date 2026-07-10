@@ -128,6 +128,7 @@ public class UserService {
 
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         UserEntity user = new UserEntity(username);
+        user.setPk(nextUserId());
         user.setPasswordHash(hashedPassword);
         entityManager.persist(user);
         return user;
@@ -170,5 +171,11 @@ public class UserService {
         user.setPasswordHash(hashedPassword);
         user.setChangePasswordNextLogin(false);
         entityManager.merge(user);
+    }
+
+    private long nextUserId() {
+        Long currentMax = entityManager.createQuery("SELECT COALESCE(MAX(u.id), 0) FROM UserEntity u", Long.class)
+            .getSingleResult();
+        return currentMax + 1;
     }
 }

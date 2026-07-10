@@ -124,11 +124,10 @@ public class MarketAiService {
         barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
         featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContextRegistry));
         signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
-        binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, key -> {
-            final BinanceTradeStreamClient client = new BinanceTradeStreamClient();
-            client.start(key.toLowerCase(Locale.ROOT), this::onTrade);
-            return client;
-        });
+        final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BinanceTradeStreamClient());
+        if (!client.isRunning()) {
+            client.start(normalizedSymbol.toLowerCase(Locale.ROOT), this::onTrade);
+        }
     }
 
     @Lock(LockType.READ)

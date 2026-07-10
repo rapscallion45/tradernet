@@ -24,6 +24,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.tradernet</groupId>
+            <artifactId>trade-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+
+        <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
             <scope>provided</scope>

@@ -2,6 +2,7 @@ package com.tradernet.order;
 
 import com.tradernet.jpa.dao.OrderDao;
 import com.tradernet.jpa.entities.OrderEntity;
+import com.tradernet.trade.TradeExecutionService;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Persists mocked orders and exposes user-level order retrieval.
+ * Persists orders, records trade fills, and exposes user-level order retrieval.
  */
 @Stateless
 public class OrderService {
@@ -21,8 +22,11 @@ public class OrderService {
     @Inject
     private OrderDao orderDao;
 
+    @Inject
+    private TradeExecutionService tradeExecutionService;
+
     /**
-     * Creates and persists a mocked order linked to a user.
+     * Creates and persists an order linked to a user, then records the opening fill.
      *
      * @param userId authenticated user id
      * @param order incoming order payload
@@ -35,6 +39,7 @@ public class OrderService {
             order.setCreatedAt(Instant.now());
         }
         orderDao.save(order);
+        tradeExecutionService.execute(order);
         return order;
     }
 
@@ -61,7 +66,8 @@ public class OrderService {
      * @return updated order when successful
      */
     public Optional<OrderEntity> closeOrder(long userId, long orderId, double closePrice) {
-        Optional<OrderEntity> foundOrder = getOrderForUser(userId, orderId);
+        Optional<OrderEntity> foundOrder = orderDao.findByIdForUpdate(orderId)
+            .filter(order -> order.getUserId() != null && order.getUserId() == userId);
 
         if (foundOrder.isEmpty()) {
             return Optional.empty();
@@ -75,6 +81,7 @@ public class OrderService {
         order.setStatus(CLOSED_STATUS);
         order.setClosePrice(closePrice);
         order.setClosedAt(Instant.now());
+        tradeExecutionService.executeClose(order, closePrice);
         return Optional.of(order);
     }
 

@@ -4,8 +4,8 @@ Business logic is split into focused modules under `services/`.
 
 ## Core service modules
 
-- `order-service`: order creation, order book operations, and order DTO mapping.
-- `trade-service`: trade execution and lifecycle operations.
+- `order-service`: order creation, lifecycle operations, and order DTO mapping.
+- `trade-service`: trade execution and user-visible persisted fill history for order placement/closure.
 - `user-service`: user profile/auth-adjacent workflows and bootstrap routines.
 - `signal-service`: trading signal processing logic.
 - `currency-conversion-service`: currency conversion support and code abstractions.

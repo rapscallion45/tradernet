@@ -38,7 +38,7 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 | `/api/roles` | `RoleResource` | Role/resource management. |
 | `/api/passwords` | `PasswordResource` | Password workflows. |
 | `/api/orders` | `OrderResource` | Order creation, listing, and lifecycle operations. |
-| `/api/trades` | `TradeResource` | Trade execution/history operations. |
+| `/api/trades` | `TradeResource` | Authenticated user's trade history, optionally filtered by `symbol`. |
 | `/api/signals` | `SignalResource` | Trading signal operations. |
 | `/api/portfolio` | `PortfolioResource` | Portfolio summary/history views. |
 | `/api/market/bars` | `MarketResource` | Historical/recent market bars for charts. |
@@ -51,6 +51,14 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 ### Portfolio history contract
 
 `GET /api/portfolio` returns the current summary plus a daily `history` series. Each history point contains the account value for that day in the selected display currency and an `events` array for order activity on that day. The portfolio page uses those backend-calculated values directly for the chart hover tooltip and BUY/SELL markers.
+
+### Order history contract
+
+`GET /api/orders` returns the authenticated user's orders. Supplying a different `userId` is rejected with `403` rather than exposing another user's history.
+
+### Trade history contract
+
+`GET /api/trades` returns only the authenticated user's persisted fills, ordered newest first. Each item includes the related `orderId`, normalized `symbol`, execution `side`, `executionType` (`OPEN` or `CLOSE`), signed `quantity`, `price`, and `timestamp`. Pass `symbol=BTCUSDT` to filter the history to one symbol.
 
 ### Forecast API contract
 
@@ -116,7 +124,7 @@ Response fields include:
 | --- | --- | --- |
 | Users, roles, groups, passwords, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
-| Trades | `tblTrades` | Used for trade execution/history. |
+| Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
 | Signals | `tblSignals` | Stores application trading signals. |
 | User properties | `tblUserProperties` | Per-user preferences/properties. |
 | Market bars | `market_bars` | Written by `MarketAiService` from closed live bars and read by the Python forecasting service. |

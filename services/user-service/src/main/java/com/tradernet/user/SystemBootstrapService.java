@@ -99,7 +99,7 @@ public class SystemBootstrapService {
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
             .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
 
-        ensureBootstrapCredentials(superUser, DEFAULT_PASSWORD);
+        ensureBootstrapCredentialsWhenMissing(superUser, DEFAULT_PASSWORD);
 
         if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
             superUser.addGroup(superUsersGroup);
@@ -143,12 +143,16 @@ public class SystemBootstrapService {
         return user;
     }
 
-    private void ensureBootstrapCredentials(UserEntity user, String password) {
+    private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String password) {
+        if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+            return;
+        }
+
         user.setFullName("Super User");
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setChangePasswordNextLogin(true);
         userDao.save(user);
-        LOG.info("Reset bootstrap credentials for user '{}'.", user.getUsername());
+        LOG.info("Initialized missing bootstrap credentials for user '{}'.", user.getUsername());
     }
 
     private GroupEntity ensureGroup(String groupName) {

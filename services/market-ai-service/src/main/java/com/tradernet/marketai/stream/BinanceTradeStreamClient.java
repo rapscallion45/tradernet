@@ -34,46 +34,56 @@ public class BinanceTradeStreamClient {
         final URI endpoint = URI.create(getWebSocketBaseUrl() + "/" + stream);
         running = true;
 
-        webSocket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
-            @Override
-            public void onOpen(WebSocket webSocket) {
-                LOG.info("Connected to Binance trade stream: {}", endpoint);
-                WebSocket.Listener.super.onOpen(webSocket);
-                webSocket.request(1);
-            }
-
-            @Override
-            public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                try {
-                    final JsonNode node = objectMapper.readTree(data.toString());
-                    final String eventSymbol = node.path("s").asText(symbol.toUpperCase(Locale.ROOT));
-                    final long eventTime = node.path("T").asLong(System.currentTimeMillis());
-                    final double price = node.path("p").asDouble(0.0);
-                    final double quantity = node.path("q").asDouble(0.0);
-                    if (price > 0.0 && quantity > 0.0) {
-                        listener.accept(new MarketTrade(eventSymbol, eventTime, price, quantity));
-                    }
-                } catch (Exception ex) {
-                    LOG.warn("Unable to parse Binance trade payload", ex);
+        try {
+            webSocket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
+                @Override
+                public void onOpen(WebSocket webSocket) {
+                    LOG.info("Connected to Binance trade stream: {}", endpoint);
+                    WebSocket.Listener.super.onOpen(webSocket);
+                    webSocket.request(1);
                 }
-                webSocket.request(1);
-                return WebSocket.Listener.super.onText(webSocket, data, last);
-            }
 
-            @Override
-            public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-                LOG.info("Binance stream closed ({}): {}", statusCode, reason);
-                running = false;
-                return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
-            }
+                @Override
+                public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                    try {
+                        final JsonNode node = objectMapper.readTree(data.toString());
+                        final String eventSymbol = node.path("s").asText(symbol.toUpperCase(Locale.ROOT));
+                        final long eventTime = node.path("T").asLong(System.currentTimeMillis());
+                        final double price = node.path("p").asDouble(0.0);
+                        final double quantity = node.path("q").asDouble(0.0);
+                        if (price > 0.0 && quantity > 0.0) {
+                            listener.accept(new MarketTrade(eventSymbol, eventTime, price, quantity));
+                        }
+                    } catch (Exception ex) {
+                        LOG.warn("Unable to parse Binance trade payload", ex);
+                    }
+                    webSocket.request(1);
+                    return WebSocket.Listener.super.onText(webSocket, data, last);
+                }
 
-            @Override
-            public void onError(WebSocket webSocket, Throwable error) {
-                LOG.error("Binance stream error", error);
-                running = false;
-                WebSocket.Listener.super.onError(webSocket, error);
-            }
-        }).join();
+                @Override
+                public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                    LOG.info("Binance stream closed ({}): {}", statusCode, reason);
+                    running = false;
+                    return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                }
+
+                @Override
+                public void onError(WebSocket webSocket, Throwable error) {
+                    LOG.error("Binance stream error", error);
+                    running = false;
+                    WebSocket.Listener.super.onError(webSocket, error);
+                }
+            }).join();
+        } catch (RuntimeException ex) {
+            running = false;
+            webSocket = null;
+            LOG.warn("Unable to connect to Binance trade stream: {}", endpoint, ex);
+        }
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
     public synchronized void stop() {

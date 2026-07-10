@@ -73,20 +73,24 @@ public class BinanceOrderBookClient {
         this.staleAfterMs = systemLong("market.ai.orderBook.staleAfterMs", DEFAULT_STALE_AFTER_MS);
     }
 
-    public synchronized void ensureStarted() {
-        if (running) {
-            return;
-        }
-
-        final long now = System.currentTimeMillis();
-        if (now - lastStartAttemptAtMs < START_RETRY_COOLDOWN_MS) {
-            return;
-        }
-        lastStartAttemptAtMs = now;
-
+    public void ensureStarted() {
         try {
             final URI endpoint = URI.create(wsBaseUrl + "/" + symbol.toLowerCase(Locale.ROOT) + "@depth@100ms");
-            webSocket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
+            synchronized (this) {
+                if (running) {
+                    return;
+                }
+
+                final long now = System.currentTimeMillis();
+                if (now - lastStartAttemptAtMs < START_RETRY_COOLDOWN_MS) {
+                    return;
+                }
+                lastStartAttemptAtMs = now;
+                running = true;
+                streamSynchronized = false;
+            }
+
+            final WebSocket socket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     LOG.info("Connected to Binance order book stream: {}", endpoint);
@@ -129,65 +133,82 @@ public class BinanceOrderBookClient {
                 }
             }).join();
 
-            running = true;
+            synchronized (this) {
+                if (!running) {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
+                    return;
+                }
+                webSocket = socket;
+            }
             resync("initial snapshot");
         } catch (CompletionException | IllegalArgumentException ex) {
-            running = false;
-            streamSynchronized = false;
+            synchronized (this) {
+                running = false;
+                streamSynchronized = false;
+                webSocket = null;
+            }
             markError("Unable to connect to Binance order book stream", ex);
             refreshSnapshotOnly();
         }
     }
 
-    public synchronized OrderBookSnapshot getSnapshot(int requestedLevels) {
-        if (running && !streamSynchronized && System.currentTimeMillis() - lastSyncAttemptAtMs > RESYNC_RETRY_COOLDOWN_MS) {
+    public OrderBookSnapshot getSnapshot(int requestedLevels) {
+        final boolean shouldRetrySync;
+        synchronized (this) {
+            shouldRetrySync = running
+                    && !streamSynchronized
+                    && System.currentTimeMillis() - lastSyncAttemptAtMs > RESYNC_RETRY_COOLDOWN_MS;
+        }
+        if (shouldRetrySync) {
             resync("retry snapshot");
         }
 
-        final int levels = boundRequestedLevels(requestedLevels);
-        final List<OrderBookLevel> bidLevels = buildLevels(bids, levels);
-        final List<OrderBookLevel> askLevels = buildLevels(asks, levels);
-        final long now = System.currentTimeMillis();
-        final boolean hasData = !bidLevels.isEmpty() || !askLevels.isEmpty();
-        final boolean stale = hasData && lastAppliedAtMs > 0 && now - lastAppliedAtMs > staleAfterMs;
-        final OrderBookStatus status = resolveStatus(hasData, stale);
-        final double bestBid = bidLevels.isEmpty() ? 0.0 : bidLevels.get(0).getPrice();
-        final double bestAsk = askLevels.isEmpty() ? 0.0 : askLevels.get(0).getPrice();
-        final double midPrice = bestBid > 0.0 && bestAsk > 0.0 ? (bestBid + bestAsk) / 2.0 : 0.0;
-        final double spread = bestBid > 0.0 && bestAsk > 0.0 ? Math.max(0.0, bestAsk - bestBid) : 0.0;
-        final double spreadPercent = midPrice > 0.0 ? (spread / midPrice) * 100.0 : 0.0;
-        final double bidDepthNotional = sumNotional(bidLevels);
-        final double askDepthNotional = sumNotional(askLevels);
-        final double totalDepthNotional = bidDepthNotional + askDepthNotional;
-        final double depthImbalancePercent = totalDepthNotional > 0.0
-                ? ((bidDepthNotional - askDepthNotional) / totalDepthNotional) * 100.0
-                : 0.0;
-        final long updateLatencyMs = lastExchangeEventTimeMs > 0L ? Math.max(0L, now - lastExchangeEventTimeMs) : 0L;
+        synchronized (this) {
+            final int levels = boundRequestedLevels(requestedLevels);
+            final List<OrderBookLevel> bidLevels = buildLevels(bids, levels);
+            final List<OrderBookLevel> askLevels = buildLevels(asks, levels);
+            final long now = System.currentTimeMillis();
+            final boolean hasData = !bidLevels.isEmpty() || !askLevels.isEmpty();
+            final boolean stale = hasData && lastAppliedAtMs > 0 && now - lastAppliedAtMs > staleAfterMs;
+            final OrderBookStatus status = resolveStatus(hasData, stale);
+            final double bestBid = bidLevels.isEmpty() ? 0.0 : bidLevels.get(0).getPrice();
+            final double bestAsk = askLevels.isEmpty() ? 0.0 : askLevels.get(0).getPrice();
+            final double midPrice = bestBid > 0.0 && bestAsk > 0.0 ? (bestBid + bestAsk) / 2.0 : 0.0;
+            final double spread = bestBid > 0.0 && bestAsk > 0.0 ? Math.max(0.0, bestAsk - bestBid) : 0.0;
+            final double spreadPercent = midPrice > 0.0 ? (spread / midPrice) * 100.0 : 0.0;
+            final double bidDepthNotional = sumNotional(bidLevels);
+            final double askDepthNotional = sumNotional(askLevels);
+            final double totalDepthNotional = bidDepthNotional + askDepthNotional;
+            final double depthImbalancePercent = totalDepthNotional > 0.0
+                    ? ((bidDepthNotional - askDepthNotional) / totalDepthNotional) * 100.0
+                    : 0.0;
+            final long updateLatencyMs = lastExchangeEventTimeMs > 0L ? Math.max(0L, now - lastExchangeEventTimeMs) : 0L;
 
-        return new OrderBookSnapshot(
-                symbol,
-                inferQuoteCurrency(symbol),
-                status,
-                "binance-spot",
-                "AGGREGATED_L2",
-                statusMessage(status),
-                lastExchangeEventTimeMs,
-                lastUpdateId,
-                updateLatencyMs,
-                resyncCount,
-                exchangeSnapshotLimit,
-                levels,
-                stale,
-                bestBid,
-                bestAsk,
-                midPrice,
-                spread,
-                spreadPercent,
-                bidDepthNotional,
-                askDepthNotional,
-                depthImbalancePercent,
-                bidLevels,
-                askLevels);
+            return new OrderBookSnapshot(
+                    symbol,
+                    inferQuoteCurrency(symbol),
+                    status,
+                    "binance-spot",
+                    "AGGREGATED_L2",
+                    statusMessage(status),
+                    lastExchangeEventTimeMs,
+                    lastUpdateId,
+                    updateLatencyMs,
+                    resyncCount,
+                    exchangeSnapshotLimit,
+                    levels,
+                    stale,
+                    bestBid,
+                    bestAsk,
+                    midPrice,
+                    spread,
+                    spreadPercent,
+                    bidDepthNotional,
+                    askDepthNotional,
+                    depthImbalancePercent,
+                    bidLevels,
+                    askLevels);
+        }
     }
 
     public synchronized boolean isRunning() {
@@ -204,92 +225,102 @@ public class BinanceOrderBookClient {
         }
     }
 
-    private synchronized void handleUpdate(DepthUpdate update) {
-        if (update == null) {
-            return;
-        }
-
-        if (!streamSynchronized) {
-            bufferedUpdates.addLast(update);
-            while (bufferedUpdates.size() > MAX_BUFFERED_UPDATES) {
-                bufferedUpdates.removeFirst();
+    private void handleUpdate(DepthUpdate update) {
+        final String resyncReason;
+        synchronized (this) {
+            if (update == null) {
+                return;
             }
-            return;
+
+            if (!streamSynchronized) {
+                bufferedUpdates.addLast(update);
+                while (bufferedUpdates.size() > MAX_BUFFERED_UPDATES) {
+                    bufferedUpdates.removeFirst();
+                }
+                return;
+            }
+
+            if (update.finalUpdateId <= lastUpdateId) {
+                return;
+            }
+
+            if (update.previousFinalUpdateId > 0L && update.previousFinalUpdateId != lastUpdateId) {
+                resyncReason = "previous update id " + update.previousFinalUpdateId + " did not match " + lastUpdateId;
+            } else if (update.firstUpdateId > lastUpdateId + 1L) {
+                resyncReason = "first update id " + update.firstUpdateId + " skipped local update id " + lastUpdateId;
+            } else {
+                applyUpdate(update);
+                lastError = null;
+                return;
+            }
         }
 
-        if (update.finalUpdateId <= lastUpdateId) {
-            return;
-        }
-
-        if (update.previousFinalUpdateId > 0L && update.previousFinalUpdateId != lastUpdateId) {
-            resyncAfterGap("previous update id " + update.previousFinalUpdateId + " did not match " + lastUpdateId);
-            return;
-        }
-
-        if (update.firstUpdateId > lastUpdateId + 1L) {
-            resyncAfterGap("first update id " + update.firstUpdateId + " skipped local update id " + lastUpdateId);
-            return;
-        }
-
-        applyUpdate(update);
-        lastError = null;
+        resyncAfterGap(resyncReason);
     }
 
     private void resyncAfterGap(String reason) {
-        lastError = "Missed Binance depth update; resyncing from REST snapshot (" + reason + ")";
-        resyncCount++;
+        synchronized (this) {
+            lastError = "Missed Binance depth update; resyncing from REST snapshot (" + reason + ")";
+            resyncCount++;
+        }
         resync("gap");
     }
 
-    private synchronized void resync(String reason) {
-        lastSyncAttemptAtMs = System.currentTimeMillis();
-        streamSynchronized = false;
-        bufferedUpdates.clear();
+    private void resync(String reason) {
+        synchronized (this) {
+            lastSyncAttemptAtMs = System.currentTimeMillis();
+            streamSynchronized = false;
+            bufferedUpdates.clear();
+        }
 
         final SnapshotData snapshot = fetchSnapshot();
         if (snapshot == null) {
             return;
         }
 
-        bids.clear();
-        bids.putAll(snapshot.bids);
-        asks.clear();
-        asks.putAll(snapshot.asks);
-        lastUpdateId = snapshot.lastUpdateId;
-        lastExchangeEventTimeMs = snapshot.receivedAtMs;
-        lastAppliedAtMs = snapshot.receivedAtMs;
-        streamSynchronized = true;
-        lastError = null;
+        synchronized (this) {
+            bids.clear();
+            bids.putAll(snapshot.bids);
+            asks.clear();
+            asks.putAll(snapshot.asks);
+            lastUpdateId = snapshot.lastUpdateId;
+            lastExchangeEventTimeMs = snapshot.receivedAtMs;
+            lastAppliedAtMs = snapshot.receivedAtMs;
+            streamSynchronized = true;
+            lastError = null;
 
-        while (!bufferedUpdates.isEmpty()) {
-            final DepthUpdate buffered = bufferedUpdates.removeFirst();
-            if (buffered.finalUpdateId <= lastUpdateId) {
-                continue;
+            while (!bufferedUpdates.isEmpty()) {
+                final DepthUpdate buffered = bufferedUpdates.removeFirst();
+                if (buffered.finalUpdateId <= lastUpdateId) {
+                    continue;
+                }
+                if (buffered.firstUpdateId > lastUpdateId + 1L) {
+                    streamSynchronized = false;
+                    lastError = "Buffered Binance depth updates had a gap after " + reason;
+                    resyncCount++;
+                    return;
+                }
+                applyUpdate(buffered);
             }
-            if (buffered.firstUpdateId > lastUpdateId + 1L) {
-                streamSynchronized = false;
-                lastError = "Buffered Binance depth updates had a gap after " + reason;
-                resyncCount++;
-                return;
-            }
-            applyUpdate(buffered);
         }
     }
 
-    private synchronized void refreshSnapshotOnly() {
+    private void refreshSnapshotOnly() {
         final SnapshotData snapshot = fetchSnapshot();
         if (snapshot == null) {
             return;
         }
 
-        bids.clear();
-        bids.putAll(snapshot.bids);
-        asks.clear();
-        asks.putAll(snapshot.asks);
-        lastUpdateId = snapshot.lastUpdateId;
-        lastExchangeEventTimeMs = snapshot.receivedAtMs;
-        lastAppliedAtMs = snapshot.receivedAtMs;
-        streamSynchronized = false;
+        synchronized (this) {
+            bids.clear();
+            bids.putAll(snapshot.bids);
+            asks.clear();
+            asks.putAll(snapshot.asks);
+            lastUpdateId = snapshot.lastUpdateId;
+            lastExchangeEventTimeMs = snapshot.receivedAtMs;
+            lastAppliedAtMs = snapshot.receivedAtMs;
+            streamSynchronized = false;
+        }
     }
 
     private SnapshotData fetchSnapshot() {
@@ -304,14 +335,14 @@ public class BinanceOrderBookClient {
         try {
             final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() > 299) {
-                lastError = "Binance order book snapshot returned HTTP " + response.statusCode();
+                setLastError("Binance order book snapshot returned HTTP " + response.statusCode());
                 return null;
             }
 
             final JsonNode payload = objectMapper.readTree(response.body());
             final long snapshotUpdateId = payload.path("lastUpdateId").asLong(-1L);
             if (snapshotUpdateId < 0L) {
-                lastError = "Binance order book snapshot did not include lastUpdateId";
+                setLastError("Binance order book snapshot did not include lastUpdateId");
                 return null;
             }
 
@@ -322,7 +353,7 @@ public class BinanceOrderBookClient {
                     System.currentTimeMillis());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            lastError = "Interrupted while fetching Binance order book snapshot";
+            setLastError("Interrupted while fetching Binance order book snapshot");
             return null;
         } catch (IOException | RuntimeException ex) {
             markError("Unable to fetch Binance order book snapshot", ex);
@@ -508,6 +539,10 @@ public class BinanceOrderBookClient {
     private synchronized void markError(String message, Throwable error) {
         lastError = message + ": " + error.getMessage();
         LOG.warn(message, error);
+    }
+
+    private synchronized void setLastError(String message) {
+        lastError = message;
     }
 
     private static int boundRequestedLevels(int requestedLevels) {

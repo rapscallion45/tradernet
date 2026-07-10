@@ -3,6 +3,7 @@ package com.tradernet.jpa.dao;
 import com.tradernet.jpa.entities.OrderEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
@@ -45,6 +46,11 @@ public class OrderDaoJPA implements OrderDao {
     @Override
     public Optional<OrderEntity> findById(long orderId) {
         return Optional.ofNullable(entityManager.find(OrderEntity.class, orderId));
+    }
+
+    @Override
+    public Optional<OrderEntity> findByIdForUpdate(long orderId) {
+        return Optional.ofNullable(entityManager.find(OrderEntity.class, orderId, LockModeType.PESSIMISTIC_WRITE));
     }
 
     @Override

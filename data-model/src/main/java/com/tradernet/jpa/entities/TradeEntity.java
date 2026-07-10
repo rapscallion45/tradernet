@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /**
  * Represents a completed trade in the trading system.
- * Stores symbol, quantity, price, and execution timestamp.
+ * Stores user/order ownership, symbol, signed quantity, price, and execution timestamp.
  */
 @Entity
 @Table(name = "tblTrades")
@@ -19,7 +19,11 @@ public class TradeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long userId;
+    private Long orderId;
     private String symbol;
+    private String side;
+    private String executionType;
     private double quantity;
     private double price;
     private LocalDateTime timestamp;
@@ -35,7 +39,15 @@ public class TradeEntity {
      * @param price    execution price
      */
     public TradeEntity(String symbol, double quantity, double price) {
+        this(null, null, symbol, null, null, quantity, price);
+    }
+
+    public TradeEntity(Long userId, Long orderId, String symbol, String side, String executionType, double quantity, double price) {
+        this.userId = userId;
+        this.orderId = orderId;
         this.symbol = symbol;
+        this.side = side;
+        this.executionType = executionType;
         this.quantity = quantity;
         this.price = price;
         this.timestamp = LocalDateTime.now();
@@ -49,12 +61,44 @@ public class TradeEntity {
         this.id = id;
     }
 
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
+    }
+
     public String getSymbol() {
         return symbol;
     }
 
     public void setSymbol(String symbol) {
         this.symbol = symbol;
+    }
+
+    public String getSide() {
+        return side;
+    }
+
+    public void setSide(String side) {
+        this.side = side;
+    }
+
+    public String getExecutionType() {
+        return executionType;
+    }
+
+    public void setExecutionType(String executionType) {
+        this.executionType = executionType;
     }
 
     public double getQuantity() {
