@@ -17,6 +17,8 @@ import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketTrade;
+import com.tradernet.marketai.orderbook.BinanceOrderBookClient;
+import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -69,6 +71,7 @@ public class MarketAiService {
 
     private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
     private final Map<String, BinanceTradeStreamClient> binanceClientsBySymbol = new ConcurrentHashMap<>();
+    private final Map<String, BinanceOrderBookClient> orderBookClientsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
     private final Map<String, AiSignalEngine> signalEnginesBySymbol = new ConcurrentHashMap<>();
@@ -102,7 +105,9 @@ public class MarketAiService {
     @PreDestroy
     public void stop() {
         binanceClientsBySymbol.values().forEach(BinanceTradeStreamClient::stop);
+        orderBookClientsBySymbol.values().forEach(BinanceOrderBookClient::stop);
         binanceClientsBySymbol.clear();
+        orderBookClientsBySymbol.clear();
         barAggregatorsBySymbol.clear();
         featureEnginesBySymbol.clear();
         signalEnginesBySymbol.clear();
@@ -236,6 +241,16 @@ public class MarketAiService {
         final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
         forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
         return forecast;
+    }
+
+    @Lock(LockType.READ)
+    public OrderBookSnapshot getOrderBook(String symbol, int levels) {
+        final String normalizedSymbol = normalizeSymbol(symbol);
+        final BinanceOrderBookClient client = orderBookClientsBySymbol.computeIfAbsent(
+                normalizedSymbol,
+                key -> new BinanceOrderBookClient(key, httpClient, OBJECT_MAPPER));
+        client.ensureStarted();
+        return client.getSnapshot(levels);
     }
 
     @Lock(LockType.READ)
@@ -387,7 +402,7 @@ public class MarketAiService {
     }
 
     private List<String> fetchExchangeSymbols() {
-        final HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.binance.com/api/v3/exchangeInfo"))
+        final HttpRequest request = HttpRequest.newBuilder(URI.create(getBinanceRestBaseUrl() + "/api/v3/exchangeInfo"))
                 .timeout(Duration.ofSeconds(8))
                 .GET()
                 .build();
@@ -429,7 +444,7 @@ public class MarketAiService {
     private List<MarketBar> fetchKlines(String symbol, ChartInterval interval, int limit) {
         final String normalizedSymbol = normalizeSymbol(symbol);
         final int boundedLimit = Math.max(1, Math.min(limit, 1_000));
-        final String endpoint = "https://api.binance.com/api/v3/klines?symbol="
+        final String endpoint = getBinanceRestBaseUrl() + "/api/v3/klines?symbol="
                 + URLEncoder.encode(normalizedSymbol, StandardCharsets.UTF_8)
                 + "&interval=" + URLEncoder.encode(interval.getBinanceInterval(), StandardCharsets.UTF_8)
                 + "&limit=" + boundedLimit;
@@ -486,6 +501,12 @@ public class MarketAiService {
         }
 
         return upper;
+    }
+
+    private String getBinanceRestBaseUrl() {
+        final String rawUrl = System.getProperty("market.ai.binance.restBaseUrl", "https://api.binance.com");
+        final String trimmed = rawUrl.trim();
+        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 
     private String normalizeSymbol(String rawSymbol) {

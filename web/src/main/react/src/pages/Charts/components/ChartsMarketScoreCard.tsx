@@ -116,18 +116,13 @@ const marketScoreHelp =
 
 export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selectedSymbol, context, isLoading, fillAvailable = true }) => {
   const resolvedContext = context ?? neutralContext
-  const populatedFigureCount = useMemo(
-    () => scoreFigures.filter((figure) => resolvedContext[figure.availableKey]).length,
-    [resolvedContext]
-  )
+  const populatedFigureCount = useMemo(() => scoreFigures.filter((figure) => resolvedContext[figure.availableKey]).length, [resolvedContext])
   const hasMarketScoreInputs = resolvedContext.anyMarketScoreInputAvailable ?? populatedFigureCount > 0
 
   const paperStyle = fillAvailable
     ? { display: "flex", flex: "1 1 0", flexDirection: "column" as const, minHeight: 0, overflow: "hidden" }
     : { display: "flex", flexDirection: "column" as const }
-  const contentStyle = fillAvailable
-    ? { flex: 1, minHeight: 0, overflowY: "auto" as const, paddingRight: 4 }
-    : { overflow: "visible" as const }
+  const contentStyle = fillAvailable ? { flex: 1, minHeight: 0, overflowY: "auto" as const, paddingRight: 4 } : { overflow: "visible" as const }
 
   return (
     <Paper withBorder radius="md" p="md" style={paperStyle}>
@@ -138,17 +133,14 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
             <Group gap={4} align="center">
               <Text fw={700}>Market Score Inputs</Text>
               <Tooltip label={marketScoreHelp} multiline w={300} withArrow>
-                <Box
-                  component="span"
-                  c="dimmed"
-                  aria-label="Market score input help"
-                  style={{ display: "inline-flex", cursor: "help" }}
-                >
+                <Box component="span" c="dimmed" aria-label="Market score input help" style={{ display: "inline-flex", cursor: "help" }}>
                   <IconInfoCircle size={14} />
                 </Box>
               </Tooltip>
             </Group>
-            <Text size="xs" c="dimmed">{selectedSymbol}</Text>
+            <Text size="xs" c="dimmed">
+              {selectedSymbol}
+            </Text>
           </div>
         </Group>
         <Badge color={hasMarketScoreInputs ? "blue" : "gray"} variant="light" style={hasMarketScoreInputs ? undefined : disabledBadgeStyle}>
@@ -166,8 +158,8 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
           <Stack gap="sm">
             {!hasMarketScoreInputs && (
               <Text size="xs" c="dimmed">
-                No market score input data has been loaded for this symbol yet. The backend still treats missing inputs as neutral for
-                scoring, but the card does not display a bullish percentage until input data is present.
+                No market score input data has been loaded for this symbol yet. The backend still treats missing inputs as neutral for scoring, but the card
+                does not display a bullish percentage until input data is present.
               </Text>
             )}
             {scoreFigures.map((figure) => {
@@ -191,8 +183,7 @@ export const ChartsMarketScoreCard: FC<ChartsMarketScoreCardProps> = ({ selected
                       color={color}
                       variant="light"
                       style={{ flex: "0 0 auto", minWidth: 86, textAlign: "center", ...(inputAvailable ? {} : disabledBadgeStyle) }}
-                      title={inputAvailable ? `Raw input: ${formatRawScore(value)}` : `No backend input data for ${figure.label}`}
-                    >
+                      title={inputAvailable ? `Raw input: ${formatRawScore(value)}` : `No backend input data for ${figure.label}`}>
                       {inputAvailable ? `${progressValue}% bull` : "No data"}
                     </Badge>
                   </Group>

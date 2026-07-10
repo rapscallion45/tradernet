@@ -49,7 +49,6 @@ const OrderForm: FC<OrderFormProps> = ({ onSubmit, loading = false }) => {
     refetchInterval: 3000,
   })
 
-
   const { data: currentUnitPriceRaw = 0 } = useQuery({
     queryKey: [QueryClientKeys.MarketBars, symbol, "RAW"],
     queryFn: async () => {

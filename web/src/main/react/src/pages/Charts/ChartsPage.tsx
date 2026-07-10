@@ -11,6 +11,8 @@ import { ChartsMarketScoreCard } from "pages/Charts/components/ChartsMarketScore
 import { useMarketForecast } from "hooks/useMarketForecast"
 import { ChartsForecastCard } from "pages/Charts/components/ChartsForecastCard"
 import { DEFAULT_FORECAST_HORIZON_DAYS } from "global/constants"
+import { useMarketOrderBook } from "hooks/useMarketOrderBook"
+import { ChartsOrderBookCard } from "pages/Charts/components/ChartsOrderBookCard"
 
 /**
  * Dedicated chart-focused page with market details and score inputs.
@@ -35,6 +37,7 @@ const ChartsPage: FC = () => {
   const { data: selectedBars = [], isLoading: isSelectedBarsLoading } = useChartDetailBars(selectedSymbol, currency)
   const { data: marketContext, isLoading: isMarketContextLoading } = useMarketContext(selectedSymbol)
   const { data: marketForecast, isLoading: isMarketForecastLoading, isError: isMarketForecastError } = useMarketForecast(selectedSymbol, forecastHorizonDays)
+  const { data: orderBook, isLoading: isOrderBookLoading, isError: isOrderBookError } = useMarketOrderBook(selectedSymbol, currency)
   const detailMetrics = useMemo(() => getSymbolMetrics(selectedBars), [selectedBars])
 
   return (
@@ -51,6 +54,13 @@ const ChartsPage: FC = () => {
             </Box>
             <Box style={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
               <Stack gap="md">
+                <ChartsOrderBookCard
+                  selectedSymbol={selectedSymbol}
+                  currency={currency}
+                  orderBook={orderBook}
+                  isLoading={isOrderBookLoading}
+                  isError={isOrderBookError}
+                />
                 <ChartsForecastCard
                   selectedSymbol={selectedSymbol}
                   horizonDays={forecastHorizonDays}

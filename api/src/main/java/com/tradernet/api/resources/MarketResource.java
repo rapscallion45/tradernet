@@ -7,6 +7,7 @@ import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -85,6 +86,16 @@ public class MarketResource {
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
             @DefaultValue("1") @QueryParam("horizonDays") int horizonDays) {
         return marketAiService.getForecast(symbol, horizonDays);
+    }
+
+    @GET
+    @Path("/order-book")
+    public OrderBookSnapshot getOrderBook(
+            @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @DefaultValue("12") @QueryParam("levels") int levels,
+            @DefaultValue("USD") @QueryParam("currency") String currency) {
+        CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
+        return currencyConversionService.convertOrderBook(marketAiService.getOrderBook(symbol, levels), targetCurrency);
     }
 
     @POST

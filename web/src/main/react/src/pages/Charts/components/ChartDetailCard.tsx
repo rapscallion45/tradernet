@@ -27,7 +27,9 @@ export const ChartDetailCard: FC<ChartDetailCardProps> = ({ selectedSymbol, curr
             <Text size="sm" c="dimmed">{`${currency} quote`}</Text>
           </div>
         </Group>
-        <Badge variant="light" color={isUp ? "green" : "red"}>{isUp ? "Bullish" : "Bearish"}</Badge>
+        <Badge variant="light" color={isUp ? "green" : "red"}>
+          {isUp ? "Bullish" : "Bearish"}
+        </Badge>
       </Group>
 
       {isLoading ? (
@@ -37,7 +39,9 @@ export const ChartDetailCard: FC<ChartDetailCardProps> = ({ selectedSymbol, curr
       ) : (
         <Stack gap="sm">
           <Group align="center" gap="xs">
-            <Text fz={32} fw={700}>{formatCurrency(metrics.latest?.close ?? 0, currency)}</Text>
+            <Text fz={32} fw={700}>
+              {formatCurrency(metrics.latest?.close ?? 0, currency)}
+            </Text>
             <ThemeIcon variant="light" color={isUp ? "green" : "red"} size="lg" radius="xl">
               {isUp ? <IconTrendingUp size={18} /> : <IconTrendingDown size={18} />}
             </ThemeIcon>

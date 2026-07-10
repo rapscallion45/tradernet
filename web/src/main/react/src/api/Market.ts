@@ -1,5 +1,5 @@
 import { ApiInterface } from "api/ApiInterface"
-import { Get, List, MarketBar, MarketContextSnapshot, MarketForecast } from "api/types"
+import { Get, List, MarketBar, MarketContextSnapshot, MarketForecast, OrderBookSnapshot } from "api/types"
 import { RestResource } from "api/RestResource"
 
 /**
@@ -42,6 +42,16 @@ export class MarketResource extends RestResource<MarketBar> {
       queryParams: {
         symbol,
         horizonDays,
+      },
+    })
+  }
+
+  getOrderBook(symbol: string, levels = 12, currency = "USD"): Get<OrderBookSnapshot> {
+    return this.typedSubPath<OrderBookSnapshot>("order-book")._get({
+      queryParams: {
+        symbol,
+        levels,
+        currency,
       },
     })
   }

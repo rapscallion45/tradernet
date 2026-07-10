@@ -42,6 +42,9 @@ export enum QueryClientKeys {
 
   /** Market forecasts */
   MarketForecast = "MarketForecast",
+
+  /** Market order book */
+  MarketOrderBook = "MarketOrderBook",
 }
 
 /** Default chart/order symbol */

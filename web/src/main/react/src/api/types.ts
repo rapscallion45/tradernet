@@ -129,6 +129,43 @@ export type MarketForecast = {
   marketConditionSummary?: string
 }
 
+export type OrderBookStatus = "LIVE" | "SYNCING" | "SNAPSHOT_ONLY" | "STALE" | "UNAVAILABLE"
+
+export type OrderBookLevel = {
+  price: number
+  quantity: number
+  notional: number
+  cumulativeQuantity: number
+  cumulativeNotional: number
+  depthPercent: number
+}
+
+export type OrderBookSnapshot = {
+  symbol: string
+  quoteCurrency: string
+  status: OrderBookStatus
+  source: string
+  aggregation: string
+  message: string
+  eventTime: number
+  lastUpdateId: number
+  updateLatencyMs: number
+  resyncCount: number
+  exchangeSnapshotLimit: number
+  requestedLevels: number
+  stale: boolean
+  bestBid: number
+  bestAsk: number
+  midPrice: number
+  spread: number
+  spreadPercent: number
+  bidDepthNotional: number
+  askDepthNotional: number
+  depthImbalancePercent: number
+  bids: OrderBookLevel[]
+  asks: OrderBookLevel[]
+}
+
 /**
  * Auth
  */

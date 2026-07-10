@@ -45,7 +45,9 @@ export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol
             </ThemeIcon>
             <div>
               <Text fw={700}>TradernetAI Forecast</Text>
-              <Text size="xs" c="dimmed">{selectedSymbol}</Text>
+              <Text size="xs" c="dimmed">
+                {selectedSymbol}
+              </Text>
             </div>
           </Group>
           <Badge color={scoreColor} variant="light">
@@ -83,13 +85,19 @@ export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol
             </Text>
             {forecast?.marketConditionSummary && (
               <Text size="sm">
-                <Text span fw={700}>Current condition: </Text>
+                <Text span fw={700}>
+                  Current condition:{" "}
+                </Text>
                 {forecast.marketConditionSummary}
               </Text>
             )}
             <Group justify="space-between" gap="xs">
-              <Text size="xs" c="dimmed">Positive {selectedHorizonDays}d return</Text>
-              <Text size="xs" fw={700}>{probabilityPercent}%</Text>
+              <Text size="xs" c="dimmed">
+                Positive {selectedHorizonDays}d return
+              </Text>
+              <Text size="xs" fw={700}>
+                {probabilityPercent}%
+              </Text>
             </Group>
           </Stack>
         )}

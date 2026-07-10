@@ -195,7 +195,9 @@ const preload = async (sessionId: number) => {
   const apiBase = resolveApiBase()
   const barsFetchLimit = Math.max(historySize * 4, 2_000)
   const [barsResponse, signalResponse] = await Promise.all([
-    fetch(`${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}&currency=${encodeURIComponent(currency)}`),
+    fetch(
+      `${apiBase}/market/bars?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(intervalToken)}&limit=${barsFetchLimit}&currency=${encodeURIComponent(currency)}`,
+    ),
     fetch(`${apiBase}/market/signals?symbol=${encodeURIComponent(symbol)}&limit=1`),
   ])
 

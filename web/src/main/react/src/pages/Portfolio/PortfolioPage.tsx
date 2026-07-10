@@ -61,11 +61,7 @@ const getEvenIndexes = (length: number, tickCount: number) => {
     return [0]
   }
 
-  return Array.from(
-    new Set(
-      Array.from({ length: effectiveTickCount }, (_, index) => Math.round((index / (effectiveTickCount - 1)) * (length - 1))),
-    ),
-  )
+  return Array.from(new Set(Array.from({ length: effectiveTickCount }, (_, index) => Math.round((index / (effectiveTickCount - 1)) * (length - 1)))))
 }
 
 const formatAxisDate = (timestamp: number, includeYear: boolean) => {
@@ -121,9 +117,7 @@ const PortfolioChart: FC = () => {
       return { x, y, point }
     })
 
-    const linePoints = renderPoints
-      .map((point) => `${point.x},${point.y}`)
-      .join(" ")
+    const linePoints = renderPoints.map((point) => `${point.x},${point.y}`).join(" ")
 
     const areaPoints = `${linePoints} ${CHART_PLOT_RIGHT},${CHART_PLOT_BOTTOM} ${CHART_MARGIN.left},${CHART_PLOT_BOTTOM}`
     const includeYear = new Date(minX).getFullYear() !== new Date(maxX).getFullYear()
@@ -346,7 +340,11 @@ const PortfolioContent: FC = () => {
         <Text fw={700} mb="sm">
           Held currencies
         </Text>
-        <Table<PortfolioAssetRow> columns={columns} data={rows} caption={rows.length === 0 ? "No held currencies yet. Place an order to start building your portfolio." : undefined} />
+        <Table<PortfolioAssetRow>
+          columns={columns}
+          data={rows}
+          caption={rows.length === 0 ? "No held currencies yet. Place an order to start building your portfolio." : undefined}
+        />
       </Card>
     </Stack>
   )

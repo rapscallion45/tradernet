@@ -90,14 +90,7 @@ const getVisibleSignalNotes = (notes?: string[]) => {
     return []
   }
 
-  const priorityPrefixes = [
-    "forecast_bull_score=",
-    "effective_context_score=",
-    "forecast_filter=",
-    "context_filter=",
-    "market_score=",
-    "market_regime=",
-  ]
+  const priorityPrefixes = ["forecast_bull_score=", "effective_context_score=", "forecast_filter=", "context_filter=", "market_score=", "market_regime="]
   const prioritized = notes.filter((note) => priorityPrefixes.some((prefix) => note.startsWith(prefix)))
   const remaining = notes.filter((note) => !prioritized.includes(note))
 

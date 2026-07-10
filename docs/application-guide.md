@@ -22,7 +22,7 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 2. The React app calls REST endpoints under `/api/*` or subscribes to the market websocket.
 3. API resources validate query/body data and delegate to service modules.
 4. Service modules use DAOs/entities from `data-model` for durable application state.
-5. Market AI also consumes Binance trade streams, builds bars, computes features, emits signals, and stores closed bars in `market_bars`.
+5. Market AI also consumes Binance trade streams, maintains Binance order books, builds bars, computes features, emits signals, and stores closed bars in `market_bars`.
 6. Forecast requests call the Python forecasting service, enrich the forecast with current market context, and optionally ask Ollama/Gemma for a narrative.
 
 ## 3. Main API surfaces
@@ -45,6 +45,7 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 | `/api/market/signals` | `MarketResource` | Recent market AI signals. |
 | `/api/market/context` | `MarketResource` | Get/update normalized market context, including backend-calculated bullish-percent display fields and per-input availability flags. |
 | `/api/market/forecast` | `MarketResource` | Longer-horizon forecast with bull score, probability, drivers, and narrative. |
+| `/api/market/order-book` | `MarketResource` | Backend-maintained Binance aggregated L2 order book with spread, depth, and synchronization status. |
 | `/api/ws/market` | `MarketStreamEndpoint` | Websocket stream of market bars and signals. |
 
 ### Portfolio history contract
@@ -86,6 +87,28 @@ Example response shape:
   "narrative": "Today's BTCUSDT Bull Score is 54. price history source: timescaledb, recent price momentum positive, realized volatility contained. Probability of a positive 1-day return: 53%."
 }
 ```
+
+### Order book API contract
+
+Request:
+
+```http
+GET /api/market/order-book?symbol=BTCUSDT&levels=12&currency=USD
+```
+
+The backend opens Binance's diff-depth stream, fetches a REST snapshot, applies updates in update-ID order, and resyncs from REST if a gap is detected. The response is aggregated L2 market depth, not individual order/queue-level data.
+
+Response fields include:
+
+| Field | Meaning |
+| --- | --- |
+| `status` | `LIVE`, `SYNCING`, `SNAPSHOT_ONLY`, `STALE`, or `UNAVAILABLE`. |
+| `aggregation` | `AGGREGATED_L2`, reflecting Binance price-level depth rather than individual orders. |
+| `bids` / `asks` | Top requested levels with backend-calculated notional, cumulative notional, and depth percentage. |
+| `bestBid`, `bestAsk`, `midPrice`, `spread`, `spreadPercent` | Backend-calculated top-of-book values in the requested display currency. |
+| `depthImbalancePercent` | Percentage tilt between displayed bid and ask notional. Positive values indicate more bid depth. |
+| `exchangeSnapshotLimit` | REST snapshot depth requested from Binance, capped by Binance's supported limits. |
+| `resyncCount` | Number of detected stream gaps that forced a snapshot resync. |
 
 ## 4. Persistence and database ownership
 
@@ -223,6 +246,10 @@ curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPasswor
 | Property | Default | Description |
 | --- | --- | --- |
 | `market.ai.symbol` | `btcusdt` | Default Binance stream symbol started at application boot. Additional chart symbols become live dynamically when a user opens a chart websocket for that symbol. |
+| `market.ai.binance.restBaseUrl` | `https://api.binance.com` | Binance REST base URL used for symbols, klines, and order book snapshots. Use `https://api.binance.us` for Binance.US deployments. |
+| `market.ai.binance.wsBaseUrl` | `wss://stream.binance.com:9443/ws` | Binance websocket base URL used for trade and order book streams. Use `wss://stream.binance.us:9443/ws` for Binance.US deployments. |
+| `market.ai.orderBook.snapshotLimit` | `5000` | Binance REST order book snapshot depth used before applying websocket deltas. Normalized to Binance-supported limits up to 5000. |
+| `market.ai.orderBook.staleAfterMs` | `30000` | Age after which a synchronized order book is marked `STALE` if no update has been applied. |
 | `market.ai.context.symbols` | active symbol | Comma-separated symbols for scheduled context hydration. |
 | `market.ai.context.ingestion.enabled` | `true` | Enables/disables scheduled no-key market context ingestion. |
 | `market.ai.scorer` | `context` | Selects `context`, `linear`, or `rules` signal scorer. |
@@ -279,6 +306,7 @@ Market UI features can consume:
 
 - REST bars via `/api/market/bars`.
 - REST signals via `/api/market/signals`.
+- REST order books via `/api/market/order-book`.
 - Websocket bars/signals via `/api/ws/market`.
 - Forecast cards/summaries via `/api/market/forecast`.
 
@@ -295,6 +323,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.
 - The Market Score Inputs card shows backend-calculated bullish-tilt percentages, not raw z-scores. `50% bull` is neutral only when backend input data is present; missing inputs show muted `No data` badges instead of a fallback percentage. The card-level explanation is available from the info icon next to the title. Values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input when data exists. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
+- The charts sidebar shows the selected symbol order book between the summary card and `TradernetAI Forecast`. The browser polls Tradernet, not Binance directly; the backend maintains the Binance L2 book, exposes `LIVE`/sync status, and resyncs from REST snapshots when diff-depth update IDs gap.
 
 ### Forecast and order history display
 

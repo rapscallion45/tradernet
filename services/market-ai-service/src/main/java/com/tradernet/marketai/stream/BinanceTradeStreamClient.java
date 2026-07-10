@@ -31,7 +31,7 @@ public class BinanceTradeStreamClient {
             return;
         }
         final String stream = symbol.toLowerCase(Locale.ROOT) + "@trade";
-        final URI endpoint = URI.create("wss://stream.binance.com:9443/ws/" + stream);
+        final URI endpoint = URI.create(getWebSocketBaseUrl() + "/" + stream);
         running = true;
 
         webSocket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
@@ -83,5 +83,11 @@ public class BinanceTradeStreamClient {
         if (socket != null) {
             socket.sendClose(WebSocket.NORMAL_CLOSURE, "shutdown");
         }
+    }
+
+    private String getWebSocketBaseUrl() {
+        final String rawUrl = System.getProperty("market.ai.binance.wsBaseUrl", "wss://stream.binance.com:9443/ws");
+        final String trimmed = rawUrl.trim();
+        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 }
