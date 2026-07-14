@@ -10,7 +10,7 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 | --- | --- | --- |
 | Frontend | `web/` | React/Vite UI, chart panels, session-aware screens, static build assets. |
 | API boundary | `api/` | JAX-RS REST resources, websocket endpoint, auth filter, JSON request/response contracts. |
-| Domain services | `services/*` | Business logic for users, orders, trades, signals, currency conversion, facade orchestration, and market AI. |
+| Domain services | `services/*` | Business logic for users, orders, trades, currency conversion, and market AI. |
 | Persistence | `data-model/` | JPA entities, DAO interfaces/implementations, persistence unit, schema and seed SQL. |
 | Deployment | `deployment/*` | EAR assembly, WildFly modules, Docker image, Docker Compose stack, entry script. |
 | Forecasting runtime | `python-services/forecasting` | FastAPI service for TimesFM/Chronos adapter-shaped forecasts with a statistical fallback. |
@@ -27,7 +27,9 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 
 ## 3. Main API surfaces
 
-Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
+Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. The market websocket at `/api/ws/market` requires the same cookie during the websocket handshake. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
+
+An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-lived, HTTP-only `tradernet_password_reset` cookie rather than a full session. Reuse that temporary cookie only for `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
 | API | Resource | Purpose |
 | --- | --- | --- |
@@ -36,7 +38,6 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 | `/api/users` | `UserResource` | User management and profile operations. |
 | `/api/groups` | `GroupResource` | Group management. |
 | `/api/roles` | `RoleResource` | Role/resource management. |
-| `/api/passwords` | `PasswordResource` | Password workflows. |
 | `/api/orders` | `OrderResource` | Order creation, listing, and lifecycle operations. |
 | `/api/trades` | `TradeResource` | Authenticated user's trade history, optionally filtered by `symbol`. |
 | `/api/signals` | `SignalResource` | Trading signal operations. |
@@ -46,7 +47,7 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 | `/api/market/context` | `MarketResource` | Get/update normalized market context, including backend-calculated bullish-percent display fields and per-input availability flags. |
 | `/api/market/forecast` | `MarketResource` | Longer-horizon forecast with bull score, probability, drivers, and narrative. |
 | `/api/market/order-book` | `MarketResource` | Backend-maintained Binance aggregated L2 order book with spread, depth, and synchronization status. |
-| `/api/ws/market` | `MarketStreamEndpoint` | Websocket stream of market bars and signals. |
+| `/api/ws/market` | `MarketStreamEndpoint` | Authenticated websocket stream of market bars and signals. |
 
 ### Portfolio history contract
 
@@ -122,7 +123,7 @@ Response fields include:
 
 | Data | Storage | Notes |
 | --- | --- | --- |
-| Users, roles, groups, passwords, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. |
+| Users, roles, groups, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. User password hashes are stored canonically on `tblUsers.password_hash`. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
 | Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
 | Signals | `tblSignals` | Stores application trading signals. |
@@ -223,14 +224,16 @@ One-line PowerShell form:
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
-If a persistent local database returns `INCORRECT_CREDENTIALS`, reset the bootstrap application user's password and retry login:
+If login returns `ACCOUNT_PASSWORD_EXPIRED`, reset the password with the same cookie jar/session and retry login:
 
 ```powershell
-Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}'
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
 ```
 
 ```bash
-curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+curl -b /tmp/tradernet.cookies -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
 ```
 
 ## 6. Runtime configuration reference

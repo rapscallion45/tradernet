@@ -3,8 +3,8 @@ package com.tradernet.order;
 import com.tradernet.jpa.dao.OrderDao;
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.trade.TradeExecutionService;
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
-import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,10 +19,10 @@ public class OrderService {
     public static final String OPEN_STATUS = "OPEN";
     public static final String CLOSED_STATUS = "CLOSED";
 
-    @Inject
+    @EJB
     private OrderDao orderDao;
 
-    @Inject
+    @EJB
     private TradeExecutionService tradeExecutionService;
 
     /**

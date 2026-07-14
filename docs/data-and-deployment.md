@@ -6,7 +6,7 @@ This document explains persistence and runtime packaging.
 
 `data-model/` contains:
 
-- JPA entities (users, roles, groups, orders, trades, signals, passwords, resources).
+- JPA entities (users, roles, groups, orders, trades, signals, resources, and user properties).
 - DAO interfaces and JPA implementations.
 - Persistence configuration (`persistence.xml`).
 - SQL schema + seed resources for local/dev bootstrapping.

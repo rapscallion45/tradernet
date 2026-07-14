@@ -2,7 +2,7 @@ package com.tradernet.api.resources;
 
 import com.tradernet.user.UserService;
 import com.tradernet.user.dto.UserProfileDto;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class UserResource {
 
-    @Inject
+    @EJB
     private UserService userService;
 
     @GET

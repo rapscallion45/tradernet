@@ -5,8 +5,8 @@ import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.UserService;
 import com.tradernet.jpa.dao.ResourceDao;
 import com.tradernet.jpa.entities.ResourceEntity;
-import jakarta.inject.Inject;
 import jakarta.annotation.Priority;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -25,10 +25,10 @@ import java.util.stream.Collectors;
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
-    @Inject
+    @EJB
     private UserService userService;
 
-    @Inject
+    @EJB
     private ResourceDao resourceDao;
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
@@ -92,7 +92,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
+        if (requiredRoles.isEmpty()) {
+            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
+                .entity(new MessageResponseDto("No permissions configured for this resource"))
+                .build());
+            return;
+        }
+
+        if (!hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
@@ -117,7 +124,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     private boolean pathMatchesResource(String path, ResourceEntity resource) {
         String normalisedPath = normalisePath(path);
-        String pathPrefix = resource.getPathPrefix();
-        return pathPrefix != null && !pathPrefix.isBlank() && normalisedPath.startsWith(pathPrefix);
+        String pathPrefix = normalisePath(resource.getPathPrefix());
+        return !pathPrefix.isBlank()
+            && (normalisedPath.equals(pathPrefix) || normalisedPath.startsWith(pathPrefix + "/"));
     }
 }

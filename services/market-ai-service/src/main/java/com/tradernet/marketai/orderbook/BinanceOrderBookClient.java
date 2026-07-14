@@ -2,6 +2,7 @@ package com.tradernet.marketai.orderbook;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.MarketSymbolNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ public class BinanceOrderBookClient {
     private String lastError;
 
     public BinanceOrderBookClient(String symbol, HttpClient httpClient, ObjectMapper objectMapper) {
-        this.symbol = normalizeSymbol(symbol);
+        this.symbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
         this.restBaseUrl = normalizeBaseUrl(System.getProperty("market.ai.binance.restBaseUrl", "https://api.binance.com"));
@@ -597,13 +598,6 @@ public class BinanceOrderBookClient {
 
         final String trimmed = rawUrl.trim();
         return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
-    }
-
-    private static String normalizeSymbol(String rawSymbol) {
-        if (rawSymbol == null || rawSymbol.isBlank()) {
-            return "BTCUSDT";
-        }
-        return rawSymbol.trim().toUpperCase(Locale.ROOT);
     }
 
     private static String inferQuoteCurrency(String symbol) {

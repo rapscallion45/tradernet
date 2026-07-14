@@ -28,8 +28,7 @@ type ResetPasswordFormProps = {
 
 /**
  * Change password form that is shown when LoginStatus is AccountPasswordExpired.
- * At this point we are still not logged in, so we need to call an open servlet, passing through the credentials
- * to first retrieve the password settings, and then again to change the password.
+ * The backend issues a short-lived, HTTP-only reset cookie after validating the expired-password login.
  */
 const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginStatus }) => {
   const resetPasswordSettings: PasswordSettings = {
@@ -65,11 +64,12 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
         })
         resetLoginStatus()
       } catch (error: unknown) {
-        if (isAxiosError(error) && isPasswordErrorResponse(error.response?.data)) {
+        const responseData = isAxiosError(error) ? error.response?.data : undefined
+        if (isPasswordErrorResponse(responseData)) {
           toast({
             id: "password-change",
             title: "Password change failed",
-            message: error.response?.data.error ?? "Please try again or contact an administrator",
+            message: responseData.message ?? responseData.error ?? "Please try again or contact an administrator",
             variant: "error",
             timestamp: Date.now(),
           })
@@ -132,9 +132,12 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
 export default ResetPasswordForm
 
 type PasswordErrorResponse = {
-  error: string
+  error?: string
+  message?: string
 }
 
 function isPasswordErrorResponse(data: unknown): data is PasswordErrorResponse {
-  return (data as PasswordErrorResponse).error !== undefined
+  if (data == null || typeof data !== "object") return false
+  const response = data as PasswordErrorResponse
+  return response.error !== undefined || response.message !== undefined
 }

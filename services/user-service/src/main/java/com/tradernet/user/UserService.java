@@ -1,7 +1,7 @@
 package com.tradernet.user;
 
 import com.tradernet.jpa.entities.UserEntity;
-import jakarta.ejb.Singleton;
+import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * and validating passwords. Uses JPA with Hibernate
  * and BCrypt for password hashing.
  */
-@Singleton
+@Stateless
 public class UserService {
 
 

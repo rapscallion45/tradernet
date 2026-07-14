@@ -74,7 +74,9 @@ curl http://localhost:8080/api/health
 curl http://localhost:8000/health
 ```
 
-Application endpoints such as `/api/market/forecast` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
+Application endpoints such as `/api/market/forecast` and `/api/ws/market` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
+
+If login returns `ACCOUNT_PASSWORD_EXPIRED`, the response sets a short-lived, HTTP-only `tradernet_password_reset` cookie instead of a full session. Reuse that temporary cookie when calling `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
 PowerShell (run these as three separate commands, or keep the semicolons if you paste them as one line):
 
@@ -90,10 +92,11 @@ One-line PowerShell form:
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
-If login returns `INCORRECT_CREDENTIALS` in a reused persistent database, reset the bootstrap application user's password and try the login again:
+If login returns `ACCOUNT_PASSWORD_EXPIRED`, reset the password with the same web session and then try the login again:
 
 ```powershell
-Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}'
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
 ```
 
 Bash/curl (run this in Bash, Git Bash, WSL, macOS/Linux shells, or use `curl.exe` in PowerShell because PowerShell aliases `curl` to `Invoke-WebRequest`):
@@ -111,10 +114,11 @@ curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" --
 curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
-Bash/curl password reset, if needed:
+Bash/curl password reset after an `ACCOUNT_PASSWORD_EXPIRED` login response:
 
 ```bash
-curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+curl -b /tmp/tradernet.cookies -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
 ```
 
 Open the app at:

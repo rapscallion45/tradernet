@@ -10,6 +10,7 @@
 
 ## Conventions
 - Keep resources focused on HTTP concerns: authentication/session lookup, request validation, response shaping, and delegation.
+- Do not put business calculations, aggregation, valuation, or DTO construction workflows in resources. Add or extend an EJB service in `services/*` and have the resource delegate to it.
 - Put business rules in `services/*` rather than directly in resource classes.
 - Use DTOs from service modules for API payloads where possible.
 - For protected endpoints, preserve `tradernet_session` cookie behavior unless explicitly changing auth.

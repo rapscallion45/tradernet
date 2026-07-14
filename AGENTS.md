@@ -6,7 +6,7 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 ## Project map
 - `web/`: React/Vite frontend served in development or packaged into the backend WAR.
 - `api/`: Jakarta REST and websocket boundary. Keep request/session handling here and delegate business logic to services.
-- `services/`: business modules for orders, trades, users, signals, currency conversion, facade orchestration, and market AI.
+- `services/`: business modules for orders, trades, users, currency conversion, and market AI.
 - `data-model/`: JPA entities, DAOs, persistence configuration, schema SQL, seed SQL, and migrations.
 - `deployment/`: EAR assembly, WildFly module packaging, Docker image, Docker Compose stack, and operational scripts.
 - `python-services/forecasting/`: FastAPI forecasting adapter used by the Java market AI service.
@@ -14,6 +14,7 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 
 ## General conventions
 - Prefer small, focused changes that keep API/resource layers thin and push business logic into the appropriate service module.
+- Keep REST resources as transport adapters only: authentication/session lookup, request validation, parameter parsing, response status shaping, and delegation. Move portfolio/order/market calculations, aggregation, valuation, and DTO construction into service-layer EJBs.
 - Keep business calculations on the backend. Frontend code should request calculated values from APIs and limit itself to presentation, formatting, and user interaction state.
 - Keep generated or environment-specific artifacts out of version control.
 - Do not use recursive `ls -R` or `grep -R`; use `find` and `rg`.

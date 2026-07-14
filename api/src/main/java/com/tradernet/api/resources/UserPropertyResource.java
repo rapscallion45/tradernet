@@ -1,8 +1,8 @@
 package com.tradernet.api.resources;
 
+import com.tradernet.api.resources.dto.UserPropertyDto;
 import com.tradernet.jpa.dao.UserPropertyDao;
-import com.tradernet.jpa.entities.UserPropertyEntity;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -10,6 +10,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST API for querying user properties.
@@ -18,14 +19,18 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class UserPropertyResource {
 
-    @Inject
+    @EJB
     private UserPropertyDao userPropertyDao;
 
     @GET
-    public List<UserPropertyEntity> getUserProperties(@QueryParam("userId") Long userId) {
+    public List<UserPropertyDto> getUserProperties(@QueryParam("userId") Long userId) {
         if (userId != null && userId > 0) {
-            return userPropertyDao.findByUserId(userId);
+            return userPropertyDao.findByUserId(userId).stream()
+                .map(UserPropertyDto::fromEntity)
+                .collect(Collectors.toList());
         }
-        return userPropertyDao.findAll();
+        return userPropertyDao.findAll().stream()
+            .map(UserPropertyDto::fromEntity)
+            .collect(Collectors.toList());
     }
 }

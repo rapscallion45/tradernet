@@ -1,4 +1,4 @@
-package com.tradernet.api.resources.dto;
+package com.tradernet.order.dto;
 
 import java.util.ArrayList;
 import java.util.List;

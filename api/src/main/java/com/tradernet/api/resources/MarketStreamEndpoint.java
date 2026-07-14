@@ -8,32 +8,45 @@ import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import jakarta.enterprise.inject.spi.CDI;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /**
  * WebSocket endpoint streaming bar updates and AI signals.
  */
-@ServerEndpoint("/ws/market")
+@ServerEndpoint(value = "/ws/market", configurator = MarketStreamEndpoint.AuthenticatedConfigurator.class)
 public class MarketStreamEndpoint {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String SESSION_ID_PROPERTY = "tradernet.sessionId";
 
     private AutoCloseable barSubscription;
     private AutoCloseable signalSubscription;
 
     @OnOpen
     public void onOpen(Session session) {
+        String sessionId = (String) session.getUserProperties().get(SESSION_ID_PROPERTY);
+        if (!AuthResource.hasValidSession(sessionId)) {
+            closeUnauthenticated(session);
+            return;
+        }
+
         final MarketAiService service = CDI.current().select(MarketAiService.class).get();
         final CurrencyConversionService conversionService = CDI.current().select(CurrencyConversionService.class).get();
-        final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", java.util.List.of("USD")).stream().findFirst().orElse("USD");
-        final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", java.util.List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
+        final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", List.of("USD")).stream().findFirst().orElse("USD");
+        final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
         final String normalizedSymbol = normalizeSymbol(requestedSymbol);
         service.ensureLiveSymbol(normalizedSymbol);
         final CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(requestedCurrency, CurrencyCode.USD);
@@ -98,6 +111,58 @@ public class MarketStreamEndpoint {
             closeable.close();
         } catch (Exception ignored) {
             // no-op
+        }
+    }
+
+    private void closeUnauthenticated(Session session) {
+        try {
+            session.close(new CloseReason(
+                CloseReason.CloseCodes.VIOLATED_POLICY,
+                "Not authenticated"
+            ));
+        } catch (IOException ignored) {
+            // The handshake already failed from the client's perspective.
+        }
+    }
+
+    public static class AuthenticatedConfigurator extends ServerEndpointConfig.Configurator {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
+            config.getUserProperties().remove(SESSION_ID_PROPERTY);
+            String sessionId = findSessionId(request.getHeaders());
+            if (sessionId != null) {
+                config.getUserProperties().put(SESSION_ID_PROPERTY, sessionId);
+            }
+        }
+
+        private String findSessionId(Map<String, List<String>> headers) {
+            for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+                if (!"Cookie".equalsIgnoreCase(header.getKey())) {
+                    continue;
+                }
+
+                for (String cookieHeader : header.getValue()) {
+                    String sessionId = findCookieValue(cookieHeader, AuthResource.SESSION_COOKIE_NAME);
+                    if (sessionId != null) {
+                        return sessionId;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private String findCookieValue(String cookieHeader, String name) {
+            if (cookieHeader == null || cookieHeader.isBlank()) {
+                return null;
+            }
+
+            for (String cookie : cookieHeader.split(";")) {
+                String[] parts = cookie.trim().split("=", 2);
+                if (parts.length == 2 && name.equals(parts[0])) {
+                    return parts[1];
+                }
+            }
+            return null;
         }
     }
 }

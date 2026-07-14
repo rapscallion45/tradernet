@@ -10,7 +10,7 @@ import com.tradernet.order.OrderService;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
@@ -43,13 +43,13 @@ public class OrderResource {
 
     private static final int DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS = 1;
 
-    @Inject
+    @EJB
     private OrderService orderService;
 
-    @Inject
+    @EJB
     private MarketAiService marketAiService;
 
-    @Inject
+    @EJB
     private CurrencyConversionService currencyConversionService;
 
     @GET

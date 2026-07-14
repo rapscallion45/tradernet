@@ -6,7 +6,7 @@ import com.tradernet.jpa.entities.RoleEntity;
 import com.tradernet.jpa.entities.ResourceEntity;
 import com.tradernet.api.resources.dto.RoleDto;
 import com.tradernet.api.resources.dto.UpdateRoleRequestDto;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -30,10 +30,10 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class RoleResource {
 
-    @Inject
+    @EJB
     private RoleDao roleDao;
 
-    @Inject
+    @EJB
     private ResourceDao resourceDao;
 
     @GET

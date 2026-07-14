@@ -3,7 +3,7 @@ package com.tradernet.api.resources;
 import com.tradernet.api.resources.dto.TradeResponseDto;
 import com.tradernet.trade.TradeExecutionService;
 import com.tradernet.user.dto.AuthUserDto;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class TradeResource {
 
-    @Inject
+    @EJB
     private TradeExecutionService tradeExecutionService;
 
     @GET

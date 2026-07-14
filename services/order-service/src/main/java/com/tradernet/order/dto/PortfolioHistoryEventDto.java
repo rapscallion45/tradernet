@@ -1,4 +1,4 @@
-package com.tradernet.api.resources.dto;
+package com.tradernet.order.dto;
 
 /**
  * Trade event attached to a portfolio history day.

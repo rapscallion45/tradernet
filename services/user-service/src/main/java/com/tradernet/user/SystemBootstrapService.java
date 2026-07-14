@@ -175,7 +175,6 @@ public class SystemBootstrapService {
         ensureResource("Signals", "signals");
         ensureResource("Market", "market");
         ensureResource("User Properties", "user-properties");
-        ensureResource("Passwords", "passwords");
         ensureResource("Health", "health");
         return resourceDao.findAll();
     }

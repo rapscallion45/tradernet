@@ -2,6 +2,9 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,21 +21,16 @@ import java.util.Map;
 /**
  * Generates concise market commentary through Ollama-hosted Gemma 4.
  */
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class OllamaNarrativeClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(OllamaNarrativeClient.class);
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-    private final URI generateUri;
-    private final String model;
-
-    public OllamaNarrativeClient(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
-        this.generateUri = URI.create(System.getProperty("market.ai.ollama.url", "http://ollama:11434")).resolve("/api/generate");
-        this.model = System.getProperty("market.ai.ollama.model", "gemma4:e4b");
-    }
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final URI generateUri = URI.create(System.getProperty("market.ai.ollama.url", "http://ollama:11434")).resolve("/api/generate");
+    private final String model = System.getProperty("market.ai.ollama.model", "gemma4:e4b");
 
     public String summarize(MarketForecast forecast) {
         if (!Boolean.parseBoolean(System.getProperty("market.ai.ollama.enabled", "true"))) {

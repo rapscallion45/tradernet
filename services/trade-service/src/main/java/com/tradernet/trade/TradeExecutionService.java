@@ -3,8 +3,8 @@ package com.tradernet.trade;
 import com.tradernet.jpa.dao.TradeDao;
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.jpa.entities.TradeEntity;
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
-import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Locale;
@@ -19,7 +19,7 @@ public class TradeExecutionService {
     public static final String OPEN_EXECUTION_TYPE = "OPEN";
     public static final String CLOSE_EXECUTION_TYPE = "CLOSE";
 
-    @Inject
+    @EJB
     private TradeDao tradeDao;
 
     /**

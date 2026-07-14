@@ -3,6 +3,9 @@ package com.tradernet.marketai.forecast;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,19 +23,15 @@ import java.util.List;
 /**
  * HTTP bridge to the Python TimesFM/Chronos forecasting service.
  */
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class ForecastingClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(ForecastingClient.class);
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-    private final URI baseUri;
-
-    public ForecastingClient(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
-        this.baseUri = URI.create(System.getProperty("market.ai.forecasting.url", "http://forecasting-service:8000"));
-    }
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final URI baseUri = URI.create(System.getProperty("market.ai.forecasting.url", "http://forecasting-service:8000"));
 
     public MarketForecast forecast(String symbol, int horizonDays, MarketContextSnapshot context) {
         final String normalizedSymbol = symbol == null || symbol.isBlank() ? "BTCUSDT" : symbol.trim().toUpperCase();

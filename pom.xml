@@ -25,10 +25,8 @@
         <module>services/order-service</module>
         <module>services/trade-service</module>
         <module>services/user-service</module>
-        <module>services/signal-service</module>
         <module>services/market-ai-service</module>
         <module>services/currency-conversion-service</module>
-        <module>services/facade-service</module>
         <module>api</module>
         <module>deployment/tradernet-ear</module>
         <module>deployment/wildfly-modules</module>

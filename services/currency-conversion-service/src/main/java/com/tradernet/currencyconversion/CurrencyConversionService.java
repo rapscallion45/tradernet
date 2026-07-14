@@ -5,7 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.orderbook.OrderBookLevel;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
+import jakarta.ejb.ConcurrencyManagement;
+import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.Singleton;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -29,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.EnumMap;
 
 @Singleton
+@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class CurrencyConversionService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

@@ -8,7 +8,7 @@ import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.api.resources.dto.GroupDto;
 import com.tradernet.api.resources.dto.UpdateGroupRequestDto;
 import com.tradernet.user.UserService;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -32,13 +32,13 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class GroupResource {
 
-    @Inject
+    @EJB
     private GroupDao groupDao;
 
-    @Inject
+    @EJB
     private RoleDao roleDao;
 
-    @Inject
+    @EJB
     private UserService userService;
 
     @GET

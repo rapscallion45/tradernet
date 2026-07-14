@@ -8,7 +8,7 @@ import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
-import jakarta.inject.Inject;
+import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 public class MarketResource {
 
-    @Inject
+    @EJB
     private MarketAiService marketAiService;
 
-    @Inject
+    @EJB
     private CurrencyConversionService currencyConversionService;
 
     @GET

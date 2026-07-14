@@ -31,6 +31,20 @@
         </dependency>
 
         <dependency>
+            <groupId>com.tradernet</groupId>
+            <artifactId>market-ai-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tradernet</groupId>
+            <artifactId>currency-conversion-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+
+        <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
             <scope>provided</scope>

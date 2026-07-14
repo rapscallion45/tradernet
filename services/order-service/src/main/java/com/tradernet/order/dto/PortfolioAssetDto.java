@@ -1,4 +1,4 @@
-package com.tradernet.api.resources.dto;
+package com.tradernet.order.dto;
 
 /**
  * Portfolio entry for a currently held asset.
