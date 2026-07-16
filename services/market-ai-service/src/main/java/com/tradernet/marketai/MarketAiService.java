@@ -118,11 +118,6 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
-    public List<MarketBar> getBars(int limit) {
-        return history.getBars(limit);
-    }
-
-    @Lock(LockType.READ)
     public List<MarketBar> getBars(String symbol, String intervalToken, int limit) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         final ChartInterval interval = ChartInterval.parse(intervalToken);
@@ -132,11 +127,6 @@ public class MarketAiService {
         }
 
         return history.getBarsForSymbol(normalizedSymbol, limit);
-    }
-
-    @Lock(LockType.READ)
-    public List<AiSignal> getSignals(int limit) {
-        return history.getSignals(limit);
     }
 
     @Lock(LockType.READ)

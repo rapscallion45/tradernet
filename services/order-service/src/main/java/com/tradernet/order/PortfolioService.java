@@ -4,6 +4,7 @@ import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.marketai.MarketAiService;
+import com.tradernet.marketai.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.order.dto.PortfolioAssetDto;
 import com.tradernet.order.dto.PortfolioHistoryEventDto;
@@ -14,8 +15,6 @@ import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -25,11 +24,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+
+import static com.tradernet.order.CurrencyRounding.roundCurrency;
 
 /**
  * Builds user-scoped portfolio holdings, valuation, and history from order and market data.
@@ -45,6 +45,9 @@ public class PortfolioService {
 
     @EJB
     private MarketAiService marketAiService;
+
+    @EJB
+    private MarketPriceService marketPriceService;
 
     @EJB
     private CurrencyConversionService currencyConversionService;
@@ -85,7 +88,7 @@ public class PortfolioService {
 
             final double averageCostRaw = aggregate.netCost <= 0.0 ? 0.0 : aggregate.netCost / aggregate.netQuantity;
             final double fallbackPrice = aggregate.lastKnownPrice > 0.0 ? aggregate.lastKnownPrice : averageCostRaw;
-            final double currentPriceRaw = resolveCurrentPrice(symbol, fallbackPrice);
+            final double currentPriceRaw = marketPriceService.resolveCurrentPrice(symbol, fallbackPrice);
 
             final double averageCost = currencyConversionService.convertAmount(averageCostRaw, sourceCurrency, displayCurrency, now);
             final double currentPrice = currencyConversionService.convertAmount(currentPriceRaw, sourceCurrency, displayCurrency, now);
@@ -193,7 +196,7 @@ public class PortfolioService {
             final String symbol = entry.getKey();
             final double fallbackPrice = aggregate.lastKnownPrice > 0.0 ? aggregate.lastKnownPrice : aggregate.netCost / aggregate.netQuantity;
             final double priceRaw = useLivePrice
-                ? resolveCurrentPrice(symbol, fallbackPrice)
+                ? marketPriceService.resolveCurrentPrice(symbol, fallbackPrice)
                 : resolveHistoricalPrice(symbol, valuationDate, fallbackPrice, dailyClosePrices);
 
             final CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(symbol);
@@ -212,7 +215,7 @@ public class PortfolioService {
                 continue;
             }
 
-            final String symbol = order.getSymbol().trim().toUpperCase(Locale.ROOT);
+            final String symbol = MarketSymbolNormalizer.normalizeSymbol(order.getSymbol());
             final OrderEntity.Side orderSide = order.getSide();
             if (orderSide == null) {
                 continue;
@@ -333,20 +336,8 @@ public class PortfolioService {
         aggregate.netCost = newQuantity * tradePrice;
     }
 
-    private double roundCurrency(double value) {
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    }
-
     private boolean hasSameSign(double left, double right) {
         return (left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0);
-    }
-
-    private double resolveCurrentPrice(String symbol, double fallbackPrice) {
-        final List<MarketBar> bars = marketAiService.getBars(symbol, "1S", 1);
-        if (bars == null || bars.isEmpty() || bars.get(0) == null || bars.get(0).getClose() <= 0.0) {
-            return fallbackPrice;
-        }
-        return bars.get(0).getClose();
     }
 
     private static class PositionAggregate {

@@ -30,6 +30,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.tradernet</groupId>
+            <artifactId>currency-conversion-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
     </dependencies>
 
     <build>

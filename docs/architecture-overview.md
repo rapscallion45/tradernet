@@ -6,7 +6,7 @@ Tradernet is organized as a multi-module Maven project where the backend and fro
 
 - `web/`: Vite + React user interface.
 - `api/`: Jakarta EE web layer exposing REST and websocket endpoints.
-- `services/*`: business logic modules (orders, trades, users, signals, market-ai, etc.).
+- `services/*`: business logic modules for orders, trades, users/security, currency conversion, and market AI.
 - `data-model/`: JPA entities, DAO interfaces/implementations, persistence setup.
 - `deployment/*`: assembly modules for EAR packaging, WildFly modules, and Docker image.
 

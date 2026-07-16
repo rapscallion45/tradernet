@@ -44,13 +44,6 @@ public class OrderService {
     }
 
     /**
-     * Returns all orders sorted by creation time descending.
-     */
-    public List<OrderEntity> getOrders() {
-        return orderDao.findAll();
-    }
-
-    /**
      * Returns all orders for a specific user sorted by creation time descending.
      */
     public List<OrderEntity> getOrdersByUserId(long userId) {

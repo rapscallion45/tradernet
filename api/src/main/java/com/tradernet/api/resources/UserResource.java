@@ -11,7 +11,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * REST API for querying users.
@@ -25,25 +24,22 @@ public class UserResource {
 
     @GET
     public List<UserProfileDto> getUsers() {
-        return userService.findAllWithRoles()
-            .stream()
-            .map(UserProfileDto::fromUser)
-            .collect(Collectors.toList());
+        return userService.getUserProfiles();
     }
 
     @GET
     @Path("/{id}")
     public Response getUser(@PathParam("id") long id) {
-        return userService.findByIdWithRoles(id)
-            .map(user -> Response.ok(UserProfileDto.fromUser(user)).build())
+        return userService.getUserProfile(id)
+            .map(user -> Response.ok(user).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/by-username/{username}")
     public Response getUserByUsername(@PathParam("username") String username) {
-        return userService.findByUsernameWithRoles(username)
-            .map(user -> Response.ok(UserProfileDto.fromUser(user)).build())
+        return userService.getUserProfileByUsername(username)
+            .map(user -> Response.ok(user).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 }

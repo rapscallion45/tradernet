@@ -1,6 +1,7 @@
 package com.tradernet.user;
 
 import com.tradernet.jpa.entities.UserEntity;
+import com.tradernet.user.dto.UserProfileDto;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -8,12 +9,13 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing application users.
  * <p>
- * Provides methods for creating users, retrieving users by username,
- * and validating passwords. Uses JPA with Hibernate
+ * Provides methods for retrieving users by username or id,
+ * and authenticating passwords. Uses JPA with Hibernate
  * and BCrypt for password hashing.
  */
 @Stateless
@@ -33,6 +35,10 @@ public class UserService {
      * @return Optional containing the User if found, empty otherwise
      */
     public Optional<UserEntity> findByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+
         return entityManager.createNamedQuery("GetUserByUsername", UserEntity.class)
             .setParameter("username", username.toLowerCase())
             .getResultStream()
@@ -47,6 +53,10 @@ public class UserService {
      * @return Optional containing the User if found, empty otherwise
      */
     public Optional<UserEntity> findByUsernameWithRoles(String username) {
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+
         return entityManager.createQuery(
                 "select distinct u from UserEntity u " +
                     "left join fetch u.roles " +
@@ -81,6 +91,12 @@ public class UserService {
             .getResultList();
     }
 
+    public List<UserProfileDto> getUserProfiles() {
+        return findAllWithRoles().stream()
+            .map(UserProfileDto::fromUser)
+            .collect(Collectors.toList());
+    }
+
     /**
      * Finds a user by id and eagerly loads roles.
      *
@@ -103,48 +119,21 @@ public class UserService {
             .findFirst();
     }
 
-    /**
-     * Creates a new user with the given username and password.
-     * The password is hashed using BCrypt before storing in the database.
-     *
-     * @param username The username of the new user
-     * @param password The plain-text password of the new user
-     */
-    public void createUser(String username, String password) {
-        registerUser(username, password);
+    public Optional<UserProfileDto> getUserProfile(long id) {
+        return findByIdWithRoles(id).map(UserProfileDto::fromUser);
     }
 
-    /**
-     * Registers a new user and returns the created user record.
-     *
-     * @param username The username of the new user
-     * @param password The plain-text password of the new user
-     * @return The created user entity
-     */
-    public UserEntity registerUser(String username, String password) {
-        if (findByUsername(username).isPresent()) {
-            throw new IllegalArgumentException("User already exists: " + username);
+    public Optional<UserProfileDto> getUserProfileByUsername(String username) {
+        return findByUsernameWithRoles(username).map(UserProfileDto::fromUser);
+    }
+
+    public Optional<UserEntity> findAuthenticatedUser(String username, String password) {
+        if (password == null || password.isBlank()) {
+            return Optional.empty();
         }
 
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-        UserEntity user = new UserEntity(username);
-        user.setPk(nextUserId());
-        user.setPasswordHash(hashedPassword);
-        entityManager.persist(user);
-        return user;
-    }
-
-    /**
-     * Validates that the provided password matches the stored password for the user.
-     *
-     * @param username The username of the user
-     * @param password The plain-text password to validate
-     * @return true if the password is correct, false otherwise
-     */
-    public boolean validatePassword(String username, String password) {
-        return findByUsername(username)
-            .map(user -> BCrypt.checkpw(password, user.getPasswordHash()))
-            .orElse(false);
+        return findByUsernameWithRoles(username)
+            .filter(user -> passwordMatches(user, password));
     }
 
     /**
@@ -155,7 +144,26 @@ public class UserService {
      * @return true if authentication succeeds, false otherwise
      */
     public boolean authenticate(String username, String password) {
-        return validatePassword(username, password);
+        if (password == null || password.isBlank()) {
+            return false;
+        }
+
+        return findByUsername(username)
+            .filter(user -> passwordMatches(user, password))
+            .isPresent();
+    }
+
+    private boolean passwordMatches(UserEntity user, String password) {
+        String passwordHash = user.getPasswordHash();
+        if (passwordHash == null || passwordHash.isBlank()) {
+            return false;
+        }
+
+        try {
+            return BCrypt.checkpw(password, passwordHash);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     /**
@@ -165,6 +173,10 @@ public class UserService {
      * @param newPassword The new plain-text password
      */
     public void resetPassword(String username, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("newPassword is required");
+        }
+
         UserEntity user = findByUsername(username)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
@@ -173,9 +185,4 @@ public class UserService {
         entityManager.merge(user);
     }
 
-    private long nextUserId() {
-        Long currentMax = entityManager.createQuery("SELECT COALESCE(MAX(u.id), 0) FROM UserEntity u", Long.class)
-            .getSingleResult();
-        return currentMax + 1;
-    }
 }

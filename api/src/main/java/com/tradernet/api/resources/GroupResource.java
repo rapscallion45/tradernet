@@ -1,13 +1,8 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.jpa.dao.GroupDao;
-import com.tradernet.jpa.dao.RoleDao;
-import com.tradernet.jpa.entities.GroupEntity;
-import com.tradernet.jpa.entities.RoleEntity;
-import com.tradernet.jpa.entities.UserEntity;
-import com.tradernet.api.resources.dto.GroupDto;
-import com.tradernet.api.resources.dto.UpdateGroupRequestDto;
-import com.tradernet.user.UserService;
+import com.tradernet.user.GroupManagementService;
+import com.tradernet.user.dto.GroupDto;
+import com.tradernet.user.dto.UpdateGroupRequestDto;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -19,10 +14,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * REST API for querying groups.
@@ -33,24 +25,18 @@ import java.util.stream.Collectors;
 public class GroupResource {
 
     @EJB
-    private GroupDao groupDao;
-
-    @EJB
-    private RoleDao roleDao;
-
-    @EJB
-    private UserService userService;
+    private GroupManagementService groupManagementService;
 
     @GET
     public List<GroupDto> getGroups() {
-        return groupDao.findAll().stream().map(GroupDto::fromEntity).collect(Collectors.toList());
+        return groupManagementService.getGroups();
     }
 
     @GET
     @Path("/{id}")
     public Response getGroup(@PathParam("id") long id) {
-        return groupDao.findById(id)
-            .map(group -> Response.ok(GroupDto.fromEntity(group)).build())
+        return groupManagementService.getGroup(id)
+            .map(group -> Response.ok(group).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 
@@ -61,42 +47,12 @@ public class GroupResource {
             throw new BadRequestException("Request body is required");
         }
 
-        return groupDao.findById(id)
-            .map(group -> {
-                group.setUsers(resolveUsers(request.getUsernames()));
-                group.setRoles(resolveRoles(request.getRoleNames()));
-                groupDao.save(group);
-
-                return Response.ok(GroupDto.fromEntity(group)).build();
-            })
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
-    }
-
-    private Set<UserEntity> resolveUsers(Set<String> usernames) {
-        if (usernames == null || usernames.isEmpty()) {
-            return new HashSet<>();
+        try {
+            return groupManagementService.updateGroup(id, request.getUsernames(), request.getRoleNames())
+                .map(group -> Response.ok(group).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException(ex.getMessage());
         }
-
-        Set<UserEntity> users = new HashSet<>();
-        for (String username : usernames) {
-            UserEntity user = userService.findByUsernameWithRoles(username)
-                .orElseThrow(() -> new BadRequestException("User not found: " + username));
-            users.add(user);
-        }
-        return users;
-    }
-
-    private Set<RoleEntity> resolveRoles(Set<String> roleNames) {
-        if (roleNames == null || roleNames.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        Set<RoleEntity> roles = new HashSet<>();
-        for (String roleName : roleNames) {
-            RoleEntity role = roleDao.findByName(roleName)
-                .orElseThrow(() -> new BadRequestException("Role not found: " + roleName));
-            roles.add(role);
-        }
-        return roles;
     }
 }

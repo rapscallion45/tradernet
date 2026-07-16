@@ -2,9 +2,6 @@ package com.tradernet.currencyconversion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradernet.marketai.model.MarketBar;
-import com.tradernet.marketai.orderbook.OrderBookLevel;
-import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import jakarta.ejb.ConcurrencyManagement;
 import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.Singleton;
@@ -133,92 +130,6 @@ public class CurrencyConversionService {
             .multiply(rate, MC)
             .setScale(CURRENCY_SCALE, RoundingMode.HALF_UP)
             .doubleValue();
-    }
-
-    public MarketBar convertBar(MarketBar bar, CurrencyCode targetCurrency) {
-        if (bar == null) {
-            return null;
-        }
-
-        CurrencyCode sourceCurrency = resolveQuoteCurrency(bar.getSymbol());
-        Instant timestamp = Instant.ofEpochMilli(bar.getBucketStart());
-
-        if (sourceCurrency == targetCurrency) {
-            return bar;
-        }
-
-        return new MarketBar(
-            bar.getSymbol(),
-            bar.getBucketStart(),
-            convertAmount(bar.getOpen(), sourceCurrency, targetCurrency, timestamp),
-            convertAmount(bar.getHigh(), sourceCurrency, targetCurrency, timestamp),
-            convertAmount(bar.getLow(), sourceCurrency, targetCurrency, timestamp),
-            convertAmount(bar.getClose(), sourceCurrency, targetCurrency, timestamp),
-            bar.getVolume(),
-            bar.isClosed()
-        );
-    }
-
-    public OrderBookSnapshot convertOrderBook(OrderBookSnapshot snapshot, CurrencyCode targetCurrency) {
-        if (snapshot == null) {
-            return null;
-        }
-
-        CurrencyCode sourceCurrency = resolveQuoteCurrency(snapshot.getSymbol());
-        Instant timestamp = snapshot.getEventTime() > 0L ? Instant.ofEpochMilli(snapshot.getEventTime()) : Instant.now();
-
-        if (sourceCurrency == targetCurrency) {
-            return snapshot;
-        }
-
-        return new OrderBookSnapshot(
-            snapshot.getSymbol(),
-            targetCurrency.name(),
-            snapshot.getStatus(),
-            snapshot.getSource(),
-            snapshot.getAggregation(),
-            snapshot.getMessage(),
-            snapshot.getEventTime(),
-            snapshot.getLastUpdateId(),
-            snapshot.getUpdateLatencyMs(),
-            snapshot.getResyncCount(),
-            snapshot.getExchangeSnapshotLimit(),
-            snapshot.getRequestedLevels(),
-            snapshot.isStale(),
-            convertMarketAmount(snapshot.getBestBid(), sourceCurrency, targetCurrency, timestamp),
-            convertMarketAmount(snapshot.getBestAsk(), sourceCurrency, targetCurrency, timestamp),
-            convertMarketAmount(snapshot.getMidPrice(), sourceCurrency, targetCurrency, timestamp),
-            convertMarketAmount(snapshot.getSpread(), sourceCurrency, targetCurrency, timestamp),
-            snapshot.getSpreadPercent(),
-            convertMarketAmount(snapshot.getBidDepthNotional(), sourceCurrency, targetCurrency, timestamp),
-            convertMarketAmount(snapshot.getAskDepthNotional(), sourceCurrency, targetCurrency, timestamp),
-            snapshot.getDepthImbalancePercent(),
-            convertOrderBookLevels(snapshot.getBids(), sourceCurrency, targetCurrency, timestamp),
-            convertOrderBookLevels(snapshot.getAsks(), sourceCurrency, targetCurrency, timestamp)
-        );
-    }
-
-    private List<OrderBookLevel> convertOrderBookLevels(List<OrderBookLevel> levels, CurrencyCode from, CurrencyCode to, Instant timestamp) {
-        List<OrderBookLevel> converted = new ArrayList<>(levels.size());
-        for (OrderBookLevel level : levels) {
-            converted.add(new OrderBookLevel(
-                convertMarketAmount(level.getPrice(), from, to, timestamp),
-                level.getQuantity(),
-                convertMarketAmount(level.getNotional(), from, to, timestamp),
-                level.getCumulativeQuantity(),
-                convertMarketAmount(level.getCumulativeNotional(), from, to, timestamp),
-                level.getDepthPercent()
-            ));
-        }
-        return converted;
-    }
-
-    private double convertMarketAmount(double amount, CurrencyCode from, CurrencyCode to, Instant timestamp) {
-        if (from == to) {
-            return amount;
-        }
-
-        return BigDecimal.valueOf(amount).multiply(getRate(from, to, timestamp), MC).doubleValue();
     }
 
     public BigDecimal getRate(CurrencyCode from, CurrencyCode to, Instant timestamp) {

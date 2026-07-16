@@ -8,9 +8,7 @@ import com.tradernet.api.resources.MarketResource;
 import com.tradernet.api.resources.OrderResource;
 import com.tradernet.api.resources.PortfolioResource;
 import com.tradernet.api.resources.RoleResource;
-import com.tradernet.api.resources.SignalResource;
 import com.tradernet.api.resources.TradeResource;
-import com.tradernet.api.resources.UserPropertyResource;
 import com.tradernet.api.resources.UserResource;
 
 import jakarta.ws.rs.ApplicationPath;
@@ -34,9 +32,7 @@ public class TradernetApplication extends Application {
             OrderResource.class,
             PortfolioResource.class,
             RoleResource.class,
-            SignalResource.class,
             TradeResource.class,
-            UserPropertyResource.class,
             UserResource.class
         );
     }

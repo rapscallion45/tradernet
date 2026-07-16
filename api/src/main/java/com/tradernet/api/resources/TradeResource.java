@@ -1,20 +1,20 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.api.resources.dto.TradeResponseDto;
 import com.tradernet.trade.TradeExecutionService;
+import com.tradernet.trade.dto.TradeResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
-import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * REST API for querying trades.
@@ -28,19 +28,17 @@ public class TradeResource {
 
     @GET
     public Response getTrades(
-        @CookieParam(AuthResource.SESSION_COOKIE_NAME) String sessionId,
+        @Context ContainerRequestContext request,
         @QueryParam("symbol") String symbol
     ) {
-        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
         if (authUser.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity("Not authenticated")
                 .build();
         }
 
-        List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.get().getId(), symbol).stream()
-            .map(TradeResponseDto::fromTrade)
-            .collect(Collectors.toList());
+        List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.get().getId(), symbol);
         return Response.ok(response).build();
     }
 }

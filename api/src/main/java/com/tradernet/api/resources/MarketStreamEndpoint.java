@@ -2,11 +2,12 @@ package com.tradernet.api.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradernet.currencyconversion.CurrencyCode;
-import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
+import com.tradernet.marketai.MarketDataViewService;
+import com.tradernet.marketai.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.user.AuthSessionService;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.HandshakeResponse;
@@ -20,7 +21,6 @@ import jakarta.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -38,21 +38,21 @@ public class MarketStreamEndpoint {
     @OnOpen
     public void onOpen(Session session) {
         String sessionId = (String) session.getUserProperties().get(SESSION_ID_PROPERTY);
-        if (!AuthResource.hasValidSession(sessionId)) {
+        final AuthSessionService authSessionService = CDI.current().select(AuthSessionService.class).get();
+        if (!authSessionService.hasValidSession(sessionId)) {
             closeUnauthenticated(session);
             return;
         }
 
         final MarketAiService service = CDI.current().select(MarketAiService.class).get();
-        final CurrencyConversionService conversionService = CDI.current().select(CurrencyConversionService.class).get();
+        final MarketDataViewService marketDataViewService = CDI.current().select(MarketDataViewService.class).get();
         final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", List.of("USD")).stream().findFirst().orElse("USD");
         final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
-        final String normalizedSymbol = normalizeSymbol(requestedSymbol);
+        final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(requestedSymbol);
         service.ensureLiveSymbol(normalizedSymbol);
-        final CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(requestedCurrency, CurrencyCode.USD);
         barSubscription = service.subscribeBars(bar -> {
             if (matchesSymbol(bar.getSymbol(), normalizedSymbol)) {
-                send(session, "bar", conversionService.convertBar(bar, targetCurrency));
+                send(session, "bar", marketDataViewService.convertBar(bar, requestedCurrency));
             }
         });
         signalSubscription = service.subscribeSignals(signal -> {
@@ -93,14 +93,7 @@ public class MarketStreamEndpoint {
     }
 
     private boolean matchesSymbol(String actualSymbol, String expectedSymbol) {
-        return actualSymbol == null || actualSymbol.trim().toUpperCase(Locale.ROOT).equals(expectedSymbol);
-    }
-
-    private String normalizeSymbol(String rawSymbol) {
-        if (rawSymbol == null || rawSymbol.isBlank()) {
-            return "BTCUSDT";
-        }
-        return rawSymbol.trim().toUpperCase(Locale.ROOT);
+        return actualSymbol == null || MarketSymbolNormalizer.normalizeSymbol(actualSymbol).equals(expectedSymbol);
     }
 
     private void closeQuietly(AutoCloseable closeable) {

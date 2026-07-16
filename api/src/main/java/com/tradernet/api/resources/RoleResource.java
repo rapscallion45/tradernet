@@ -1,11 +1,8 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.jpa.dao.RoleDao;
-import com.tradernet.jpa.dao.ResourceDao;
-import com.tradernet.jpa.entities.RoleEntity;
-import com.tradernet.jpa.entities.ResourceEntity;
-import com.tradernet.api.resources.dto.RoleDto;
-import com.tradernet.api.resources.dto.UpdateRoleRequestDto;
+import com.tradernet.user.RoleManagementService;
+import com.tradernet.user.dto.RoleDto;
+import com.tradernet.user.dto.UpdateRoleRequestDto;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
@@ -17,10 +14,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * REST API for querying roles.
@@ -31,30 +25,25 @@ import java.util.stream.Collectors;
 public class RoleResource {
 
     @EJB
-    private RoleDao roleDao;
-
-    @EJB
-    private ResourceDao resourceDao;
+    private RoleManagementService roleManagementService;
 
     @GET
     public List<RoleDto> getRoles() {
-        return roleDao.findAllWithResources().stream().map(RoleDto::fromEntity).collect(Collectors.toList());
+        return roleManagementService.getRoles();
     }
 
     @GET
     @Path("/{name}")
     public Response getRole(@PathParam("name") String name) {
-        return roleDao.findAllWithResources().stream()
-            .filter(role -> role.getName().equals(name))
-            .findFirst()
-            .map(role -> Response.ok(RoleDto.fromEntity(role)).build())
+        return roleManagementService.getRole(name)
+            .map(role -> Response.ok(role).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/resources")
     public List<String> getResources() {
-        return resourceDao.findAll().stream().map(ResourceEntity::getName).sorted().collect(Collectors.toList());
+        return roleManagementService.getResourceNames();
     }
 
     @PUT
@@ -64,32 +53,13 @@ public class RoleResource {
             throw new BadRequestException("Request body is required");
         }
 
-        return roleDao.findAllWithResources().stream()
-            .filter(role -> role.getName().equals(name))
-            .findFirst()
-            .map(role -> {
-                role.setResources(resolveResources(request.getResourceNames()));
-                roleDao.save(role);
-                return Response.ok(RoleDto.fromEntity(role)).build();
-            })
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
-    }
-
-    private Set<ResourceEntity> resolveResources(Set<String> resourceNames) {
-        if (resourceNames == null || resourceNames.isEmpty()) {
-            return new HashSet<>();
+        try {
+            return roleManagementService.updateRole(name, request.getResourceNames())
+                .map(role -> Response.ok(role).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException(ex.getMessage());
         }
-
-        List<ResourceEntity> allResources = resourceDao.findAll();
-        Set<ResourceEntity> resources = new HashSet<>();
-        for (String resourceName : resourceNames) {
-            ResourceEntity resource = allResources.stream()
-                .filter(candidate -> resourceName.equals(candidate.getName()))
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException("Resource not found: " + resourceName));
-            resources.add(resource);
-        }
-        return resources;
     }
 
 }

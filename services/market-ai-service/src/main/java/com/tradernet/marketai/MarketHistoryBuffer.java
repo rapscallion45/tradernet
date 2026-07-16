@@ -12,7 +12,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -39,20 +38,10 @@ public class MarketHistoryBuffer {
     }
 
     @Lock(LockType.READ)
-    public List<MarketBar> getBars(int limit) {
-        return takeLast(bars, limit);
-    }
-
-    @Lock(LockType.READ)
     public List<MarketBar> getBarsForSymbol(String normalizedSymbol, int limit) {
         return takeLast(bars.stream()
             .filter(bar -> matchesSymbol(bar.getSymbol(), normalizedSymbol))
             .collect(Collectors.toList()), limit);
-    }
-
-    @Lock(LockType.READ)
-    public List<AiSignal> getSignals(int limit) {
-        return takeLast(signals, limit);
     }
 
     @Lock(LockType.READ)
@@ -83,11 +72,7 @@ public class MarketHistoryBuffer {
         }
     }
 
-    private static <T> List<T> takeLast(Deque<T> deque, int limit) {
-        return takeLast(new ArrayList<>(deque), limit);
-    }
-
     private static boolean matchesSymbol(String actualSymbol, String normalizedSymbol) {
-        return actualSymbol != null && actualSymbol.trim().toUpperCase(Locale.ROOT).equals(normalizedSymbol);
+        return actualSymbol != null && MarketSymbolNormalizer.normalizeSymbol(actualSymbol).equals(normalizedSymbol);
     }
 }

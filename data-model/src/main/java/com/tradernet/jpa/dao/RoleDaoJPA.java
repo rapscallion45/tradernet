@@ -35,6 +35,17 @@ public class RoleDaoJPA implements RoleDao {
     }
 
     @Override
+    public Optional<RoleEntity> findByNameWithResources(String name) {
+        return entityManager.createQuery(
+                "SELECT DISTINCT r FROM RoleEntity r LEFT JOIN FETCH r.resources WHERE r.name = :name",
+                RoleEntity.class
+            )
+            .setParameter("name", name)
+            .getResultStream()
+            .findFirst();
+    }
+
+    @Override
     public Optional<RoleEntity> findByName(String name) {
         return entityManager.createQuery("SELECT r FROM RoleEntity r WHERE r.name = :name", RoleEntity.class)
             .setParameter("name", name)

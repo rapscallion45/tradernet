@@ -3,12 +3,13 @@ package com.tradernet.api.resources;
 import com.tradernet.order.PortfolioService;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
-import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -26,10 +27,10 @@ public class PortfolioResource {
 
     @GET
     public Response getPortfolio(
-        @CookieParam(AuthResource.SESSION_COOKIE_NAME) String sessionId,
+        @Context ContainerRequestContext request,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
         if (authUser.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity("Not authenticated")

@@ -1,8 +1,8 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.marketai.MarketAiService;
+import com.tradernet.marketai.MarketDataViewService;
 import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
@@ -19,7 +19,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * REST API for chart bars and generated AI signals.
@@ -35,6 +34,9 @@ public class MarketResource {
     @EJB
     private CurrencyConversionService currencyConversionService;
 
+    @EJB
+    private MarketDataViewService marketDataViewService;
+
     @GET
     @Path("/bars")
     public List<MarketBar> getBars(
@@ -42,16 +44,7 @@ public class MarketResource {
             @DefaultValue("1S") @QueryParam("interval") String interval,
             @DefaultValue("500") @QueryParam("limit") int limit,
             @DefaultValue("USD") @QueryParam("currency") String currency) {
-        CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
-        List<MarketBar> rawBars = marketAiService.getBars(symbol, interval, limit);
-
-        try {
-            return rawBars.stream()
-                    .map(bar -> currencyConversionService.convertBar(bar, targetCurrency))
-                    .collect(Collectors.toList());
-        } catch (RuntimeException ex) {
-            return rawBars;
-        }
+        return marketDataViewService.getBars(symbol, interval, limit, currency);
     }
 
     @GET
@@ -94,8 +87,7 @@ public class MarketResource {
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
             @DefaultValue("12") @QueryParam("levels") int levels,
             @DefaultValue("USD") @QueryParam("currency") String currency) {
-        CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
-        return currencyConversionService.convertOrderBook(marketAiService.getOrderBook(symbol, levels), targetCurrency);
+        return marketDataViewService.getOrderBook(symbol, levels, currency);
     }
 
     @POST

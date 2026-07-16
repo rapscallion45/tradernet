@@ -1,13 +1,15 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.dto.AuthUserDto;
+import com.tradernet.user.AuthenticationResult;
+import com.tradernet.user.AuthenticationService;
+import com.tradernet.user.AuthSessionService;
+import com.tradernet.user.PasswordResetResult;
 import com.tradernet.user.dto.ForgotPasswordRequestDto;
+import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.LoginRequestDto;
 import com.tradernet.user.dto.LoginResponseDto;
 import com.tradernet.user.dto.LoginStatus;
 import com.tradernet.user.dto.MessageResponseDto;
-import com.tradernet.jpa.entities.UserEntity;
-import com.tradernet.user.UserService;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
@@ -19,12 +21,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.UUID;
 
 /**
  * REST API for authentication workflows.
@@ -36,13 +33,12 @@ public class AuthResource {
 
     public static final String SESSION_COOKIE_NAME = "tradernet_session";
     public static final String PASSWORD_RESET_COOKIE_NAME = "tradernet_password_reset";
-    private static final Duration SESSION_DURATION = Duration.ofHours(8);
-    private static final Duration PASSWORD_RESET_DURATION = Duration.ofMinutes(10);
-    private static final Map<String, AuthUserDto> SESSIONS = new ConcurrentHashMap<>();
-    private static final Map<String, PasswordResetSession> PASSWORD_RESET_SESSIONS = new ConcurrentHashMap<>();
 
     @EJB
-    private UserService userService;
+    private AuthSessionService authSessionService;
+
+    @EJB
+    private AuthenticationService authenticationService;
 
     @POST
     @Path("/login")
@@ -51,59 +47,19 @@ public class AuthResource {
             return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
         }
 
-        if (userService == null) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new MessageResponseDto("User service unavailable"))
-                .build();
-        }
-
-        String username = request.getUsername();
-        String password = request.getPassword();
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
-        }
-
-        if (!userService.authenticate(username, password)) {
-            return Response.ok(new LoginResponseDto(LoginStatus.INCORRECT_CREDENTIALS)).build();
-        }
-
-        Optional<UserEntity> user = userService.findByUsernameWithRoles(username);
-        if (user.isEmpty()) {
-            return Response.ok(new LoginResponseDto(LoginStatus.USER_NOT_FOUND)).build();
-        }
-
-        UserEntity authenticatedUser = user.get();
-        if (isAccountBlocked(authenticatedUser)) {
-            return Response.ok(new LoginResponseDto(LoginStatus.INCORRECT_CREDENTIALS)).build();
-        }
-
-        if (authenticatedUser.isChangePasswordNextLogin()) {
-            String resetToken = UUID.randomUUID().toString();
-            PASSWORD_RESET_SESSIONS.put(resetToken, new PasswordResetSession(
-                authenticatedUser.getUsername(),
-                Instant.now().plus(PASSWORD_RESET_DURATION)
-            ));
-
-            NewCookie resetCookie = new NewCookie.Builder(PASSWORD_RESET_COOKIE_NAME)
-                .value(resetToken)
-                .path("/")
-                .maxAge((int) PASSWORD_RESET_DURATION.getSeconds())
-                .httpOnly(true)
-                .build();
-
+        AuthenticationResult result = authenticationService.login(request.getUsername(), request.getPassword());
+        if (result.getStatus() == LoginStatus.ACCOUNT_PASSWORD_EXPIRED) {
             return Response.ok(new LoginResponseDto(LoginStatus.ACCOUNT_PASSWORD_EXPIRED))
-                .cookie(resetCookie, clearSessionCookie())
+                .cookie(passwordResetCookie(result.getPasswordResetToken()), clearSessionCookie())
                 .build();
         }
 
-        String token = UUID.randomUUID().toString();
-        AuthUserDto authUser = AuthUserDto.fromUser(authenticatedUser);
-        SESSIONS.put(token, authUser);
+        if (result.getStatus() != LoginStatus.SUCCESS) {
+            return Response.ok(new LoginResponseDto(result.getStatus())).build();
+        }
 
-        LoginResponseDto response = new LoginResponseDto(LoginStatus.SUCCESS);
-
-        return Response.ok(response)
-            .cookie(sessionCookie(token), clearPasswordResetCookie())
+        return Response.ok(new LoginResponseDto(LoginStatus.SUCCESS))
+            .cookie(sessionCookie(result.getSessionToken()), clearPasswordResetCookie())
             .build();
     }
 
@@ -114,10 +70,10 @@ public class AuthResource {
         @CookieParam(PASSWORD_RESET_COOKIE_NAME) String passwordResetToken
     ) {
         if (sessionId != null) {
-            removeSession(sessionId);
+            authSessionService.removeSession(sessionId);
         }
         if (passwordResetToken != null) {
-            PASSWORD_RESET_SESSIONS.remove(passwordResetToken);
+            authSessionService.removePasswordResetSession(passwordResetToken);
         }
         return Response.ok(new MessageResponseDto("Logged out"))
             .cookie(clearSessionCookie(), clearPasswordResetCookie())
@@ -127,7 +83,7 @@ public class AuthResource {
     @GET
     @Path("/session")
     public Response getSession(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
-        Optional<AuthUserDto> user = getSessionUser(sessionId);
+        Optional<AuthUserDto> user = authSessionService.getSessionUser(sessionId);
         if (user.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity(new MessageResponseDto("Not authenticated"))
@@ -151,58 +107,46 @@ public class AuthResource {
 
         String username = request.getUsername();
         String newPassword = request.getNewPassword();
-        if (username == null || username.isBlank() || newPassword == null || newPassword.isBlank()) {
+        PasswordResetResult result = authenticationService.resetPassword(passwordResetToken, username, newPassword);
+        if (result.getStatus() == PasswordResetResult.Status.INVALID_REQUEST) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new MessageResponseDto("username and newPassword are required"))
+                .entity(new MessageResponseDto(result.getMessage()))
                 .build();
         }
 
-        if (!isValidPasswordResetSession(passwordResetToken, username)) {
+        if (result.getStatus() == PasswordResetResult.Status.INVALID_SESSION) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new MessageResponseDto("Password reset session is invalid or expired"))
+                .entity(new MessageResponseDto(result.getMessage()))
                 .cookie(clearPasswordResetCookie())
                 .build();
         }
 
-        try {
-            userService.resetPassword(username, newPassword);
-        } catch (IllegalArgumentException ex) {
-            PASSWORD_RESET_SESSIONS.remove(passwordResetToken);
+        if (result.getStatus() == PasswordResetResult.Status.USER_NOT_FOUND) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new MessageResponseDto(ex.getMessage()))
+                .entity(new MessageResponseDto(result.getMessage()))
                 .cookie(clearPasswordResetCookie())
                 .build();
         }
 
-        PASSWORD_RESET_SESSIONS.remove(passwordResetToken);
-        return Response.ok(new MessageResponseDto("Password reset"))
+        return Response.ok(new MessageResponseDto(result.getMessage()))
             .cookie(clearPasswordResetCookie())
             .build();
-    }
-
-    public static Optional<AuthUserDto> getSessionUser(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(SESSIONS.get(sessionId));
-    }
-
-    public static boolean hasValidSession(String sessionId) {
-        return getSessionUser(sessionId).isPresent();
-    }
-
-    public static void removeSession(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return;
-        }
-        SESSIONS.remove(sessionId);
     }
 
     private static NewCookie sessionCookie(String token) {
         return new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value(token)
             .path("/")
-            .maxAge((int) SESSION_DURATION.getSeconds())
+            .maxAge((int) AuthSessionService.SESSION_DURATION.getSeconds())
+            .httpOnly(true)
+            .build();
+    }
+
+    private static NewCookie passwordResetCookie(String token) {
+        return new NewCookie.Builder(PASSWORD_RESET_COOKIE_NAME)
+            .value(token)
+            .path("/")
+            .maxAge((int) AuthSessionService.PASSWORD_RESET_DURATION.getSeconds())
             .httpOnly(true)
             .build();
     }
@@ -225,35 +169,4 @@ public class AuthResource {
             .build();
     }
 
-    private static boolean isValidPasswordResetSession(String resetToken, String username) {
-        if (resetToken == null || resetToken.isBlank()) {
-            return false;
-        }
-
-        PasswordResetSession resetSession = PASSWORD_RESET_SESSIONS.get(resetToken);
-        if (resetSession == null) {
-            return false;
-        }
-
-        if (resetSession.expiresAt.isBefore(Instant.now())) {
-            PASSWORD_RESET_SESSIONS.remove(resetToken);
-            return false;
-        }
-
-        return resetSession.username != null && resetSession.username.equalsIgnoreCase(username);
-    }
-
-    private static boolean isAccountBlocked(UserEntity user) {
-        return user.isDeleted() || user.isDisabled() || user.isAccountExpired() || user.isLockedOut();
-    }
-
-    private static class PasswordResetSession {
-        private final String username;
-        private final Instant expiresAt;
-
-        private PasswordResetSession(String username, Instant expiresAt) {
-            this.username = username;
-            this.expiresAt = expiresAt;
-        }
-    }
 }

@@ -1,4 +1,4 @@
-package com.tradernet.api.resources.dto;
+package com.tradernet.user.dto;
 
 import com.tradernet.jpa.entities.GroupEntity;
 

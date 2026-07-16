@@ -1,7 +1,7 @@
 # Market AI service agent guide
 
 ## Responsibility
-`services/market-ai-service` owns live market ingestion, bar aggregation, technical/context features, AI signal generation, market bar persistence, forecasting service integration, and Ollama narrative integration.
+`services/market-ai-service` owns live market ingestion, bar aggregation, technical/context features, display-ready market data views, AI signal generation, market bar persistence, forecasting service integration, and Ollama narrative integration.
 
 ## Key packages
 - `engine`: market event publishing, feature generation, signal engine, chart intervals, and bar/tick handling.

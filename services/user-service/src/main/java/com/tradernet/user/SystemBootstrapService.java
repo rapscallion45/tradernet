@@ -99,7 +99,7 @@ public class SystemBootstrapService {
         UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
             .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
 
-        ensureBootstrapCredentialsWhenMissing(superUser, DEFAULT_PASSWORD);
+        ensureBootstrapCredentialsWhenMissing(superUser, "Super User", DEFAULT_PASSWORD);
 
         if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
             superUser.addGroup(superUsersGroup);
@@ -109,10 +109,12 @@ public class SystemBootstrapService {
 
         UserEntity adminUser = userDao.findByUsername(DEFAULT_ADMIN_USERNAME)
             .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_PASSWORD));
+        ensureBootstrapCredentialsWhenMissing(adminUser, "Admin", DEFAULT_PASSWORD);
         ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
 
         UserEntity standardUser = userDao.findByUsername(DEFAULT_STANDARD_USERNAME)
             .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_PASSWORD));
+        ensureBootstrapCredentialsWhenMissing(standardUser, "Standard User", DEFAULT_PASSWORD);
         ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
 
     }
@@ -143,12 +145,14 @@ public class SystemBootstrapService {
         return user;
     }
 
-    private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String password) {
+    private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String fullName, String password) {
         if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
             return;
         }
 
-        user.setFullName("Super User");
+        if (user.getFullName() == null || user.getFullName().isBlank()) {
+            user.setFullName(fullName);
+        }
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setChangePasswordNextLogin(true);
         userDao.save(user);
@@ -172,10 +176,7 @@ public class SystemBootstrapService {
         ensureResource("Orders", "orders");
         ensureResource("Portfolio", "portfolio");
         ensureResource("Trades", "trades");
-        ensureResource("Signals", "signals");
         ensureResource("Market", "market");
-        ensureResource("User Properties", "user-properties");
-        ensureResource("Health", "health");
         return resourceDao.findAll();
     }
 

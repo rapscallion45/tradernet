@@ -2,9 +2,8 @@ package com.tradernet.api.resources;
 
 import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
-import com.tradernet.user.UserService;
-import com.tradernet.jpa.dao.ResourceDao;
-import com.tradernet.jpa.entities.ResourceEntity;
+import com.tradernet.user.AuthSessionService;
+import com.tradernet.user.AuthorizationService;
 import jakarta.annotation.Priority;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Priorities;
@@ -16,7 +15,6 @@ import jakarta.ws.rs.ext.Provider;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Enforces authenticated sessions for all non-auth REST endpoints.
@@ -26,10 +24,10 @@ import java.util.stream.Collectors;
 public class AuthenticationFilter implements ContainerRequestFilter {
 
     @EJB
-    private UserService userService;
+    private AuthSessionService authSessionService;
 
     @EJB
-    private ResourceDao resourceDao;
+    private AuthorizationService authorizationService;
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
         "auth",
@@ -56,10 +54,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         return PUBLIC_PATHS.contains(normalisePath(path));
     }
 
-    private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
-        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(allowedRoles::contains);
-    }
-
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
@@ -69,7 +63,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
         Cookie sessionCookie = requestContext.getCookies().get(AuthResource.SESSION_COOKIE_NAME);
         String sessionId = sessionCookie == null ? null : sessionCookie.getValue();
-        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        Optional<AuthUserDto> authUser = authSessionService.getSessionUser(sessionId);
 
         if (authUser.isEmpty()) {
             requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
@@ -78,17 +72,12 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        AuthUserDto effectiveAuthUser = userService.findByUsernameWithRoles(authUser.get().getUsername())
-            .map(AuthUserDto::fromUser)
-            .orElse(authUser.get());
+        AuthUserDto effectiveAuthUser = authUser.get();
+        AuthenticatedRequest.setAuthenticatedUser(requestContext, effectiveAuthUser);
 
-        Set<String> requiredRoles = resourceDao.findAllWithRoles().stream()
-            .filter(resource -> pathMatchesResource(path, resource))
-            .flatMap(resource -> resource.getRoles().stream())
-            .map(role -> role.getName())
-            .collect(Collectors.toSet());
+        Set<String> requiredRoles = authorizationService.getRequiredRoles(path);
 
-        if (canReadOwnUserByUsername(path, effectiveAuthUser)) {
+        if (authorizationService.canReadOwnUserByUsername(path, effectiveAuthUser)) {
             return;
         }
 
@@ -99,33 +88,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             return;
         }
 
-        if (!hasAnyRole(effectiveAuthUser, requiredRoles)) {
+        if (!authorizationService.hasAnyRole(effectiveAuthUser, requiredRoles)) {
             requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
                 .entity(new MessageResponseDto("Insufficient permissions"))
                 .build());
         }
-    }
-
-    private boolean canReadOwnUserByUsername(String path, AuthUserDto authUser) {
-        String normalisedPath = normalisePath(path);
-        String byUsernamePrefix = "users/by-username/";
-        if (!normalisedPath.startsWith(byUsernamePrefix)) {
-            return false;
-        }
-
-        String requestedUsername = normalisedPath.substring(byUsernamePrefix.length());
-        if (requestedUsername.isBlank()) {
-            return false;
-        }
-
-        String currentUsername = authUser.getUsername();
-        return currentUsername != null && currentUsername.equalsIgnoreCase(requestedUsername);
-    }
-
-    private boolean pathMatchesResource(String path, ResourceEntity resource) {
-        String normalisedPath = normalisePath(path);
-        String pathPrefix = normalisePath(resource.getPathPrefix());
-        return !pathPrefix.isBlank()
-            && (normalisedPath.equals(pathPrefix) || normalisedPath.startsWith(pathPrefix + "/"));
     }
 }

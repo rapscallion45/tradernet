@@ -3,11 +3,13 @@ package com.tradernet.trade;
 import com.tradernet.jpa.dao.TradeDao;
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.jpa.entities.TradeEntity;
+import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.trade.dto.TradeResponseDto;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
 import java.util.List;
-import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Executes orders and persists the resulting trade fill.
@@ -26,11 +28,10 @@ public class TradeExecutionService {
      * Executes the given order.
      *
      * @param order order to execute
-     * @return Trade object representing the completed trade
      */
-    public TradeEntity execute(OrderEntity order) {
+    public void execute(OrderEntity order) {
         requireOrder(order);
-        return execute(order, order.getSide(), OPEN_EXECUTION_TYPE, order.getPrice());
+        execute(order, order.getSide(), OPEN_EXECUTION_TYPE, order.getPrice());
     }
 
     /**
@@ -38,28 +39,32 @@ public class TradeExecutionService {
      *
      * @param order open order being closed
      * @param closePrice close execution price
-     * @return Trade object representing the completed close fill
      */
-    public TradeEntity executeClose(OrderEntity order, double closePrice) {
+    public void executeClose(OrderEntity order, double closePrice) {
         requireOrder(order);
         if (order.getId() != null && tradeDao.existsByOrderIdAndExecutionType(order.getId(), CLOSE_EXECUTION_TYPE)) {
-            return null;
+            return;
         }
 
         OrderEntity.Side closeSide = order.getSide() == OrderEntity.Side.BUY
             ? OrderEntity.Side.SELL
             : OrderEntity.Side.BUY;
-        return execute(order, closeSide, CLOSE_EXECUTION_TYPE, closePrice);
+        execute(order, closeSide, CLOSE_EXECUTION_TYPE, closePrice);
     }
 
-    public List<TradeEntity> getTradesForUser(long userId, String symbol) {
+    public List<TradeResponseDto> getTradesForUser(long userId, String symbol) {
+        List<TradeEntity> trades;
         if (symbol == null || symbol.isBlank()) {
-            return tradeDao.findByUserId(userId);
+            trades = tradeDao.findByUserId(userId);
+        } else {
+            trades = tradeDao.findByUserIdAndSymbol(userId, MarketSymbolNormalizer.normalizeSymbol(symbol));
         }
-        return tradeDao.findByUserIdAndSymbol(userId, normalizeSymbol(symbol));
+        return trades.stream()
+            .map(TradeResponseDto::fromTrade)
+            .collect(Collectors.toList());
     }
 
-    private TradeEntity execute(OrderEntity order, OrderEntity.Side executionSide, String executionType, double executionPrice) {
+    private void execute(OrderEntity order, OrderEntity.Side executionSide, String executionType, double executionPrice) {
         requireOrder(order);
         if (executionPrice <= 0) {
             throw new IllegalArgumentException("execution price must be greater than 0");
@@ -68,14 +73,13 @@ public class TradeExecutionService {
         TradeEntity trade = new TradeEntity(
             order.getUserId(),
             order.getId(),
-            normalizeSymbol(order.getSymbol()),
+            MarketSymbolNormalizer.normalizeSymbol(order.getSymbol()),
             executionSide.name(),
             executionType,
             signedQuantity(executionSide, order.getQuantity()),
             executionPrice
         );
         tradeDao.save(trade);
-        return trade;
     }
 
     private void requireOrder(OrderEntity order) {
@@ -100,7 +104,4 @@ public class TradeExecutionService {
         return side == OrderEntity.Side.SELL ? -quantity : quantity;
     }
 
-    private String normalizeSymbol(String symbol) {
-        return symbol.trim().toUpperCase(Locale.ROOT);
-    }
 }

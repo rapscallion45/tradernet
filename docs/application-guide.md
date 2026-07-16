@@ -27,7 +27,7 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 
 ## 3. Main API surfaces
 
-Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. The market websocket at `/api/ws/market` requires the same cookie during the websocket handshake. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
+Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. Session state is persisted in the database and role-policy lookup is owned by `user-service`, while the API filter and websocket handshake only enforce those service decisions. The market websocket at `/api/ws/market` requires the same cookie during the websocket handshake. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
 
 An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-lived, HTTP-only `tradernet_password_reset` cookie rather than a full session. Reuse that temporary cookie only for `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
@@ -40,7 +40,6 @@ An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-li
 | `/api/roles` | `RoleResource` | Role/resource management. |
 | `/api/orders` | `OrderResource` | Order creation, listing, and lifecycle operations. |
 | `/api/trades` | `TradeResource` | Authenticated user's trade history, optionally filtered by `symbol`. |
-| `/api/signals` | `SignalResource` | Trading signal operations. |
 | `/api/portfolio` | `PortfolioResource` | Portfolio summary/history views. |
 | `/api/market/bars` | `MarketResource` | Historical/recent market bars for charts. |
 | `/api/market/signals` | `MarketResource` | Recent market AI signals. |
@@ -124,10 +123,9 @@ Response fields include:
 | Data | Storage | Notes |
 | --- | --- | --- |
 | Users, roles, groups, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. User password hashes are stored canonically on `tblUsers.password_hash`. |
+| Auth sessions | `tblAuthSessions`, `tblPasswordResetSessions` | Full login sessions and short-lived expired-password reset tokens. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
 | Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
-| Signals | `tblSignals` | Stores application trading signals. |
-| User properties | `tblUserProperties` | Per-user preferences/properties. |
 | Market bars | `market_bars` | Written by `MarketAiService` from closed live bars and read by the Python forecasting service. |
 
 Docker Compose uses TimescaleDB/Postgres for durable local development. The named Docker volume `timescaledb_data` is mounted at `/var/lib/postgresql/data`, so orders, trades, users, market bars, and forecast history inputs survive normal container recreation. Do not run `docker compose down -v` unless deleting the database is intentional.
