@@ -43,6 +43,7 @@
         <maven.compiler.target>${java.target.version}</maven.compiler.target>
 
         <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
+        <maven.ejb.plugin.version>3.2.1</maven.ejb.plugin.version>
         <maven.test.plugins.version>3.1.2</maven.test.plugins.version>
         <wildfly.maven.plugin.version>4.2.0.Final</wildfly.maven.plugin.version>
     </properties>
@@ -181,6 +182,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.3.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-ejb-plugin</artifactId>
+                    <version>${maven.ejb.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
