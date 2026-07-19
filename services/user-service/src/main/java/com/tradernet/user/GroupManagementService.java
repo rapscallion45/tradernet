@@ -51,7 +51,7 @@ public class GroupManagementService {
     }
 
     private GroupDto toDto(GroupEntity group) {
-        return GroupDto.fromEntity(initializeGroup(group));
+        return UserDtoMapper.toGroup(initializeGroup(group));
     }
 
     private GroupEntity initializeGroup(GroupEntity group) {

@@ -5,6 +5,7 @@ import com.tradernet.api.resources.AuthenticationFilter;
 import com.tradernet.api.resources.GroupResource;
 import com.tradernet.api.resources.HealthResource;
 import com.tradernet.api.resources.MarketResource;
+import com.tradernet.api.resources.NotAuthenticatedExceptionMapper;
 import com.tradernet.api.resources.OrderResource;
 import com.tradernet.api.resources.PortfolioResource;
 import com.tradernet.api.resources.RoleResource;
@@ -29,6 +30,7 @@ public class TradernetApplication extends Application {
             GroupResource.class,
             HealthResource.class,
             MarketResource.class,
+            NotAuthenticatedExceptionMapper.class,
             OrderResource.class,
             PortfolioResource.class,
             RoleResource.class,

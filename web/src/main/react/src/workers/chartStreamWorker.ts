@@ -1,3 +1,5 @@
+import type { ExplanationItem } from "api/types"
+
 type Candle = {
   time: number
   open: number
@@ -38,7 +40,7 @@ type AiSignal = {
   side: SignalSide
   confidence: number
   modelVersion: string
-  notes: string[]
+  notes: ExplanationItem[]
 }
 
 type WsEnvelope = { type: "bar"; payload: MarketBar } | { type: "signal"; payload: AiSignal } | { type: string; payload?: unknown }

@@ -1,5 +1,6 @@
 package com.tradernet.marketai.scoring;
 
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.SignalSide;
 
@@ -33,10 +34,10 @@ public class LinearModelSignalScorer implements SignalScorer {
         final double linear = (emaDeltaPct * 120.0) + (rsiCentered * 0.9);
         final double probabilityBuy = 1.0 / (1.0 + Math.exp(-linear));
 
-        final List<String> notes = new ArrayList<>();
-        notes.add("model=linear-logit");
-        notes.add("ema_delta_pct=" + String.format("%.6f", emaDeltaPct));
-        notes.add("rsi=" + String.format("%.2f", features.getRsi()));
+        final List<ExplanationItem> notes = new ArrayList<>();
+        notes.add(ExplanationItem.value("model", "model", "linear-logit"));
+        notes.add(ExplanationItem.numeric("ema_delta_pct", "ema_delta_pct", emaDeltaPct));
+        notes.add(ExplanationItem.numeric("rsi", "rsi", features.getRsi()));
 
         if (probabilityBuy >= buyThreshold) {
             return new ScoreResult(SignalSide.BUY, directionalConfidence(probabilityBuy, buyThreshold, 1.0), "linear-v1", notes);

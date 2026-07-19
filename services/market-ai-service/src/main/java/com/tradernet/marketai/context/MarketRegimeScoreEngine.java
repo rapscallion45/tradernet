@@ -1,5 +1,6 @@
 package com.tradernet.marketai.context;
 
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 
@@ -13,7 +14,7 @@ public class MarketRegimeScoreEngine {
 
     public MarketRegimeScore score(FeatureSnapshot features) {
         final MarketContextSnapshot context = features.getMarketContext();
-        final List<String> drivers = new ArrayList<>();
+        final List<ExplanationItem> drivers = new ArrayList<>();
         double score = 50.0;
 
         final double trendScore = clamp((features.getEmaFast() - features.getEmaSlow()) / Math.max(features.getClose(), 1.0) * 1_000.0, -2.0, 2.0);
@@ -98,9 +99,9 @@ public class MarketRegimeScoreEngine {
         return 0.0;
     }
 
-    private void addDriver(List<String> drivers, String name, double value) {
+    private void addDriver(List<ExplanationItem> drivers, String name, double value) {
         if (Math.abs(value) >= 0.25) {
-            drivers.add(name + "=" + String.format("%.2f", value));
+            drivers.add(ExplanationItem.numeric(name, name, value));
         }
     }
 

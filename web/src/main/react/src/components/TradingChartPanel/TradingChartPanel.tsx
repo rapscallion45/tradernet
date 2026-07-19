@@ -22,7 +22,7 @@ import "uplot/dist/uPlot.min.css"
 import classes from "./TradingChartPanel.module.css"
 import { useToast } from "hooks/useToast"
 import { DEFAULT_CHART_SYMBOL } from "global/constants"
-import { formatCurrency, formatDateTime } from "utils/intl"
+import { formatCurrency, formatDateTime, formatNumber } from "utils/intl"
 import { useMarketSymbols } from "hooks/useMarketSymbols"
 import { useCurrencyPreference } from "hooks/useCurrencyPreference"
 import { ConfirmationModal } from "components/ConfirmationModal/ConfirmationModal"
@@ -30,6 +30,7 @@ import { Button } from "components/Button/Button"
 import { ActionIcon } from "components/ActionIcon/ActionIcon"
 import { IconCaretDownFilled, IconChartHistogram, IconCheck, IconPencil, IconSearch, IconStar, IconStarFilled, IconTrash, IconX } from "@tabler/icons-react"
 import { getAssetLogoUrl, getBaseAsset } from "utils/marketAssets"
+import type { ExplanationItem } from "api/types"
 
 type Candle = {
   time: number
@@ -61,7 +62,7 @@ type ChartSignal = {
   side: SignalSide
   confidence: number
   modelVersion: string
-  notes: string[]
+  notes: ExplanationItem[]
 }
 
 const getSignalColor = (side?: SignalSide) => {
@@ -85,16 +86,30 @@ const getSignalStrength = (confidence?: number) => {
   return { label: "Weak", color: "yellow" }
 }
 
-const getVisibleSignalNotes = (notes?: string[]) => {
+const formatExplanationItem = (note: ExplanationItem) => {
+  const key = note.key || note.label || "note"
+
+  if (note.numericValue != null && Number.isFinite(note.numericValue)) {
+    return `${key}=${formatNumber(note.numericValue, { maximumFractionDigits: 6 })}`
+  }
+
+  if (note.value) {
+    return `${key}=${note.value}`
+  }
+
+  return note.label || key
+}
+
+const getVisibleSignalNotes = (notes?: ExplanationItem[]) => {
   if (!notes?.length) {
     return []
   }
 
-  const priorityPrefixes = ["forecast_bull_score=", "effective_context_score=", "forecast_filter=", "context_filter=", "market_score=", "market_regime="]
-  const prioritized = notes.filter((note) => priorityPrefixes.some((prefix) => note.startsWith(prefix)))
+  const priorityKeys = ["forecast_bull_score", "effective_context_score", "forecast_filter", "context_filter", "market_score", "market_regime"]
+  const prioritized = notes.filter((note) => priorityKeys.includes(note.key))
   const remaining = notes.filter((note) => !prioritized.includes(note))
 
-  return [...prioritized, ...remaining].slice(0, 5)
+  return [...prioritized, ...remaining].slice(0, 5).map(formatExplanationItem)
 }
 
 type WorkerPayload = {

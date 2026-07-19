@@ -21,7 +21,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * REST API for creating and listing persisted orders.
@@ -40,14 +39,8 @@ public class OrderResource {
         @QueryParam("userId") Long userId,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
-        if (authUser.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Not authenticated")
-                .build();
-        }
-
-        long authenticatedUserId = authUser.get().getId();
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        long authenticatedUserId = authUser.getId();
         if (userId != null && userId != authenticatedUserId) {
             return Response.status(Response.Status.FORBIDDEN)
                 .entity("Cannot list orders for another user")
@@ -66,12 +59,7 @@ public class OrderResource {
                 .build();
         }
 
-        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(requestContext);
-        if (authUser.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Not authenticated")
-                .build();
-        }
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(requestContext);
 
         String symbol = request.getSymbol();
         if (symbol == null || symbol.isBlank()) {
@@ -99,7 +87,7 @@ public class OrderResource {
         }
 
         return Response.status(Response.Status.CREATED)
-            .entity(orderPresentationService.createOrder(authUser.get().getId(), request))
+            .entity(orderPresentationService.createOrder(authUser.getId(), request))
             .build();
     }
 
@@ -109,12 +97,7 @@ public class OrderResource {
         @Context ContainerRequestContext request,
         @PathParam("orderId") Long orderId
     ) {
-        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
-        if (authUser.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Not authenticated")
-                .build();
-        }
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
 
         if (orderId == null || orderId <= 0) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -122,7 +105,7 @@ public class OrderResource {
                 .build();
         }
 
-        return orderPresentationService.closeOrder(authUser.get().getId(), orderId)
+        return orderPresentationService.closeOrder(authUser.getId(), orderId)
             .map(response -> Response.ok(response).build())
             .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
                 .entity("Order not found")

@@ -64,7 +64,7 @@ public class AuthSessionService {
         }
 
         Optional<AuthUserDto> authUser = userService.findByIdWithRoles(session.getUserId())
-            .map(AuthUserDto::fromUser);
+            .map(UserDtoMapper::toAuthUser);
         if (authUser.isEmpty()) {
             entityManager.remove(session);
         }

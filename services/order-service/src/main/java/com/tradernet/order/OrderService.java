@@ -2,7 +2,10 @@ package com.tradernet.order;
 
 import com.tradernet.jpa.dao.OrderDao;
 import com.tradernet.jpa.entities.OrderEntity;
+import com.tradernet.trade.TradeExecutionRequest;
 import com.tradernet.trade.TradeExecutionService;
+import com.tradernet.trade.TradeExecutionType;
+import com.tradernet.trade.TradeSide;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
@@ -39,7 +42,7 @@ public class OrderService {
             order.setCreatedAt(Instant.now());
         }
         orderDao.save(order);
-        tradeExecutionService.execute(order);
+        tradeExecutionService.execute(tradeExecutionRequest(order, order.getSide(), TradeExecutionType.OPEN, order.getPrice()));
         return order;
     }
 
@@ -74,12 +77,43 @@ public class OrderService {
         order.setStatus(CLOSED_STATUS);
         order.setClosePrice(closePrice);
         order.setClosedAt(Instant.now());
-        tradeExecutionService.executeClose(order, closePrice);
+        tradeExecutionService.execute(tradeExecutionRequest(order, opposite(order.getSide()), TradeExecutionType.CLOSE, closePrice));
         return Optional.of(order);
     }
 
     public Optional<OrderEntity> getOrderForUser(long userId, long orderId) {
         return orderDao.findById(orderId)
             .filter(order -> order.getUserId() != null && order.getUserId() == userId);
+    }
+
+    private TradeExecutionRequest tradeExecutionRequest(
+        OrderEntity order,
+        OrderEntity.Side side,
+        TradeExecutionType executionType,
+        double price
+    ) {
+        return new TradeExecutionRequest(
+            order.getUserId(),
+            order.getId(),
+            order.getSymbol(),
+            toTradeSide(side),
+            executionType,
+            order.getQuantity(),
+            price
+        );
+    }
+
+    private TradeSide toTradeSide(OrderEntity.Side side) {
+        if (side == null) {
+            throw new IllegalArgumentException("order side is required");
+        }
+        return TradeSide.valueOf(side.name());
+    }
+
+    private OrderEntity.Side opposite(OrderEntity.Side side) {
+        if (side == null) {
+            throw new IllegalArgumentException("order side is required");
+        }
+        return side == OrderEntity.Side.BUY ? OrderEntity.Side.SELL : OrderEntity.Side.BUY;
     }
 }

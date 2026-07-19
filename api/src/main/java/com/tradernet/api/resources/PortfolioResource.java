@@ -13,8 +13,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.Optional;
-
 /**
  * REST API for viewing portfolio holdings and performance.
  */
@@ -30,13 +28,7 @@ public class PortfolioResource {
         @Context ContainerRequestContext request,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
-        if (authUser.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Not authenticated")
-                .build();
-        }
-
-        return Response.ok(portfolioService.getPortfolio(authUser.get().getId(), currency)).build();
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        return Response.ok(portfolioService.getPortfolio(authUser.getId(), currency)).build();
     }
 }

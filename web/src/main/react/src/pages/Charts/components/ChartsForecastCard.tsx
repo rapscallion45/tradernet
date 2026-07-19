@@ -29,11 +29,51 @@ const getScoreColor = (score: number) => {
   return "red"
 }
 
+const safeSymbol = (symbol?: string, fallback?: string) => {
+  const normalized = (symbol || fallback || "").trim().toUpperCase()
+  return normalized || "the asset"
+}
+
+const getConditionLabel = (bullScore: number) => {
+  if (bullScore >= 75) return "strongly bullish"
+  if (bullScore >= 60) return "leaning bullish"
+  if (bullScore > 45 && bullScore < 55) return "balanced"
+  if (bullScore >= 40) return "slightly cautious"
+  return "bearish"
+}
+
+const getProbabilityLabel = (probabilityPercent: number) => {
+  if (probabilityPercent >= 65) return "elevated"
+  if (probabilityPercent <= 45) return "weak"
+  return "mixed"
+}
+
+const getExpectedReturnLabel = (expectedReturn: number) => {
+  const expectedReturnPercent = expectedReturn * 100
+  if (expectedReturnPercent >= 1) return "modestly positive"
+  if (expectedReturnPercent <= -1) return "modestly negative"
+  return "mostly flat"
+}
+
+const getCurrentConditionSummary = (forecast: MarketForecast | undefined, selectedSymbol: string, probabilityPercent: number) => {
+  if (!forecast) {
+    return undefined
+  }
+
+  const symbol = safeSymbol(forecast.symbol, selectedSymbol)
+  const conditionLabel = getConditionLabel(clamp(forecast.bullScore, 0, 100))
+  const probabilityLabel = getProbabilityLabel(probabilityPercent)
+  const expectedReturnLabel = getExpectedReturnLabel(forecast.expectedReturn)
+
+  return `${symbol} looks ${conditionLabel} over ${forecast.horizonDays}d. Positive-return probability is ${probabilityLabel} at ${probabilityPercent}%, and expected return is ${expectedReturnLabel}.`
+}
+
 export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol, horizonDays, onHorizonDaysChange, forecast, isLoading, isError }) => {
   const bullScore = clamp(forecast?.bullScore ?? 50, 0, 100)
   const probabilityPercent = Math.round(clamp(forecast?.probabilityPositiveReturn ?? 0.5, 0, 1) * 100)
   const scoreColor = getScoreColor(bullScore)
   const selectedHorizonDays = forecast?.horizonDays ?? horizonDays
+  const currentConditionSummary = getCurrentConditionSummary(forecast, selectedSymbol, probabilityPercent)
 
   return (
     <Paper withBorder radius="md" p="md">
@@ -83,12 +123,12 @@ export const ChartsForecastCard: FC<ChartsForecastCardProps> = ({ selectedSymbol
             <Text size="sm" c="dimmed">
               {forecast?.narrative || `Probability of a positive ${selectedHorizonDays}-day return: ${probabilityPercent}%.`}
             </Text>
-            {forecast?.marketConditionSummary && (
+            {currentConditionSummary && (
               <Text size="sm">
                 <Text span fw={700}>
                   Current condition:{" "}
                 </Text>
-                {forecast.marketConditionSummary}
+                {currentConditionSummary}
               </Text>
             )}
             <Group justify="space-between" gap="xs">

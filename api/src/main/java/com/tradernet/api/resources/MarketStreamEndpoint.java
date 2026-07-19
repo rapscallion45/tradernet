@@ -10,6 +10,7 @@ import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.user.AuthSessionService;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnOpen;
@@ -36,8 +37,8 @@ public class MarketStreamEndpoint {
     private AutoCloseable signalSubscription;
 
     @OnOpen
-    public void onOpen(Session session) {
-        String sessionId = (String) session.getUserProperties().get(SESSION_ID_PROPERTY);
+    public void onOpen(Session session, EndpointConfig config) {
+        String sessionId = (String) config.getUserProperties().get(SESSION_ID_PROPERTY);
         final AuthSessionService authSessionService = CDI.current().select(AuthSessionService.class).get();
         if (!authSessionService.hasValidSession(sessionId)) {
             closeUnauthenticated(session);

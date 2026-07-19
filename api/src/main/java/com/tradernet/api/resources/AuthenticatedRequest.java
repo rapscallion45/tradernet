@@ -21,6 +21,11 @@ final class AuthenticatedRequest {
         return toAuthUser(value);
     }
 
+    static AuthUserDto requireAuthenticatedUser(ContainerRequestContext requestContext) {
+        return authenticatedUser(requestContext)
+            .orElseThrow(NotAuthenticatedException::new);
+    }
+
     private static Optional<AuthUserDto> toAuthUser(Object value) {
         if (value instanceof AuthUserDto) {
             return Optional.of((AuthUserDto) value);

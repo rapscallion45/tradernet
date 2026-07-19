@@ -2,6 +2,7 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.model.ExplanationItem;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -80,7 +81,7 @@ public class OllamaNarrativeClient {
                 + ", horizon=" + forecast.getHorizonDays()
                 + ", probability=" + Math.round(forecast.getProbabilityPositiveReturn() * 100.0)
                 + ", expected_return=" + String.format("%.2f", forecast.getExpectedReturn() * 100.0) + "%"
-                + ", drivers=" + String.join(", ", safeDrivers(forecast.getDrivers())) + ".";
+                + ", drivers=" + String.join(", ", safeDriverLabels(forecast.getDrivers())) + ".";
     }
 
     private String displaySymbol(MarketForecast forecast) {
@@ -90,8 +91,12 @@ public class OllamaNarrativeClient {
         return forecast.getSymbol().trim().toUpperCase();
     }
 
-    private List<String> safeDrivers(List<String> drivers) {
-        return drivers == null ? List.of() : drivers.stream().limit(5).collect(java.util.stream.Collectors.toList());
+    private List<String> safeDriverLabels(List<ExplanationItem> drivers) {
+        return drivers == null ? List.of() : drivers.stream()
+                .map(this::driverLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .limit(5)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private String enforceSelectedSymbol(String narrative, MarketForecast forecast) {
@@ -105,11 +110,25 @@ public class OllamaNarrativeClient {
     }
 
     private String fallbackNarrative(MarketForecast forecast) {
-        final String drivers = forecast.getDrivers() == null || forecast.getDrivers().isEmpty()
+        final List<String> driverLabels = safeDriverLabels(forecast.getDrivers());
+        final String drivers = driverLabels.isEmpty()
                 ? "model drivers are mixed"
-                : String.join(", ", forecast.getDrivers().stream().limit(3).collect(java.util.stream.Collectors.toList()));
+                : String.join(", ", driverLabels.stream().limit(3).collect(java.util.stream.Collectors.toList()));
         return "Today's " + displaySymbol(forecast) + " Bull Score is " + Math.round(forecast.getBullScore())
                 + ". " + drivers + ". Probability of a positive " + forecast.getHorizonDays()
                 + "-day return: " + Math.round(forecast.getProbabilityPositiveReturn() * 100.0) + "%.";
+    }
+
+    private String driverLabel(ExplanationItem driver) {
+        if (driver == null) {
+            return "";
+        }
+        if (driver.getLabel() != null && !driver.getLabel().isBlank()) {
+            return driver.getLabel();
+        }
+        if (driver.getValue() != null && !driver.getValue().isBlank()) {
+            return driver.getValue();
+        }
+        return driver.getKey();
     }
 }

@@ -1,7 +1,5 @@
 package com.tradernet.trade.dto;
 
-import com.tradernet.jpa.entities.TradeEntity;
-
 import java.time.LocalDateTime;
 
 /**
@@ -17,19 +15,6 @@ public class TradeResponseDto {
     private double quantity;
     private double price;
     private LocalDateTime timestamp;
-
-    public static TradeResponseDto fromTrade(TradeEntity trade) {
-        TradeResponseDto dto = new TradeResponseDto();
-        dto.setId(trade.getId());
-        dto.setOrderId(trade.getOrderId());
-        dto.setSymbol(trade.getSymbol());
-        dto.setSide(trade.getSide());
-        dto.setExecutionType(trade.getExecutionType());
-        dto.setQuantity(trade.getQuantity());
-        dto.setPrice(trade.getPrice());
-        dto.setTimestamp(trade.getTimestamp());
-        return dto;
-    }
 
     public Long getId() {
         return id;

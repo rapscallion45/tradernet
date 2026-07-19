@@ -19,10 +19,12 @@ import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Lock;
 import jakarta.ejb.LockType;
 import jakarta.ejb.Schedule;
+import jakarta.ejb.SessionContext;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.ejb.TransactionAttribute;
@@ -71,6 +73,9 @@ public class MarketAiService {
     @EJB
     private MarketEventPublisher publisher;
 
+    @Resource
+    private SessionContext sessionContext;
+
     private final Map<String, BinanceTradeStreamClient> binanceClientsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
@@ -113,7 +118,8 @@ public class MarketAiService {
         signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
         final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BinanceTradeStreamClient());
         if (!client.isRunning()) {
-            client.start(normalizedSymbol.toLowerCase(Locale.ROOT), this::onTrade);
+            final MarketAiService tradeHandler = sessionContext.getBusinessObject(MarketAiService.class);
+            client.start(normalizedSymbol.toLowerCase(Locale.ROOT), tradeHandler::onTrade);
         }
     }
 
@@ -235,7 +241,8 @@ public class MarketAiService {
         return MarketHistoryBuffer.takeLast(generatedSignals, limit);
     }
 
-    private void onTrade(MarketTrade trade) {
+    @Lock(LockType.WRITE)
+    public void onTrade(MarketTrade trade) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(trade.getSymbol());
         final BarAggregator symbolBarAggregator = barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
         final FeatureEngine symbolFeatureEngine = featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContexts.registry()));

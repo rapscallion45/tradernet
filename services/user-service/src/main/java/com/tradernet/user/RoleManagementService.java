@@ -31,12 +31,12 @@ public class RoleManagementService {
 
     public List<RoleDto> getRoles() {
         return roleDao.findAllWithResources().stream()
-            .map(RoleDto::fromEntity)
+            .map(UserDtoMapper::toRole)
             .collect(Collectors.toList());
     }
 
     public Optional<RoleDto> getRole(String name) {
-        return getRoleEntity(name).map(RoleDto::fromEntity);
+        return getRoleEntity(name).map(UserDtoMapper::toRole);
     }
 
     public List<String> getResourceNames() {
@@ -52,7 +52,7 @@ public class RoleManagementService {
                 role.setResources(resolveResources(resourceNames));
                 roleDao.save(role);
                 authorizationService.invalidate();
-                return RoleDto.fromEntity(role);
+                return UserDtoMapper.toRole(role);
             });
     }
 

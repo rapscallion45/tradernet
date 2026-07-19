@@ -1,5 +1,6 @@
 package com.tradernet.marketai.scoring;
 
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.SignalSide;
 
 import java.util.Collections;
@@ -13,9 +14,9 @@ public class ScoreResult {
     private final SignalSide side;
     private final double confidence;
     private final String modelVersion;
-    private final List<String> notes;
+    private final List<ExplanationItem> notes;
 
-    public ScoreResult(SignalSide side, double confidence, String modelVersion, List<String> notes) {
+    public ScoreResult(SignalSide side, double confidence, String modelVersion, List<ExplanationItem> notes) {
         this.side = side;
         this.confidence = confidence;
         this.modelVersion = modelVersion;
@@ -34,7 +35,7 @@ public class ScoreResult {
         return modelVersion;
     }
 
-    public List<String> getNotes() {
+    public List<ExplanationItem> getNotes() {
         return notes;
     }
 }

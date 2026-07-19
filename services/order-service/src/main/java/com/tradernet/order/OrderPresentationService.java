@@ -8,6 +8,7 @@ import com.tradernet.marketai.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
+import com.tradernet.order.dto.OrderSide;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -15,7 +16,6 @@ import jakarta.ejb.TransactionAttributeType;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -51,7 +51,7 @@ public class OrderPresentationService {
 
     public OrderResponseDto createOrder(long userId, OrderRequestDto request) {
         final String symbol = MarketSymbolNormalizer.normalizeSymbol(request.getSymbol());
-        final OrderEntity order = new OrderEntity(symbol, request.getQuantity(), request.getPrice(), request.getSide());
+        final OrderEntity order = new OrderEntity(symbol, request.getQuantity(), request.getPrice(), toEntitySide(request.getSide()));
         order.setAiPrediction(resolveAiPrediction(symbol));
         order.setBullScore(resolveBullScore(symbol));
         return toResponse(orderService.createOrder(userId, order), CurrencyCode.USD);
@@ -70,7 +70,22 @@ public class OrderPresentationService {
     }
 
     private OrderResponseDto toResponse(OrderEntity order, CurrencyCode displayCurrency) {
-        final OrderResponseDto responseDto = OrderResponseDto.fromOrder(order);
+        final OrderResponseDto responseDto = new OrderResponseDto();
+        final long resolvedId = order.getId() == null ? 0L : order.getId();
+        responseDto.setId(resolvedId);
+        responseDto.setOrderId(resolvedId);
+        responseDto.setUserId(order.getUserId() == null ? 0L : order.getUserId());
+        responseDto.setSymbol(order.getSymbol());
+        responseDto.setSide(order.getSide() == null ? null : order.getSide().name());
+        responseDto.setCurrency(displayCurrency.name());
+        responseDto.setQuantity(order.getQuantity());
+        responseDto.setPrice(order.getPrice());
+        responseDto.setStatus(order.getStatus());
+        responseDto.setCreatedAt(order.getCreatedAt());
+        responseDto.setClosedAt(order.getClosedAt());
+        responseDto.setAiPrediction(order.getAiPrediction());
+        responseDto.setBullScore(order.getBullScore());
+        responseDto.setClosePrice(order.getClosePrice());
 
         final boolean closed = OrderService.CLOSED_STATUS.equals(order.getStatus()) && order.getClosePrice() != null;
         final CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(order.getSymbol());
@@ -104,13 +119,14 @@ public class OrderPresentationService {
         responseDto.setClosedAt(order.getClosedAt());
         responseDto.setClosePrice(closePrice == null ? null : roundCurrency(closePrice));
 
-        responseDto.setCreatedAtDisplay(responseDto.getCreatedAt() == null ? "" : responseDto.getCreatedAt().toString());
-        responseDto.setCurrentPriceDisplay(String.format(Locale.US, "%.2f", responseDto.getCurrentPrice()));
-        responseDto.setPnlDisplay(String.format(Locale.US, "%.2f", responseDto.getPnl()));
-        responseDto.setPnlPercentDisplay(String.format(Locale.US, "%.2f%%", responseDto.getPnlPercent()));
-        responseDto.setNetValueDisplay(String.format(Locale.US, "%.2f", responseDto.getNetValue()));
-
         return responseDto;
+    }
+
+    private OrderEntity.Side toEntitySide(OrderSide side) {
+        if (side == null) {
+            throw new IllegalArgumentException("order side is required");
+        }
+        return OrderEntity.Side.valueOf(side.name());
     }
 
     private Double resolveBullScore(String symbol) {

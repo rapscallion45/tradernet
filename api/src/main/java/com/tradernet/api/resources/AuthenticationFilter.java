@@ -4,6 +4,7 @@ import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.AuthSessionService;
 import com.tradernet.user.AuthorizationService;
+import com.tradernet.user.ResourcePathNormalizer;
 import jakarta.annotation.Priority;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Priorities;
@@ -37,21 +38,9 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         "auth/forgot-password",
         "health"
     );
-    private String normalisePath(String path) {
-        if (path == null) {
-            return "";
-        }
-
-        String normalisedPath = path.startsWith("/") ? path.substring(1) : path;
-        if (normalisedPath.endsWith("/")) {
-            normalisedPath = normalisedPath.substring(0, normalisedPath.length() - 1);
-        }
-
-        return normalisedPath;
-    }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.contains(normalisePath(path));
+        return PUBLIC_PATHS.contains(ResourcePathNormalizer.normalize(path));
     }
 
     @Override

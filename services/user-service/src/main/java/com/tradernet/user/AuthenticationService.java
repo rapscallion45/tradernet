@@ -1,7 +1,6 @@
 package com.tradernet.user;
 
 import com.tradernet.jpa.entities.UserEntity;
-import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.LoginStatus;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
@@ -39,7 +38,7 @@ public class AuthenticationService {
             return AuthenticationResult.passwordExpired(authSessionService.createPasswordResetSession(user.getUsername()));
         }
 
-        return AuthenticationResult.success(authSessionService.createSession(AuthUserDto.fromUser(user)));
+        return AuthenticationResult.success(authSessionService.createSession(UserDtoMapper.toAuthUser(user)));
     }
 
     public PasswordResetResult resetPassword(String resetToken, String username, String newPassword) {

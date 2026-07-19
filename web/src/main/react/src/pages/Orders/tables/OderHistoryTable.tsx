@@ -107,7 +107,7 @@ const OderHistoryTable: FC = () => {
       },
       { accessorKey: "side", header: "Position" },
       {
-        accessorKey: "pnlDisplay",
+        accessorKey: "pnl",
         header: "P/L",
         cell: ({ row }) => {
           const pnl = row.original.pnl ?? 0
@@ -120,7 +120,7 @@ const OderHistoryTable: FC = () => {
         },
       },
       {
-        accessorKey: "pnlPercentDisplay",
+        accessorKey: "pnlPercent",
         header: "Change",
         cell: ({ row }) => {
           const pnlPercent = row.original.pnlPercent ?? 0

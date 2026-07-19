@@ -2,6 +2,7 @@ package com.tradernet.marketai.scoring;
 
 import com.tradernet.marketai.context.MarketRegimeScore;
 import com.tradernet.marketai.context.MarketRegimeScoreEngine;
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.SignalSide;
 
@@ -48,66 +49,66 @@ public class ContextAwareSignalScorer implements SignalScorer {
     public ScoreResult score(FeatureSnapshot features) {
         final ScoreResult technical = technicalScorer.score(features);
         final MarketRegimeScore regimeScore = regimeScoreEngine.score(features);
-        final List<String> notes = new ArrayList<>(technical.getNotes());
+        final List<ExplanationItem> notes = new ArrayList<>(technical.getNotes());
         final boolean contextAvailable = features.getMarketContext().isAvailable();
         final Double forecastBullScore = features.getForecastBullScore();
         final boolean forecastAvailable = forecastBullScore != null;
         final int effectiveScore = effectiveContextScore(regimeScore.getValue(), forecastBullScore, contextAvailable);
         final boolean directionalContextAvailable = contextAvailable || forecastAvailable;
 
-        notes.add("market_score=" + regimeScore.getValue());
-        notes.add("market_regime=" + regimeScore.getRegime());
+        notes.add(ExplanationItem.numeric("market_score", "market_score", regimeScore.getValue()));
+        notes.add(ExplanationItem.value("market_regime", "market_regime", regimeScore.getRegime()));
         if (forecastAvailable) {
-            notes.add("forecast_bull_score=" + String.format("%.2f", forecastBullScore));
-            notes.add("effective_context_score=" + effectiveScore);
+            notes.add(ExplanationItem.numeric("forecast_bull_score", "forecast_bull_score", forecastBullScore));
+            notes.add(ExplanationItem.numeric("effective_context_score", "effective_context_score", effectiveScore));
         }
         notes.addAll(regimeScore.getDrivers());
 
         if (technical.getSide() == SignalSide.BUY) {
             if (!directionalContextAvailable) {
-                notes.add("context_filter=unavailable_passthrough");
+                notes.add(ExplanationItem.value("context_filter", "context_filter", "unavailable_passthrough"));
                 return passThrough(technical, notes);
             }
             if (forecastIsNeutral(forecastBullScore)) {
-                notes.add("forecast_filter=neutral_hold");
+                notes.add(ExplanationItem.value("forecast_filter", "forecast_filter", "neutral_hold"));
                 return hold(technical, effectiveScore, notes);
             }
             if (effectiveScore <= sellScoreThreshold) {
-                notes.add("context_filter=blocked_bearish_context");
+                notes.add(ExplanationItem.value("context_filter", "context_filter", "blocked_bearish_context"));
                 return hold(technical, effectiveScore, notes);
             }
-            notes.add(effectiveScore >= buyScoreThreshold ? "context_filter=confirmed" : "context_filter=non_contradictory");
+            notes.add(ExplanationItem.value("context_filter", "context_filter", effectiveScore >= buyScoreThreshold ? "confirmed" : "non_contradictory"));
             return new ScoreResult(SignalSide.BUY, contextualConfidence(technical, effectiveScore), "context-v2", notes);
         }
 
         if (technical.getSide() == SignalSide.SELL) {
             if (!directionalContextAvailable) {
-                notes.add("context_filter=unavailable_passthrough");
+                notes.add(ExplanationItem.value("context_filter", "context_filter", "unavailable_passthrough"));
                 return passThrough(technical, notes);
             }
             if (forecastIsNeutral(forecastBullScore)) {
-                notes.add("forecast_filter=neutral_hold");
+                notes.add(ExplanationItem.value("forecast_filter", "forecast_filter", "neutral_hold"));
                 return hold(technical, effectiveScore, notes);
             }
             if (effectiveScore >= buyScoreThreshold) {
-                notes.add("context_filter=blocked_bullish_context");
+                notes.add(ExplanationItem.value("context_filter", "context_filter", "blocked_bullish_context"));
                 return hold(technical, effectiveScore, notes);
             }
-            notes.add(effectiveScore <= sellScoreThreshold ? "context_filter=confirmed" : "context_filter=non_contradictory");
+            notes.add(ExplanationItem.value("context_filter", "context_filter", effectiveScore <= sellScoreThreshold ? "confirmed" : "non_contradictory"));
             return new ScoreResult(SignalSide.SELL, contextualConfidence(technical, 100 - effectiveScore), "context-v2", notes);
         }
 
         if (directionalContextAvailable && effectiveScore >= buyExtremeThreshold) {
-            notes.add("context_filter=forecast_or_context_promoted_buy");
+            notes.add(ExplanationItem.value("context_filter", "context_filter", "forecast_or_context_promoted_buy"));
             return new ScoreResult(SignalSide.BUY, scoreConfidence(effectiveScore), "context-v2", notes);
         }
 
         if (directionalContextAvailable && effectiveScore <= sellExtremeThreshold) {
-            notes.add("context_filter=forecast_or_context_promoted_sell");
+            notes.add(ExplanationItem.value("context_filter", "context_filter", "forecast_or_context_promoted_sell"));
             return new ScoreResult(SignalSide.SELL, scoreConfidence(100 - effectiveScore), "context-v2", notes);
         }
 
-        notes.add(directionalContextAvailable ? "context_filter=hold" : "context_filter=unavailable_hold");
+        notes.add(ExplanationItem.value("context_filter", "context_filter", directionalContextAvailable ? "hold" : "unavailable_hold"));
         return hold(technical, effectiveScore, notes);
     }
 
@@ -124,11 +125,11 @@ public class ContextAwareSignalScorer implements SignalScorer {
         return forecastBullScore != null && Math.abs(clamp(forecastBullScore, 0.0, 100.0) - 50.0) <= forecastNeutralBand;
     }
 
-    private ScoreResult passThrough(ScoreResult technical, List<String> notes) {
+    private ScoreResult passThrough(ScoreResult technical, List<ExplanationItem> notes) {
         return new ScoreResult(technical.getSide(), technical.getConfidence(), "context-v2", notes);
     }
 
-    private ScoreResult hold(ScoreResult technical, int effectiveScore, List<String> notes) {
+    private ScoreResult hold(ScoreResult technical, int effectiveScore, List<ExplanationItem> notes) {
         final int distanceFromNeutral = Math.abs(effectiveScore - 50);
         final double contextHoldConfidence = Math.max(0.50, 0.98 - (distanceFromNeutral / 50.0));
         final double confidence = technical.getSide() == SignalSide.HOLD

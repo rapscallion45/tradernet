@@ -54,7 +54,7 @@ An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-li
 
 ### Order history contract
 
-`GET /api/orders` returns the authenticated user's orders. Supplying a different `userId` is rejected with `403` rather than exposing another user's history.
+`GET /api/orders` returns the authenticated user's orders. Supplying a different `userId` is rejected with `403` rather than exposing another user's history. Monetary metrics such as `price`, `currentPrice`, `pnl`, `closePrice`, and `netValue` are returned as numeric values in the response `currency`; clients are responsible for locale-specific date, currency, and percent formatting.
 
 ### Trade history contract
 
@@ -78,7 +78,7 @@ Response fields:
 | `expectedReturn` | Expected return over the horizon as a decimal. |
 | `bullScore` | 0-100 bullishness score derived from forecast/model output. |
 | `model` | Forecast backend name, for example `statistical-fallback`, `timesfm`, `chronos`, or `context-fallback`. |
-| `drivers` | Human-readable forecast/context drivers. |
+| `drivers` | Structured forecast/context driver objects with `key`, `label`, and optional `value` or `numericValue`. |
 | `narrative` | Concise Ollama/Gemma or deterministic fallback summary. |
 
 Example response shape:
@@ -91,7 +91,11 @@ Example response shape:
   "expectedReturn": 0.012,
   "bullScore": 54.2,
   "model": "statistical-fallback",
-  "drivers": ["price history source: timescaledb", "recent price momentum positive", "realized volatility contained"],
+  "drivers": [
+    { "key": "history_source", "label": "price history source", "value": "timescaledb" },
+    { "key": "momentum", "label": "recent price momentum positive" },
+    { "key": "volatility", "label": "realized volatility contained" }
+  ],
   "narrative": "Today's BTCUSDT Bull Score is 54. price history source: timescaledb, recent price momentum positive, realized volatility contained. Probability of a positive 1-day return: 53%."
 }
 ```
@@ -326,7 +330,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - `No signal` means the chart has not received a signal payload for the selected symbol yet; no-signal badges are muted so they do not look equivalent to a real `HOLD`.
 - `BUY`, `SELL`, or `HOLD` means the backend emitted an `AiSignal` over `/api/ws/market`.
 - The adjacent confidence badge shows strength labels (`No signal`, `Weak`, `Medium`, or `Strong`) derived from the latest signal confidence.
-- The chart legend appends the latest signal model version and up to five prioritized signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context notes such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
+- The chart legend appends the latest signal model version and up to five prioritized structured signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context note keys such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
 - The chart interval selector stores the user's last selected interval in browser local storage and falls back to `1S` when no saved or valid interval exists.
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
@@ -336,7 +340,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 
 ### Forecast and order history display
 
-- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, a backend-generated plain-language current condition summary, and a forecast horizon dropdown that refetches the backend forecast for the selected number of days.
+- The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, a frontend-generated current condition summary derived from backend numeric fields, and a forecast horizon dropdown that refetches the backend forecast for the selected number of days.
 - The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured at order creation time; older rows created before the `bullScore` migration display a muted dash until they have a stored value.
 
 ## 9. Operational safeguards

@@ -117,6 +117,13 @@ export type MarketContextSnapshot = {
   available?: boolean
 }
 
+export type ExplanationItem = {
+  key: string
+  label?: string
+  value?: string
+  numericValue?: number
+}
+
 export type MarketForecast = {
   symbol: string
   horizonDays: number
@@ -124,9 +131,8 @@ export type MarketForecast = {
   expectedReturn: number
   bullScore: number
   model: string
-  drivers: string[]
+  drivers: ExplanationItem[]
   narrative?: string
-  marketConditionSummary?: string
 }
 
 export type OrderBookStatus = "LIVE" | "SYNCING" | "SNAPSHOT_ONLY" | "STALE" | "UNAVAILABLE"
@@ -257,21 +263,17 @@ export type OrderSummary = {
   userId: number
   symbol: string
   side: OrderSide
+  currency: string
   quantity: number
   price: number
   status: string
   createdAt: string
   closedAt?: string
   closePrice?: number
-  createdAtDisplay?: string
   currentPrice?: number
-  currentPriceDisplay?: string
   pnl?: number
-  pnlDisplay?: string
   pnlPercent?: number
-  pnlPercentDisplay?: string
   netValue?: number
-  netValueDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
   bullScore?: number

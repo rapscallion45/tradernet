@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * REST API for querying trades.
@@ -31,14 +30,8 @@ public class TradeResource {
         @Context ContainerRequestContext request,
         @QueryParam("symbol") String symbol
     ) {
-        Optional<AuthUserDto> authUser = AuthenticatedRequest.authenticatedUser(request);
-        if (authUser.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Not authenticated")
-                .build();
-        }
-
-        List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.get().getId(), symbol);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.getId(), symbol);
         return Response.ok(response).build();
     }
 }

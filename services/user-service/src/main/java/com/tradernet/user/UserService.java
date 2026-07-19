@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * Service for managing application users.
  * <p>
  * Provides methods for retrieving users by username or id,
- * and authenticating passwords. Uses JPA with Hibernate
+ * and resolving authenticated users for the login workflow. Uses JPA with Hibernate
  * and BCrypt for password hashing.
  */
 @Stateless
@@ -93,7 +93,7 @@ public class UserService {
 
     public List<UserProfileDto> getUserProfiles() {
         return findAllWithRoles().stream()
-            .map(UserProfileDto::fromUser)
+            .map(UserDtoMapper::toUserProfile)
             .collect(Collectors.toList());
     }
 
@@ -120,11 +120,11 @@ public class UserService {
     }
 
     public Optional<UserProfileDto> getUserProfile(long id) {
-        return findByIdWithRoles(id).map(UserProfileDto::fromUser);
+        return findByIdWithRoles(id).map(UserDtoMapper::toUserProfile);
     }
 
     public Optional<UserProfileDto> getUserProfileByUsername(String username) {
-        return findByUsernameWithRoles(username).map(UserProfileDto::fromUser);
+        return findByUsernameWithRoles(username).map(UserDtoMapper::toUserProfile);
     }
 
     public Optional<UserEntity> findAuthenticatedUser(String username, String password) {
@@ -134,23 +134,6 @@ public class UserService {
 
         return findByUsernameWithRoles(username)
             .filter(user -> passwordMatches(user, password));
-    }
-
-    /**
-     * Authenticates a user based on username and password credentials.
-     *
-     * @param username The user's username
-     * @param password The plain-text password
-     * @return true if authentication succeeds, false otherwise
-     */
-    public boolean authenticate(String username, String password) {
-        if (password == null || password.isBlank()) {
-            return false;
-        }
-
-        return findByUsername(username)
-            .filter(user -> passwordMatches(user, password))
-            .isPresent();
     }
 
     private boolean passwordMatches(UserEntity user, String password) {

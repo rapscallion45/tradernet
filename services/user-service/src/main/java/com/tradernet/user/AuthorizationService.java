@@ -25,7 +25,7 @@ public class AuthorizationService {
     private volatile List<ResourceAccessRule> cachedRules;
 
     public Set<String> getRequiredRoles(String path) {
-        final String normalisedPath = normalisePath(path);
+        final String normalisedPath = ResourcePathNormalizer.normalize(path);
         return rules().stream()
             .filter(rule -> rule.matches(normalisedPath))
             .flatMap(rule -> rule.allowedRoles.stream())
@@ -37,7 +37,7 @@ public class AuthorizationService {
     }
 
     public boolean canReadOwnUserByUsername(String path, AuthUserDto authUser) {
-        final String normalisedPath = normalisePath(path);
+        final String normalisedPath = ResourcePathNormalizer.normalize(path);
         final String byUsernamePrefix = "users/by-username/";
         if (!normalisedPath.startsWith(byUsernamePrefix)) {
             return false;
@@ -74,19 +74,6 @@ public class AuthorizationService {
         }
     }
 
-    private String normalisePath(String path) {
-        if (path == null) {
-            return "";
-        }
-
-        String normalisedPath = path.startsWith("/") ? path.substring(1) : path;
-        if (normalisedPath.endsWith("/")) {
-            normalisedPath = normalisedPath.substring(0, normalisedPath.length() - 1);
-        }
-
-        return normalisedPath;
-    }
-
     private static class ResourceAccessRule {
         private final String pathPrefix;
         private final Set<String> allowedRoles;
@@ -98,24 +85,13 @@ public class AuthorizationService {
 
         private static ResourceAccessRule fromResource(ResourceEntity resource) {
             return new ResourceAccessRule(
-                normaliseResourcePath(resource.getPathPrefix()),
+                ResourcePathNormalizer.normalize(resource.getPathPrefix()),
                 resource.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
             );
         }
 
         private boolean matches(String path) {
             return !pathPrefix.isBlank() && (path.equals(pathPrefix) || path.startsWith(pathPrefix + "/"));
-        }
-
-        private static String normaliseResourcePath(String pathPrefix) {
-            if (pathPrefix == null) {
-                return "";
-            }
-            String normalisedPath = pathPrefix.startsWith("/") ? pathPrefix.substring(1) : pathPrefix;
-            if (normalisedPath.endsWith("/")) {
-                normalisedPath = normalisedPath.substring(0, normalisedPath.length() - 1);
-            }
-            return normalisedPath;
         }
     }
 }

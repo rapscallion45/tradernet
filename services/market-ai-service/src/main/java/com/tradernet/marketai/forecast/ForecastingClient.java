@@ -2,6 +2,7 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -69,11 +70,13 @@ public class ForecastingClient {
         final double expectedReturn = root.path("expected_return").asDouble(0.0);
         final double bullScore = clamp(root.path("bull_score").asDouble(scoreFromProbability(probability)), 0.0, 100.0);
         final String model = root.path("model").asText("forecasting-service");
-        final List<String> drivers = new ArrayList<>();
+        final List<ExplanationItem> drivers = new ArrayList<>();
         final JsonNode driverNode = root.path("drivers");
         if (driverNode.isArray()) {
             for (JsonNode node : driverNode) {
-                drivers.add(node.asText());
+                if (node.isTextual() && !node.asText().isBlank()) {
+                    drivers.add(ExplanationItem.text("forecast_driver", node.asText()));
+                }
             }
         }
         addContextDrivers(drivers, context);
@@ -81,30 +84,30 @@ public class ForecastingClient {
     }
 
     private MarketForecast fallback(String symbol, int horizonDays, MarketContextSnapshot context, String reason) {
-        final List<String> drivers = new ArrayList<>();
-        drivers.add(reason);
+        final List<ExplanationItem> drivers = new ArrayList<>();
+        drivers.add(ExplanationItem.text("forecast_fallback", reason));
         addContextDrivers(drivers, context);
         final double bullScore = clamp(50.0 + contextScore(context) * 10.0, 0.0, 100.0);
         final double probability = clamp(0.5 + (bullScore - 50.0) / 100.0, 0.05, 0.95);
         return new MarketForecast(symbol, horizonDays, probability, 0.0, bullScore, "context-fallback", drivers, null);
     }
 
-    private void addContextDrivers(List<String> drivers, MarketContextSnapshot context) {
+    private void addContextDrivers(List<ExplanationItem> drivers, MarketContextSnapshot context) {
         if (context == null) {
             return;
         }
         if (context.getEtfFlowZScore() > 0.25) {
-            drivers.add("ETF inflows positive");
+            drivers.add(ExplanationItem.text("etf_flows", "ETF inflows positive"));
         } else if (context.getEtfFlowZScore() < -0.25) {
-            drivers.add("ETF flows negative");
+            drivers.add(ExplanationItem.text("etf_flows", "ETF flows negative"));
         }
         if (context.getExchangeOutflowZScore() > 0.25) {
-            drivers.add("exchange balances declining");
+            drivers.add(ExplanationItem.text("exchange_outflows", "exchange balances declining"));
         }
         if (Math.abs(context.getFundingRateZScore()) <= 0.5) {
-            drivers.add("funding rates neutral");
+            drivers.add(ExplanationItem.text("funding_rates", "funding rates neutral"));
         } else if (context.getFundingRateZScore() > 1.0) {
-            drivers.add("funding rates elevated");
+            drivers.add(ExplanationItem.text("funding_rates", "funding rates elevated"));
         }
     }
 
