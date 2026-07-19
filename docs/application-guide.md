@@ -134,6 +134,8 @@ Response fields include:
 
 Docker Compose uses TimescaleDB/Postgres for durable local development. The named Docker volume `timescaledb_data` is mounted at `/var/lib/postgresql/data`, so orders, trades, users, market bars, and forecast history inputs survive normal container recreation. Do not run `docker compose down -v` unless deleting the database is intentional.
 
+`SystemBootstrapService` defensively ensures the critical login schema exists at startup (`tblUsers.password_hash`, `tblAuthSessions`, and `tblPasswordResetSessions`) so older local databases can still reach the login/password-reset flow. Versioned migration files remain the source of truth for schema history and should still be applied to long-lived databases.
+
 The `timescaledb-init.sql` script enables the TimescaleDB extension, creates `market_bars`, converts it into a hypertable, and creates an index for symbol/time lookups.
 
 ## 5. Docker Compose runtime topology

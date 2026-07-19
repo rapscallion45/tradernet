@@ -55,6 +55,7 @@ public class SystemBootstrapService {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     private static final String DEFAULT_STANDARD_USERNAME = "standard";
     private static final String DEFAULT_PASSWORD = "changeme";
+    private static final String PASSWORD_HASH_FORMAT_PROBE = "tradernet-password-hash-format-probe";
 
     @EJB
     private RoleDao roleDao;
@@ -77,6 +78,7 @@ public class SystemBootstrapService {
     @PostConstruct
     void bootstrap() {
         initializeSchemaForH2();
+        ensureCriticalAuthSchema();
 
         RoleEntity allRightsRole = ensureRole(ALL_RIGHTS_ROLE);
         RoleEntity adminRightsRole = ensureRole(ADMIN_RIGHTS_ROLE);
@@ -146,7 +148,7 @@ public class SystemBootstrapService {
     }
 
     private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String fullName, String password) {
-        if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+        if (hasUsablePasswordHash(user.getPasswordHash())) {
             return;
         }
 
@@ -156,7 +158,31 @@ public class SystemBootstrapService {
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setChangePasswordNextLogin(true);
         userDao.save(user);
-        LOG.info("Initialized missing bootstrap credentials for user '{}'.", user.getUsername());
+        LOG.info("Initialized bootstrap credentials for user '{}' because the stored password hash was missing or invalid.",
+            user.getUsername());
+    }
+
+    private boolean hasUsablePasswordHash(String passwordHash) {
+        if (passwordHash == null || passwordHash.isBlank()) {
+            return false;
+        }
+
+        if (!isBcryptHash(passwordHash)) {
+            return false;
+        }
+
+        try {
+            BCrypt.checkpw(PASSWORD_HASH_FORMAT_PROBE, passwordHash);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private boolean isBcryptHash(String passwordHash) {
+        return passwordHash.startsWith("$2a$")
+            || passwordHash.startsWith("$2b$")
+            || passwordHash.startsWith("$2y$");
     }
 
     private GroupEntity ensureGroup(String groupName) {
@@ -232,6 +258,28 @@ public class SystemBootstrapService {
         }
     }
 
+    private void ensureCriticalAuthSchema() {
+        try (Connection connection = dataSource.getConnection()) {
+            executeSql(connection, "ALTER TABLE tblUsers ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)");
+            executeSql(connection, "CREATE TABLE IF NOT EXISTS tblAuthSessions ("
+                + "token VARCHAR(64) PRIMARY KEY, "
+                + "userId BIGINT NOT NULL, "
+                + "expiresAt TIMESTAMP NOT NULL, "
+                + "CONSTRAINT fk_tblAuthSessions_user FOREIGN KEY (userId) REFERENCES tblUsers(id)"
+                + ")");
+            executeSql(connection, "CREATE INDEX IF NOT EXISTS idx_tblAuthSessions_expiresAt ON tblAuthSessions (expiresAt)");
+            executeSql(connection, "CREATE TABLE IF NOT EXISTS tblPasswordResetSessions ("
+                + "token VARCHAR(64) PRIMARY KEY, "
+                + "username VARCHAR(50) NOT NULL, "
+                + "expiresAt TIMESTAMP NOT NULL"
+                + ")");
+            executeSql(connection,
+                "CREATE INDEX IF NOT EXISTS idx_tblPasswordResetSessions_expiresAt ON tblPasswordResetSessions (expiresAt)");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to ensure critical auth schema.", e);
+        }
+    }
+
     private void runSqlScript(Connection connection, String scriptPath) throws IOException, SQLException {
         try (InputStream stream = getClass().getResourceAsStream(scriptPath)) {
             if (stream == null) {
@@ -244,10 +292,14 @@ public class SystemBootstrapService {
             }
 
             for (String statementSql : splitStatements(script)) {
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute(statementSql);
-                }
+                executeSql(connection, statementSql);
             }
+        }
+    }
+
+    private void executeSql(Connection connection, String sql) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(sql);
         }
     }
 
