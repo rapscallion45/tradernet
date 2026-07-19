@@ -16,6 +16,15 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 - Prefer small, focused changes that keep API/resource layers thin and push business logic into the appropriate service module.
 - Keep REST resources as transport adapters only: authentication/session lookup, request validation, parameter parsing, response status shaping, and delegation. Move portfolio/order/market calculations, aggregation, valuation, and DTO construction into service-layer EJBs.
 - Keep business calculations on the backend. Frontend code should request calculated values from APIs and limit itself to presentation, formatting, and user interaction state.
+- Scope user-owned resources to the authenticated user. Do not trust client-supplied `userId` for protected portfolio, order, trade, or account data unless an explicit admin policy exists; reject mismatches instead of returning another user's data.
+- Use container-managed Jakarta EJBs for service-layer collaborators. Prefer `@Stateless` for business operations, persistence workflows, external gateways, and mapper/orchestration services. Use `@Singleton` only for intentional application-wide shared state, caches, registries, subscriptions, or lifecycle owners, and make concurrency/locking decisions explicit.
+- API resources should inject service-layer EJBs with `@EJB`. Do not inject DAOs directly into resources; keep persistence access behind the owning service module.
+- Keep repeated JAX-RS response patterns centralized. Prefer small request helpers and `ExceptionMapper` implementations for common auth/error handling instead of duplicating optional-user/401/403 response construction across resources.
+- Do not expose JPA entities, JPA enums, or persistence implementation types in API or cross-service contracts. Define service DTOs, command objects, and service-owned enums, then map to/from entities inside the owning service module.
+- Keep DTO construction and DTO/entity mapping in service-layer mappers or focused service collaborators. Avoid placing DTO assembly in REST resources, JPA entities, or unrelated services.
+- API DTOs should return raw semantic values: numbers, timestamps, currency codes, ids, enums, and structured objects. Do not add preformatted display strings for dates, money, percentages, or key/value diagnostics; frontend code owns locale-specific formatting.
+- When returning model drivers, signal notes, diagnostics, or explanations, use structured fields such as `key`, `label`, `value`, and `numericValue` rather than concatenated display strings like `foo=1.23`.
+- Persist password hashes canonically on `tblUsers.password_hash`. Do not reintroduce password-list tables, password-history APIs, or `/api/passwords`-style endpoints unless a future security design explicitly requires audited password history with hashes only.
 - Keep generated or environment-specific artifacts out of version control.
 - Do not use recursive `ls -R` or `grep -R`; use `find` and `rg`.
 - Never add try/catch blocks around imports.
