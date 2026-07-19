@@ -154,16 +154,6 @@ public class BinanceOrderBookClient {
     }
 
     public OrderBookSnapshot getSnapshot(int requestedLevels) {
-        final boolean shouldRetrySync;
-        synchronized (this) {
-            shouldRetrySync = running
-                    && !streamSynchronized
-                    && System.currentTimeMillis() - lastSyncAttemptAtMs > RESYNC_RETRY_COOLDOWN_MS;
-        }
-        if (shouldRetrySync) {
-            resync("retry snapshot");
-        }
-
         synchronized (this) {
             final int levels = boundRequestedLevels(requestedLevels);
             final List<OrderBookLevel> bidLevels = buildLevels(bids, levels);
@@ -210,6 +200,16 @@ public class BinanceOrderBookClient {
                     bidLevels,
                     askLevels);
         }
+    }
+
+    public synchronized boolean shouldRetrySync() {
+        return running
+                && !streamSynchronized
+                && System.currentTimeMillis() - lastSyncAttemptAtMs > RESYNC_RETRY_COOLDOWN_MS;
+    }
+
+    public void retrySync() {
+        resync("retry snapshot");
     }
 
     public synchronized boolean isRunning() {

@@ -31,6 +31,21 @@ Except for `/api/health` and authentication routes, REST endpoints require a val
 
 An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-lived, HTTP-only `tradernet_password_reset` cookie rather than a full session. Reuse that temporary cookie only for `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
+Auth/session cookies are HttpOnly and SameSite=Lax. The Secure attribute is enabled automatically for HTTPS or `X-Forwarded-Proto: https` requests, and can be forced with `tradernet.auth.cookie.secure`. Raw session/reset bearer tokens are never stored server-side; `tblAuthSessions.token` and `tblPasswordResetSessions.token` contain token hashes.
+
+HTTP-level API failures use a standard JSON error body:
+
+```json
+{
+  "error": {
+    "status": 400,
+    "code": "Bad Request",
+    "errorMessage": "Request body is required",
+    "timestamp": 1784476800000
+  }
+}
+```
+
 | API | Resource | Purpose |
 | --- | --- | --- |
 | `GET /api/health` | `HealthResource` | Basic application smoke check. |
@@ -51,6 +66,8 @@ An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-li
 ### Portfolio history contract
 
 `GET /api/portfolio` returns the current summary plus a daily `history` series. Each history point contains the account value for that day in the selected display currency and an `events` array for order activity on that day. The portfolio page uses those backend-calculated values directly for the chart hover tooltip and BUY/SELL markers.
+
+Open BUY/long positions are represented as positive quantities. Open SELL/short positions are represented as negative quantities and are included in holdings, totals, profit/loss, and historical account valuation.
 
 ### Order history contract
 
@@ -110,6 +127,8 @@ GET /api/market/order-book?symbol=BTCUSDT&levels=12&currency=USD
 
 The backend opens Binance's diff-depth stream, fetches a REST snapshot, applies updates in update-ID order, and resyncs from REST if a gap is detected. The response is aggregated L2 market depth, not individual order/queue-level data.
 
+Order-book websocket startup and retry snapshot sync are scheduled in the background. A first request for a symbol can therefore return `SYNCING` with the latest cached snapshot while the backend connects and hydrates the book.
+
 Response fields include:
 
 | Field | Meaning |
@@ -127,7 +146,7 @@ Response fields include:
 | Data | Storage | Notes |
 | --- | --- | --- |
 | Users, roles, groups, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. User password hashes are stored canonically on `tblUsers.password_hash`. |
-| Auth sessions | `tblAuthSessions`, `tblPasswordResetSessions` | Full login sessions and short-lived expired-password reset tokens. |
+| Auth sessions | `tblAuthSessions`, `tblPasswordResetSessions` | Full login sessions and short-lived expired-password reset tokens. The `token` columns store token hashes only. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
 | Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
 | Market bars | `market_bars` | Written by `MarketAiService` from closed live bars and read by the Python forecasting service. |
@@ -256,6 +275,12 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | `ADMIN_PASSWORD` | `changeme` | WildFly admin password created on startup. |
 | `SCHEMA_AUTO_CREATE_DEV` | `true` | Allows H2 schema auto-generation in local dev mode. |
 
+### Auth Java system properties
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `tradernet.auth.cookie.secure` | auto | Forces auth cookies Secure when `true` or explicitly disables Secure for local HTTP when `false`. If unset, HTTPS and `X-Forwarded-Proto: https` requests receive Secure cookies. |
+
 ### Market AI Java system properties
 
 | Property | Default | Description |
@@ -299,7 +324,7 @@ The real-time chart BUY/HOLD/SELL signal and the forecast card are related but s
 - Chart signals are generated from short-term technical features, market context, and the cached forecast bull score.
 - The technical model still creates the first BUY/SELL/HOLD vote from EMA/RSI features. Market context and forecast bull score then form an effective context score that can confirm the technical vote, block it into HOLD when contradictory, or promote HOLD only when the effective score reaches an extreme.
 - Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order/signal horizon is 1 day for daily trading, and the forecast card lets the user select supported horizons such as 1, 3, 7, 14, or 30 days without changing the selected symbol.
-- A high forecast bull score pulls the effective context score toward BUY, a low bull score pulls it toward SELL, and a score near 50 falls inside the neutral band and biases directional technical votes back to HOLD. The chart signal caches this score for `market.ai.signalBullScoreTtlMs` milliseconds to avoid calling the forecasting service on every closed bar.
+- A high forecast bull score pulls the effective context score toward BUY, a low bull score pulls it toward SELL, and a score near 50 falls inside the neutral band and biases directional technical votes back to HOLD. The chart signal uses an async cache for this score, refreshed according to `market.ai.signalBullScoreTtlMs`, so live websocket trade handling does not call the forecasting service on every closed bar.
 
 The forecasting path is designed to degrade gracefully:
 
@@ -336,6 +361,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - The chart interval selector stores the user's last selected interval in browser local storage and falls back to `1S` when no saved or valid interval exists.
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
+- Closed live bars are published to chart subscribers immediately and persisted asynchronously for downstream forecasting history.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.
 - The Market Score Inputs card shows backend-calculated bullish-tilt percentages, not raw z-scores. `50% bull` is neutral only when backend input data is present; missing inputs show muted `No data` badges instead of a fallback percentage. The card-level explanation is available from the info icon next to the title. Values above 50% are supportive context for BUY, and values below 50% are bearish context for SELL. Hovering a badge shows the raw normalized input when data exists. These context inputs feed the backend market score used by `context-v2`; they do not directly place orders and they are blended with the short-term technical signal and forecast bull score before producing BUY/SELL/HOLD.
 - The charts sidebar shows the selected symbol order book between the summary card and `TradernetAI Forecast`. The browser polls Tradernet, not Binance directly; the backend maintains the Binance L2 book, exposes `LIVE`/sync status, and resyncs from REST snapshots when diff-depth update IDs gap.

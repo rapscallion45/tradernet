@@ -32,7 +32,7 @@ public class UserResource {
     public Response getUser(@PathParam("id") long id) {
         return userService.getUserProfile(id)
             .map(user -> Response.ok(user).build())
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "User not found"));
     }
 
     @GET
@@ -40,6 +40,6 @@ public class UserResource {
     public Response getUserByUsername(@PathParam("username") String username) {
         return userService.getUserProfileByUsername(username)
             .map(user -> Response.ok(user).build())
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "User not found"));
     }
 }

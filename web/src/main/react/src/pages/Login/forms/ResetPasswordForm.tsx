@@ -1,6 +1,5 @@
 import { FC } from "react"
 import { useForm } from "react-hook-form"
-import { isAxiosError } from "axios"
 import { Center, Group, Image, PasswordInput, Stack, Text, Title } from "@mantine/core"
 import TradernetLogo from "assets/tradernet-logo.svg"
 import { Button } from "components/Button/Button"
@@ -9,6 +8,7 @@ import { validateFieldMatches } from "utils/forms"
 import { getPasswordValidationRules } from "utils/password"
 import { PasswordSettings } from "api/types"
 import { getRestClient } from "api/RestClient"
+import { getErrorMessage } from "api/util"
 
 /**
  * Reset-password form field data.
@@ -64,16 +64,13 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
         })
         resetLoginStatus()
       } catch (error: unknown) {
-        const responseData = isAxiosError(error) ? error.response?.data : undefined
-        if (isPasswordErrorResponse(responseData)) {
-          toast({
-            id: "password-change",
-            title: "Password change failed",
-            message: responseData.message ?? responseData.error ?? "Please try again or contact an administrator",
-            variant: "error",
-            timestamp: Date.now(),
-          })
-        }
+        toast({
+          id: "password-change",
+          title: "Password change failed",
+          message: getErrorMessage(error),
+          variant: "error",
+          timestamp: Date.now(),
+        })
       }
     },
     (errors) => {
@@ -130,14 +127,3 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
 }
 
 export default ResetPasswordForm
-
-type PasswordErrorResponse = {
-  error?: string
-  message?: string
-}
-
-function isPasswordErrorResponse(data: unknown): data is PasswordErrorResponse {
-  if (data == null || typeof data !== "object") return false
-  const response = data as PasswordErrorResponse
-  return response.error !== undefined || response.message !== undefined
-}

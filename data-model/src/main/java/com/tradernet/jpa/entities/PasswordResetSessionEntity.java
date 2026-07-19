@@ -3,28 +3,30 @@ package com.tradernet.jpa.entities;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 import java.time.Instant;
 
 /**
- * Persisted short-lived password reset token.
+ * Persisted short-lived password reset token hash.
  */
 @Entity
 @Table(name = "tblPasswordResetSessions")
 public class PasswordResetSessionEntity {
 
     @Id
-    private String token;
+    @Column(name = "token")
+    private String tokenHash;
 
     private String username;
     private Instant expiresAt;
 
-    public String getToken() {
-        return token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
     }
 
     public String getUsername() {

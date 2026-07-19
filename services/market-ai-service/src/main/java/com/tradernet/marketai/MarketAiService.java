@@ -65,6 +65,9 @@ public class MarketAiService {
     private OllamaNarrativeClient ollamaNarrativeClient;
 
     @EJB
+    private SignalBullScoreCache signalBullScoreCache;
+
+    @EJB
     private MarketHistoryBuffer history;
 
     @EJB
@@ -80,8 +83,6 @@ public class MarketAiService {
     private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
     private final Map<String, AiSignalEngine> signalEnginesBySymbol = new ConcurrentHashMap<>();
-    private final Map<String, Double> signalBullScoresBySymbol = new ConcurrentHashMap<>();
-    private final Map<String, Long> signalBullScoreRefreshBySymbol = new ConcurrentHashMap<>();
 
     private volatile List<String> cachedSymbols = List.of("BTCUSDT");
     private volatile long cachedSymbolsAtMs = 0L;
@@ -105,7 +106,7 @@ public class MarketAiService {
         signalEnginesBySymbol.clear();
     }
 
-    @Lock(LockType.WRITE)
+    @Lock(LockType.READ)
     public void ensureLiveSymbol(String symbol) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         if (normalizedSymbol.isBlank()) {
@@ -208,7 +209,7 @@ public class MarketAiService {
         marketContexts.refresh();
     }
 
-    @Lock(LockType.WRITE)
+    @Lock(LockType.READ)
     public void updateMarketContext(String symbol, MarketContextSnapshot snapshot) {
         marketContexts.update(symbol, snapshot);
     }
@@ -241,7 +242,7 @@ public class MarketAiService {
         return MarketHistoryBuffer.takeLast(generatedSignals, limit);
     }
 
-    @Lock(LockType.WRITE)
+    @Lock(LockType.READ)
     public void onTrade(MarketTrade trade) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(trade.getSymbol());
         final BarAggregator symbolBarAggregator = barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
@@ -258,7 +259,7 @@ public class MarketAiService {
         }
 
         history.appendBar(closed);
-        barPersistence.store(closed);
+        barPersistence.storeAsync(closed);
 
         final FeatureSnapshot features = enrichWithSignalBullScore(symbolFeatureEngine.onClosedBar(closed));
         final AiSignal signal = symbolSignalEngine.evaluate(features);
@@ -276,22 +277,12 @@ public class MarketAiService {
         }
 
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(features.getSymbol());
-        final long now = System.currentTimeMillis();
         final long ttlMs = Long.parseLong(System.getProperty("market.ai.signalBullScoreTtlMs", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_TTL_MS)));
-        final Long refreshedAt = signalBullScoreRefreshBySymbol.get(normalizedSymbol);
-        final Double cachedScore = signalBullScoresBySymbol.get(normalizedSymbol);
-        if (cachedScore != null && refreshedAt != null && now - refreshedAt < ttlMs) {
-            return features.withForecastBullScore(cachedScore);
-        }
-
-        try {
-            final int horizonDays = Integer.parseInt(System.getProperty("market.ai.signalBullScoreHorizonDays", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS)));
-            final double bullScore = getBullScore(normalizedSymbol, horizonDays);
-            signalBullScoresBySymbol.put(normalizedSymbol, bullScore);
-            signalBullScoreRefreshBySymbol.put(normalizedSymbol, now);
-            return features.withForecastBullScore(bullScore);
-        } catch (RuntimeException ex) {
-            return cachedScore == null ? features : features.withForecastBullScore(cachedScore);
-        }
+        final int horizonDays = Integer.parseInt(System.getProperty(
+            "market.ai.signalBullScoreHorizonDays",
+            String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS)
+        ));
+        final Double bullScore = signalBullScoreCache.getScoreOrRequestRefresh(normalizedSymbol, horizonDays, ttlMs);
+        return bullScore == null ? features : features.withForecastBullScore(bullScore);
     }
 }

@@ -3,16 +3,12 @@
  */
 import { AxiosRequestConfig } from "axios"
 
-export type ApiErrorModel = {
-  errorCode: number
-  errorMessage: string
-  hostName: string
-  timestamp: number
-}
-
 export type ApiErrorBody = {
   error?: {
+    status?: number
+    code?: string
     errorMessage?: string
+    timestamp?: number
   }
 }
 

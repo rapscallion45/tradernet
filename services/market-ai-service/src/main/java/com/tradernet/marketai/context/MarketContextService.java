@@ -2,9 +2,9 @@ package com.tradernet.marketai.context;
 
 import com.tradernet.marketai.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import jakarta.ejb.ConcurrencyManagement;
+import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.EJB;
-import jakarta.ejb.Lock;
-import jakarta.ejb.LockType;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Owns market-context registration, hydration and manual updates.
  */
 @Singleton
+@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MarketContextService {
 
@@ -25,12 +26,10 @@ public class MarketContextService {
     @EJB
     private MarketContextDataIngestionClient contextDataIngestionClient;
 
-    @Lock(LockType.READ)
     public MarketContextRegistry registry() {
         return marketContextRegistry;
     }
 
-    @Lock(LockType.WRITE)
     public void registerSymbol(String symbol) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         if (!normalizedSymbol.isBlank()) {
@@ -38,7 +37,6 @@ public class MarketContextService {
         }
     }
 
-    @Lock(LockType.WRITE)
     public void registerSymbols(String symbols) {
         if (symbols == null || symbols.isBlank()) {
             return;
@@ -49,12 +47,10 @@ public class MarketContextService {
         }
     }
 
-    @Lock(LockType.WRITE)
     public MarketContextSnapshot get(String symbol) {
         return getHydrated(symbol);
     }
 
-    @Lock(LockType.WRITE)
     public MarketContextSnapshot getHydrated(String symbol) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         registerSymbol(normalizedSymbol);
@@ -66,7 +62,6 @@ public class MarketContextService {
         return snapshot;
     }
 
-    @Lock(LockType.WRITE)
     public void refresh() {
         if (!Boolean.parseBoolean(System.getProperty("market.ai.context.ingestion.enabled", "true"))) {
             return;
@@ -76,7 +71,6 @@ public class MarketContextService {
         contextRefreshSymbols.forEach(this::hydrate);
     }
 
-    @Lock(LockType.WRITE)
     public void update(String symbol, MarketContextSnapshot snapshot) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         registerSymbol(normalizedSymbol);

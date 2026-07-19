@@ -1,11 +1,11 @@
 import { UseMutationResult } from "@tanstack/react-query"
 import { isAxiosError } from "axios"
 import { useToast } from "hooks/useToast"
-import { ApiErrorModel } from "api/types"
+import { ApiErrorBody } from "api/types"
 
 export type ApiErrorModelWithStatus = {
   status: number
-  error: ApiErrorModel
+  error: NonNullable<ApiErrorBody["error"]>
 }
 
 export type PartialHandlers<ReturnType, PayloadType = ReturnType> = Partial<CrudHandlers<ReturnType, PayloadType>>
@@ -50,10 +50,10 @@ export default function useCrudHandling<ReturnType, PayloadType = ReturnType>():
       })
     }
 
-    if (isAxiosError(error) && error.response?.data && isApiErrorModel(error.response?.data) && error.response?.status && handlers.apiModel) {
+    if (isAxiosError(error) && error.response?.data && isApiErrorBody(error.response?.data) && error.response?.status && handlers.apiModel) {
       handlers.apiModel({
         status: error.response?.status,
-        error: error.response?.data,
+        error: error.response?.data.error,
       })
     } else if (isAxiosError(error) && error.response?.status === 404 && handlers.notFound) {
       handlers.notFound(payload)
@@ -69,6 +69,6 @@ export default function useCrudHandling<ReturnType, PayloadType = ReturnType>():
   return [handleError, handleSuccess]
 }
 
-export function isApiErrorModel<T extends ApiErrorModel = ApiErrorModel>(data: unknown): data is T {
-  return (data as T).errorMessage !== undefined
+export function isApiErrorBody(data: unknown): data is ApiErrorBody & { error: NonNullable<ApiErrorBody["error"]> } {
+  return (data as ApiErrorBody).error?.errorMessage !== undefined
 }

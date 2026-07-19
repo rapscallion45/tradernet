@@ -10,7 +10,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -37,22 +36,22 @@ public class GroupResource {
     public Response getGroup(@PathParam("id") long id) {
         return groupManagementService.getGroup(id)
             .map(group -> Response.ok(group).build())
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
     }
 
     @PUT
     @Path("/{id}")
     public Response updateGroup(@PathParam("id") long id, UpdateGroupRequestDto request) {
         if (request == null) {
-            throw new BadRequestException("Request body is required");
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "Request body is required");
         }
 
         try {
             return groupManagementService.updateGroup(id, request.getUsernames(), request.getRoleNames())
                 .map(group -> Response.ok(group).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+                .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException(ex.getMessage());
+            return ApiErrors.response(Response.Status.BAD_REQUEST, ex.getMessage());
         }
     }
 }

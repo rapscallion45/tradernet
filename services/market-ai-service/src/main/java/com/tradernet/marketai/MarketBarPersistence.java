@@ -2,6 +2,7 @@ package com.tradernet.marketai;
 
 import com.tradernet.marketai.model.MarketBar;
 import jakarta.annotation.Resource;
+import jakarta.ejb.Asynchronous;
 import jakarta.ejb.Stateless;
 
 import javax.sql.DataSource;
@@ -21,6 +22,11 @@ public class MarketBarPersistence {
 
     @Resource(lookup = "java:/jdbc/TradernetDS")
     private DataSource dataSource;
+
+    @Asynchronous
+    public void storeAsync(MarketBar bar) {
+        store(bar);
+    }
 
     public void store(MarketBar bar) {
         if (dataSource == null || bar == null) {

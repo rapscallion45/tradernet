@@ -42,9 +42,7 @@ public class OrderResource {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
         long authenticatedUserId = authUser.getId();
         if (userId != null && userId != authenticatedUserId) {
-            return Response.status(Response.Status.FORBIDDEN)
-                .entity("Cannot list orders for another user")
-                .build();
+            return ApiErrors.response(Response.Status.FORBIDDEN, "Cannot list orders for another user");
         }
 
         List<OrderResponseDto> response = orderPresentationService.getOrdersForUser(authenticatedUserId, currency);
@@ -54,36 +52,26 @@ public class OrderResource {
     @POST
     public Response createOrder(@Context ContainerRequestContext requestContext, @Valid OrderRequestDto request) {
         if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Order payload is required")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "Order payload is required");
         }
 
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(requestContext);
 
         String symbol = request.getSymbol();
         if (symbol == null || symbol.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("symbol is required")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "symbol is required");
         }
 
         if (request.getSide() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("position is required")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "position is required");
         }
 
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("quantity must be greater than 0")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "quantity must be greater than 0");
         }
 
         if (request.getPrice() == null || request.getPrice() <= 0) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("price must be greater than 0")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "price must be greater than 0");
         }
 
         return Response.status(Response.Status.CREATED)
@@ -100,15 +88,11 @@ public class OrderResource {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
 
         if (orderId == null || orderId <= 0) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity("orderId must be greater than 0")
-                .build();
+            return ApiErrors.response(Response.Status.BAD_REQUEST, "orderId must be greater than 0");
         }
 
         return orderPresentationService.closeOrder(authUser.getId(), orderId)
             .map(response -> Response.ok(response).build())
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
-                .entity("Order not found")
-                .build());
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Order not found"));
     }
 }

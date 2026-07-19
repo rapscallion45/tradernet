@@ -39,6 +39,7 @@ import static com.tradernet.order.CurrencyRounding.roundCurrency;
 public class PortfolioService {
 
     private static final int MAX_PORTFOLIO_HISTORY_DAYS = 1_000;
+    private static final double POSITION_EPSILON = 1e-9;
 
     @EJB
     private OrderService orderService;
@@ -75,18 +76,19 @@ public class PortfolioService {
 
         final List<PortfolioAssetDto> assets = new ArrayList<>();
         double totalCost = 0.0;
+        double totalCostBasis = 0.0;
         double totalMarketValue = 0.0;
 
         for (Map.Entry<String, PositionAggregate> entry : positions.entrySet()) {
             final PositionAggregate aggregate = entry.getValue();
-            if (aggregate.netQuantity <= 0.0) {
+            if (isFlat(aggregate)) {
                 continue;
             }
 
             final String symbol = entry.getKey();
             final CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(symbol);
 
-            final double averageCostRaw = aggregate.netCost <= 0.0 ? 0.0 : aggregate.netCost / aggregate.netQuantity;
+            final double averageCostRaw = averageCost(aggregate);
             final double fallbackPrice = aggregate.lastKnownPrice > 0.0 ? aggregate.lastKnownPrice : averageCostRaw;
             final double currentPriceRaw = marketPriceService.resolveCurrentPrice(symbol, fallbackPrice);
 
@@ -95,7 +97,8 @@ public class PortfolioService {
             final double assetCost = averageCost * aggregate.netQuantity;
             final double marketValue = currentPrice * aggregate.netQuantity;
             final double pnl = marketValue - assetCost;
-            final double pnlPercent = assetCost == 0.0 ? 0.0 : (pnl / assetCost) * 100.0;
+            final double costBasis = Math.abs(assetCost);
+            final double pnlPercent = costBasis == 0.0 ? 0.0 : (pnl / costBasis) * 100.0;
 
             final PortfolioAssetDto asset = new PortfolioAssetDto();
             asset.setSymbol(symbol);
@@ -109,10 +112,11 @@ public class PortfolioService {
 
             assets.add(asset);
             totalCost += assetCost;
+            totalCostBasis += costBasis;
             totalMarketValue += marketValue;
         }
 
-        assets.sort(Comparator.comparingDouble(PortfolioAssetDto::getMarketValue).reversed());
+        assets.sort(Comparator.comparingDouble((PortfolioAssetDto asset) -> Math.abs(asset.getMarketValue())).reversed());
 
         final PortfolioSummaryDto summary = new PortfolioSummaryDto();
         summary.setCurrency(displayCurrency.name());
@@ -122,7 +126,7 @@ public class PortfolioService {
 
         final double totalPnl = totalMarketValue - totalCost;
         summary.setTotalProfitLoss(roundCurrency(totalPnl));
-        summary.setTotalProfitLossPercent(roundCurrency(totalCost == 0.0 ? 0.0 : (totalPnl / totalCost) * 100.0));
+        summary.setTotalProfitLossPercent(roundCurrency(totalCostBasis == 0.0 ? 0.0 : (totalPnl / totalCostBasis) * 100.0));
         return summary;
     }
 
@@ -189,12 +193,12 @@ public class PortfolioService {
 
         for (Map.Entry<String, PositionAggregate> entry : positions.entrySet()) {
             final PositionAggregate aggregate = entry.getValue();
-            if (aggregate.netQuantity <= 0.0) {
+            if (isFlat(aggregate)) {
                 continue;
             }
 
             final String symbol = entry.getKey();
-            final double fallbackPrice = aggregate.lastKnownPrice > 0.0 ? aggregate.lastKnownPrice : aggregate.netCost / aggregate.netQuantity;
+            final double fallbackPrice = aggregate.lastKnownPrice > 0.0 ? aggregate.lastKnownPrice : averageCost(aggregate);
             final double priceRaw = useLivePrice
                 ? marketPriceService.resolveCurrentPrice(symbol, fallbackPrice)
                 : resolveHistoricalPrice(symbol, valuationDate, fallbackPrice, dailyClosePrices);
@@ -303,14 +307,14 @@ public class PortfolioService {
     }
 
     private void applyTrade(PositionAggregate aggregate, double quantityDelta, double tradePrice) {
-        if (Math.abs(quantityDelta) < 1e-9) {
+        if (Math.abs(quantityDelta) < POSITION_EPSILON) {
             return;
         }
 
-        if (Math.abs(aggregate.netQuantity) < 1e-9 || hasSameSign(aggregate.netQuantity, quantityDelta)) {
+        if (Math.abs(aggregate.netQuantity) < POSITION_EPSILON || hasSameSign(aggregate.netQuantity, quantityDelta)) {
             aggregate.netQuantity += quantityDelta;
             aggregate.netCost += quantityDelta * tradePrice;
-            if (Math.abs(aggregate.netQuantity) < 1e-9) {
+            if (Math.abs(aggregate.netQuantity) < POSITION_EPSILON) {
                 aggregate.netQuantity = 0.0;
                 aggregate.netCost = 0.0;
             }
@@ -320,7 +324,7 @@ public class PortfolioService {
         final double newQuantity = aggregate.netQuantity + quantityDelta;
         final double averageCost = Math.abs(aggregate.netCost / aggregate.netQuantity);
 
-        if (Math.abs(newQuantity) < 1e-9) {
+        if (Math.abs(newQuantity) < POSITION_EPSILON) {
             aggregate.netQuantity = 0.0;
             aggregate.netCost = 0.0;
             return;
@@ -338,6 +342,14 @@ public class PortfolioService {
 
     private boolean hasSameSign(double left, double right) {
         return (left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0);
+    }
+
+    private boolean isFlat(PositionAggregate aggregate) {
+        return Math.abs(aggregate.netQuantity) < POSITION_EPSILON;
+    }
+
+    private double averageCost(PositionAggregate aggregate) {
+        return isFlat(aggregate) ? 0.0 : Math.abs(aggregate.netCost / aggregate.netQuantity);
     }
 
     private static class PositionAggregate {

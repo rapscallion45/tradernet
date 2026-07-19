@@ -11,6 +11,7 @@ import com.tradernet.api.resources.PortfolioResource;
 import com.tradernet.api.resources.RoleResource;
 import com.tradernet.api.resources.TradeResource;
 import com.tradernet.api.resources.UserResource;
+import com.tradernet.api.resources.WebApplicationExceptionMapper;
 
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
@@ -35,7 +36,8 @@ public class TradernetApplication extends Application {
             PortfolioResource.class,
             RoleResource.class,
             TradeResource.class,
-            UserResource.class
+            UserResource.class,
+            WebApplicationExceptionMapper.class
         );
     }
 }

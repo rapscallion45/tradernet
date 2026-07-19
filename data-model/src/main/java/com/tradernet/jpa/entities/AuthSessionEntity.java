@@ -3,28 +3,30 @@ package com.tradernet.jpa.entities;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 import java.time.Instant;
 
 /**
- * Persisted authenticated web session token.
+ * Persisted authenticated web session token hash.
  */
 @Entity
 @Table(name = "tblAuthSessions")
 public class AuthSessionEntity {
 
     @Id
-    private String token;
+    @Column(name = "token")
+    private String tokenHash;
 
     private long userId;
     private Instant expiresAt;
 
-    public String getToken() {
-        return token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
     }
 
     public long getUserId() {

@@ -8,10 +8,14 @@ import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Owns authenticated web sessions and short-lived password reset sessions.
@@ -21,6 +25,10 @@ public class AuthSessionService {
 
     public static final Duration SESSION_DURATION = Duration.ofHours(8);
     public static final Duration PASSWORD_RESET_DURATION = Duration.ofMinutes(10);
+    private static final int TOKEN_BYTES = 32;
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
@@ -29,9 +37,9 @@ public class AuthSessionService {
     private UserService userService;
 
     public String createSession(AuthUserDto authUser) {
-        final String token = UUID.randomUUID().toString();
+        final String token = newToken();
         final AuthSessionEntity session = new AuthSessionEntity();
-        session.setToken(token);
+        session.setTokenHash(hashToken(token));
         session.setUserId(authUser.getId());
         session.setExpiresAt(Instant.now().plus(SESSION_DURATION));
         entityManager.persist(session);
@@ -39,9 +47,9 @@ public class AuthSessionService {
     }
 
     public String createPasswordResetSession(String username) {
-        final String resetToken = UUID.randomUUID().toString();
+        final String resetToken = newToken();
         final PasswordResetSessionEntity resetSession = new PasswordResetSessionEntity();
-        resetSession.setToken(resetToken);
+        resetSession.setTokenHash(hashToken(resetToken));
         resetSession.setUsername(username);
         resetSession.setExpiresAt(Instant.now().plus(PASSWORD_RESET_DURATION));
         entityManager.persist(resetSession);
@@ -53,7 +61,7 @@ public class AuthSessionService {
             return Optional.empty();
         }
 
-        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, sessionId);
+        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, hashToken(sessionId));
         if (session == null) {
             return Optional.empty();
         }
@@ -79,7 +87,7 @@ public class AuthSessionService {
         if (sessionId == null || sessionId.isBlank()) {
             return;
         }
-        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, sessionId);
+        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, hashToken(sessionId));
         if (session != null) {
             entityManager.remove(session);
         }
@@ -90,7 +98,7 @@ public class AuthSessionService {
             return false;
         }
 
-        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, resetToken);
+        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, hashToken(resetToken));
         if (resetSession == null) {
             return false;
         }
@@ -107,10 +115,35 @@ public class AuthSessionService {
         if (resetToken == null || resetToken.isBlank()) {
             return;
         }
-        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, resetToken);
+        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, hashToken(resetToken));
         if (resetSession != null) {
             entityManager.remove(resetSession);
         }
+    }
+
+    private String newToken() {
+        final byte[] tokenBytes = new byte[TOKEN_BYTES];
+        secureRandom.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String hashToken(String token) {
+        try {
+            final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return toHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 digest is unavailable.", ex);
+        }
+    }
+
+    private String toHex(byte[] bytes) {
+        final char[] result = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i += 1) {
+            final int value = bytes[i] & 0xff;
+            result[i * 2] = HEX[value >>> 4];
+            result[i * 2 + 1] = HEX[value & 0x0f];
+        }
+        return new String(result);
     }
 
     private boolean isExpired(Instant expiresAt) {

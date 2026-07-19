@@ -1,6 +1,5 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.AuthSessionService;
 import com.tradernet.user.AuthorizationService;
@@ -55,9 +54,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         Optional<AuthUserDto> authUser = authSessionService.getSessionUser(sessionId);
 
         if (authUser.isEmpty()) {
-            requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new MessageResponseDto("Not authenticated"))
-                .build());
+            requestContext.abortWith(ApiErrors.response(Response.Status.UNAUTHORIZED, "Not authenticated"));
             return;
         }
 
@@ -71,16 +68,12 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         }
 
         if (requiredRoles.isEmpty()) {
-            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
-                .entity(new MessageResponseDto("No permissions configured for this resource"))
-                .build());
+            requestContext.abortWith(ApiErrors.response(Response.Status.FORBIDDEN, "No permissions configured for this resource"));
             return;
         }
 
         if (!authorizationService.hasAnyRole(effectiveAuthUser, requiredRoles)) {
-            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
-                .entity(new MessageResponseDto("Insufficient permissions"))
-                .build());
+            requestContext.abortWith(ApiErrors.response(Response.Status.FORBIDDEN, "Insufficient permissions"));
         }
     }
 }
