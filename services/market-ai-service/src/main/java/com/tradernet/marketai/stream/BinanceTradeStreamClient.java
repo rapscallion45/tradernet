@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 public class BinanceTradeStreamClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(BinanceTradeStreamClient.class);
+    private static final int MAX_TEXT_MESSAGE_CHARS = 256_000;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -36,43 +37,49 @@ public class BinanceTradeStreamClient {
 
         try {
             webSocket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
+                private final WebSocketTextMessageBuffer textMessages = new WebSocketTextMessageBuffer(MAX_TEXT_MESSAGE_CHARS);
+
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     LOG.info("Connected to Binance trade stream: {}", endpoint);
-                    WebSocket.Listener.super.onOpen(webSocket);
                     webSocket.request(1);
                 }
 
                 @Override
                 public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
                     try {
-                        final JsonNode node = objectMapper.readTree(data.toString());
-                        final String eventSymbol = node.path("s").asText(symbol.toUpperCase(Locale.ROOT));
-                        final long eventTime = node.path("T").asLong(System.currentTimeMillis());
-                        final double price = node.path("p").asDouble(0.0);
-                        final double quantity = node.path("q").asDouble(0.0);
-                        if (price > 0.0 && quantity > 0.0) {
-                            listener.accept(new MarketTrade(eventSymbol, eventTime, price, quantity));
+                        final String payload = textMessages.append(data, last);
+                        if (payload != null) {
+                            final JsonNode node = objectMapper.readTree(payload);
+                            final String eventSymbol = node.path("s").asText(symbol.toUpperCase(Locale.ROOT));
+                            final long eventTime = node.path("T").asLong(System.currentTimeMillis());
+                            final double price = node.path("p").asDouble(0.0);
+                            final double quantity = node.path("q").asDouble(0.0);
+                            if (price > 0.0 && quantity > 0.0) {
+                                listener.accept(new MarketTrade(eventSymbol, eventTime, price, quantity));
+                            }
                         }
                     } catch (Exception ex) {
+                        textMessages.reset();
                         LOG.warn("Unable to parse Binance trade payload", ex);
                     }
                     webSocket.request(1);
-                    return WebSocket.Listener.super.onText(webSocket, data, last);
+                    return null;
                 }
 
                 @Override
                 public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                    textMessages.reset();
                     LOG.info("Binance stream closed ({}): {}", statusCode, reason);
                     running = false;
-                    return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                    return null;
                 }
 
                 @Override
                 public void onError(WebSocket webSocket, Throwable error) {
+                    textMessages.reset();
                     LOG.error("Binance stream error", error);
                     running = false;
-                    WebSocket.Listener.super.onError(webSocket, error);
                 }
             }).join();
         } catch (RuntimeException ex) {

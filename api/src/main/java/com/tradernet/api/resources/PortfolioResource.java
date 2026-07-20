@@ -8,10 +8,10 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 
 /**
  * REST API for viewing portfolio holdings and performance.
@@ -25,10 +25,10 @@ public class PortfolioResource {
 
     @GET
     public Response getPortfolio(
-        @Context ContainerRequestContext request,
+        @Context SecurityContext securityContext,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
         return Response.ok(portfolioService.getPortfolio(authUser.getId(), currency)).build();
     }
 }

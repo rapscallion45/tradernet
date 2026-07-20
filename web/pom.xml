@@ -21,6 +21,10 @@
         <webapp.local.sources>${project.basedir}/src/main/react</webapp.local.sources>
         <webapp.build.sources>${project.build.directory}/sources</webapp.build.sources>
         <webapp.build.output>${webapp.build.sources}/dist</webapp.build.output>
+        <webapp.frontend.tools>${project.build.directory}/frontend-tools</webapp.frontend.tools>
+        <frontend.node.version>v20.19.4</frontend.node.version>
+        <frontend.yarn.version>v1.22.10</frontend.yarn.version>
+        <frontend.yarn.archive.root>yarn-v1.22.10</frontend.yarn.archive.root>
     </properties>
 
     <build>
@@ -52,6 +56,27 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-partial-yarn-install</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${webapp.frontend.tools}/node/yarn/${frontend.yarn.archive.root}</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
@@ -69,6 +94,14 @@
                                             <filtering>false</filtering>
                                             <excludes>
                                                 <exclude>node_modules/**</exclude>
+                                                <exclude>dist/**</exclude>
+                                                <exclude>build/**</exclude>
+                                                <exclude>storybook-static/**</exclude>
+                                                <exclude>.yarn/cache/**</exclude>
+                                                <exclude>.yarn/unplugged/**</exclude>
+                                                <exclude>.yarn/install-state.gz</exclude>
+                                                <exclude>.yarn/build-state.yml</exclude>
+                                                <exclude>.pnp.*</exclude>
                                             </excludes>
                                         </resource>
                                     </resources>
@@ -81,7 +114,7 @@
                         <artifactId>frontend-maven-plugin</artifactId>
                         <configuration>
                             <workingDirectory>${webapp.build.sources}</workingDirectory>
-                            <installDirectory>${project.build.directory}</installDirectory>
+                            <installDirectory>${webapp.frontend.tools}</installDirectory>
                             <environmentVariables>
                                 <BUILD_PATH>${webapp.build.output}</BUILD_PATH>
                             </environmentVariables>
@@ -94,8 +127,9 @@
                                     <goal>install-node-and-yarn</goal>
                                 </goals>
                                 <configuration>
-                                    <nodeVersion>v20.19.4</nodeVersion>
-                                    <yarnVersion>v1.22.10</yarnVersion>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <nodeVersion>${frontend.node.version}</nodeVersion>
+                                    <yarnVersion>${frontend.yarn.version}</yarnVersion>
                                 </configuration>
                             </execution>
                             <execution>

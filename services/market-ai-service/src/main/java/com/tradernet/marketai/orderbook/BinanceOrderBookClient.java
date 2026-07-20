@@ -3,6 +3,7 @@ package com.tradernet.marketai.orderbook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.marketai.stream.WebSocketTextMessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ public class BinanceOrderBookClient {
     private static final long START_RETRY_COOLDOWN_MS = Duration.ofSeconds(10).toMillis();
     private static final long RESYNC_RETRY_COOLDOWN_MS = Duration.ofSeconds(5).toMillis();
     private static final long DEFAULT_STALE_AFTER_MS = Duration.ofSeconds(30).toMillis();
+    private static final int MAX_TEXT_MESSAGE_CHARS = 1_000_000;
 
     private final String symbol;
     private final String restBaseUrl;
@@ -92,26 +94,32 @@ public class BinanceOrderBookClient {
             }
 
             final WebSocket socket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
+                private final WebSocketTextMessageBuffer textMessages = new WebSocketTextMessageBuffer(MAX_TEXT_MESSAGE_CHARS);
+
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     LOG.info("Connected to Binance order book stream: {}", endpoint);
-                    WebSocket.Listener.super.onOpen(webSocket);
                     webSocket.request(1);
                 }
 
                 @Override
                 public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
                     try {
-                        handleUpdate(parseDepthUpdate(data.toString()));
+                        final String payload = textMessages.append(data, last);
+                        if (payload != null) {
+                            handleUpdate(parseDepthUpdate(payload));
+                        }
                     } catch (RuntimeException ex) {
+                        textMessages.reset();
                         markError("Unable to parse Binance order book payload", ex);
                     }
                     webSocket.request(1);
-                    return WebSocket.Listener.super.onText(webSocket, data, last);
+                    return null;
                 }
 
                 @Override
                 public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                    textMessages.reset();
                     synchronized (BinanceOrderBookClient.this) {
                         running = false;
                         streamSynchronized = false;
@@ -120,17 +128,17 @@ public class BinanceOrderBookClient {
                         }
                     }
                     LOG.info("Binance order book stream closed ({}): {}", statusCode, reason);
-                    return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                    return null;
                 }
 
                 @Override
                 public void onError(WebSocket webSocket, Throwable error) {
+                    textMessages.reset();
                     synchronized (BinanceOrderBookClient.this) {
                         running = false;
                         streamSynchronized = false;
                     }
                     markError("Binance order book stream error", error);
-                    WebSocket.Listener.super.onError(webSocket, error);
                 }
             }).join();
 

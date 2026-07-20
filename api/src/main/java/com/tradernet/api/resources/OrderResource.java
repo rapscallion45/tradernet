@@ -15,10 +15,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 
 import java.util.List;
 
@@ -35,11 +35,11 @@ public class OrderResource {
 
     @GET
     public Response getOrders(
-        @Context ContainerRequestContext request,
+        @Context SecurityContext securityContext,
         @QueryParam("userId") Long userId,
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
-        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
         long authenticatedUserId = authUser.getId();
         if (userId != null && userId != authenticatedUserId) {
             return ApiErrors.response(Response.Status.FORBIDDEN, "Cannot list orders for another user");
@@ -50,12 +50,12 @@ public class OrderResource {
     }
 
     @POST
-    public Response createOrder(@Context ContainerRequestContext requestContext, @Valid OrderRequestDto request) {
+    public Response createOrder(@Context SecurityContext securityContext, @Valid OrderRequestDto request) {
         if (request == null) {
             return ApiErrors.response(Response.Status.BAD_REQUEST, "Order payload is required");
         }
 
-        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(requestContext);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
 
         String symbol = request.getSymbol();
         if (symbol == null || symbol.isBlank()) {
@@ -82,10 +82,10 @@ public class OrderResource {
     @PUT
     @Path("/{orderId}/close")
     public Response closeOrder(
-        @Context ContainerRequestContext request,
+        @Context SecurityContext securityContext,
         @PathParam("orderId") Long orderId
     ) {
-        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
 
         if (orderId == null || orderId <= 0) {
             return ApiErrors.response(Response.Status.BAD_REQUEST, "orderId must be greater than 0");

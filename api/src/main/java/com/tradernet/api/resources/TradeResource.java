@@ -8,10 +8,10 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 
 import java.util.List;
 
@@ -27,10 +27,10 @@ public class TradeResource {
 
     @GET
     public Response getTrades(
-        @Context ContainerRequestContext request,
+        @Context SecurityContext securityContext,
         @QueryParam("symbol") String symbol
     ) {
-        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(request);
+        AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
         List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.getId(), symbol);
         return Response.ok(response).build();
     }
