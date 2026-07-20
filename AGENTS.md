@@ -28,6 +28,10 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 - When returning model drivers, signal notes, diagnostics, or explanations, use structured fields such as `key`, `label`, `value`, and `numericValue` rather than concatenated display strings like `foo=1.23`.
 - Persist password hashes canonically on `tblUsers.password_hash`. Do not reintroduce password-list tables, password-history APIs, or `/api/passwords`-style endpoints unless a future security design explicitly requires audited password history with hashes only.
 - Store only hashes of auth-session and password-reset bearer tokens server-side. Auth cookies must be HttpOnly, SameSite-aware, and Secure in HTTPS deployments, with local HTTP development handled by explicit configuration rather than weakening production defaults.
+- Keep schema ownership in `data-model`. Service-layer startup/bootstrap code may seed required identity/domain data, but must not run DDL, replay `schema.sql`, or hardcode migration-style `ALTER TABLE`/`CREATE TABLE` statements.
+- Do not rely on insecure bootstrap passwords by default. Application bootstrap users must use an explicitly configured password outside local development; any `changeme` fallback must require an explicit local/dev opt-in.
+- Keep order placement on the persistence path. Non-critical advisory enrichment such as AI prediction and forecast bull score should run asynchronously after the order and fill have been persisted.
+- Keep read and write DTOs separate where response models expose derived/read-only fields. Market context writes accept mutable normalized inputs; derived bullish-percent and availability fields are response-only.
 - Preserve signed portfolio semantics. BUY/open long positions are positive quantities, open SELL/short positions are negative quantities, and backend portfolio valuation/history must include both unless a future product decision explicitly disables short selling.
 - Keep generated or environment-specific artifacts out of version control.
 - Do not use recursive `ls -R` or `grep -R`; use `find` and `rg`.

@@ -17,6 +17,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -80,7 +81,7 @@ public class OllamaNarrativeClient {
                 + "Data: score=" + Math.round(forecast.getBullScore())
                 + ", horizon=" + forecast.getHorizonDays()
                 + ", probability=" + Math.round(forecast.getProbabilityPositiveReturn() * 100.0)
-                + ", expected_return=" + String.format("%.2f", forecast.getExpectedReturn() * 100.0) + "%"
+                + ", expected_return=" + String.format(Locale.ROOT, "%.2f", forecast.getExpectedReturn() * 100.0) + "%"
                 + ", drivers=" + String.join(", ", safeDriverLabels(forecast.getDrivers())) + ".";
     }
 
@@ -103,7 +104,7 @@ public class OllamaNarrativeClient {
         final String symbol = displaySymbol(forecast);
         return narrative
                 .replace("Today's Bitcoin Bull Score", "Today's " + symbol + " Bull Score")
-                .replace("Today’s Bitcoin Bull Score", "Today’s " + symbol + " Bull Score")
+                .replace("Today\u2019s Bitcoin Bull Score", "Today's " + symbol + " Bull Score")
                 .replace("Bitcoin Bull Score", symbol + " Bull Score")
                 .replace("Bitcoin", symbol)
                 .replace("bitcoin", symbol);

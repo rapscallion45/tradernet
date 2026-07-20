@@ -65,6 +65,8 @@ docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
 
 Compose starts Tradernet, TimescaleDB/Postgres, the Python forecasting service, and Ollama. TimescaleDB/Postgres data is stored in the named Docker volume `timescaledb_data`, so order history, trades, market bars, users, and forecasting inputs persist across normal container recreation. Do not run `docker compose down -v` unless you intentionally want to delete those volumes.
 
+The Compose stack explicitly opts into the local application bootstrap password fallback so the smoke-test users can log in with `changeme`. For non-local environments, set `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD` and leave `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD` disabled.
+
 ## Smoke checks
 
 The health endpoints are public:
@@ -162,6 +164,8 @@ DB_PORT=5432
 DB_NAME=tradernet
 DB_USER=tradernet
 DB_PASSWORD=tradernet
+TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD=<set outside local dev>
+TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD=true
 market.ai.forecasting.url=http://forecasting-service:8000
 market.ai.orderBullScoreHorizonDays=1
 market.ai.signalBullScore.enabled=true

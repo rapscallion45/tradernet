@@ -2,6 +2,7 @@ package com.tradernet.marketai.context;
 
 import com.tradernet.marketai.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import jakarta.ejb.ConcurrencyManagement;
 import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.EJB;
@@ -71,10 +72,18 @@ public class MarketContextService {
         contextRefreshSymbols.forEach(this::hydrate);
     }
 
-    public void update(String symbol, MarketContextSnapshot snapshot) {
+    public void update(String symbol, MarketContextUpdateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("market context update request is required");
+        }
+        if (!request.hasAnyUpdate()) {
+            throw new IllegalArgumentException("at least one market context input is required");
+        }
+
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         registerSymbol(normalizedSymbol);
-        marketContextRegistry.update(normalizedSymbol, snapshot);
+        final MarketContextSnapshot current = marketContextRegistry.get(normalizedSymbol);
+        marketContextRegistry.update(normalizedSymbol, request.toSnapshot(current));
     }
 
     private void hydrate(String symbol) {

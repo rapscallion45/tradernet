@@ -9,7 +9,7 @@ This document explains persistence and runtime packaging.
 - JPA entities for active backend domains such as users, roles, groups, orders, trades, resources, auth sessions, and market data compatibility tables.
 - DAO interfaces and JPA implementations.
 - Persistence configuration (`persistence.xml`).
-- SQL schema + seed resources for local/dev bootstrapping.
+- SQL schema, seed resources, and versioned migrations for local/dev bootstrapping and long-lived database upgrades.
 - Supporting utilities and exceptions.
 
 This module is shared by service modules so persistence concerns stay centralized.
@@ -31,4 +31,4 @@ A full build can produce:
 
 ## Runtime configuration highlights
 
-The Docker runtime supports environment-variable-driven database wiring (H2 by default, Postgres optional) and startup admin-user setup.
+The Docker runtime supports environment-variable-driven database wiring (H2 by default, Postgres optional) and startup admin-user setup. Application identity bootstrap creates required roles, resources, groups, and optional local/dev users, but schema changes belong in `data-model` SQL and migrations rather than service-layer startup code.

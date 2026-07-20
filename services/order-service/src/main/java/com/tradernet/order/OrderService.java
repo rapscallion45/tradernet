@@ -86,6 +86,22 @@ public class OrderService {
             .filter(order -> order.getUserId() != null && order.getUserId() == userId);
     }
 
+    /**
+     * Updates advisory market insight fields after an order has already been persisted.
+     */
+    public Optional<OrderEntity> updateMarketInsights(long orderId, String aiPrediction, Double bullScore) {
+        return orderDao.findByIdForUpdate(orderId)
+            .map(order -> {
+                if (aiPrediction != null && !aiPrediction.isBlank()) {
+                    order.setAiPrediction(aiPrediction);
+                }
+                if (bullScore != null) {
+                    order.setBullScore(bullScore);
+                }
+                return order;
+            });
+    }
+
     private TradeExecutionRequest tradeExecutionRequest(
         OrderEntity order,
         OrderEntity.Side side,

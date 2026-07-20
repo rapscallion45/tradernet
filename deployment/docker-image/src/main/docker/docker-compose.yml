@@ -10,6 +10,7 @@ services:
       DB_NAME: tradernet
       DB_USER: tradernet
       DB_PASSWORD: tradernet
+      TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD: "true"
       JAVA_OPTS: >-
         -Dmarket.ai.forecasting.url=http://forecasting-service:8000
         -Dmarket.ai.orderBullScoreHorizonDays=1

@@ -4,7 +4,7 @@ Business logic is split into focused modules under `services/`.
 
 ## Core service modules
 
-- `order-service`: order creation, lifecycle operations, market-price resolution, order response enrichment, and portfolio valuation/history assembly.
+- `order-service`: order creation, lifecycle operations, asynchronous order market-insight enrichment, market-price resolution, order response enrichment, and portfolio valuation/history assembly.
 - `trade-service`: trade execution and user-visible persisted fill history for order placement/closure.
 - `user-service`: user profile workflows, persisted auth/session state, authorization policy lookup, admin group/role workflows, and bootstrap routines.
 - `currency-conversion-service`: currency conversion support, code abstractions, quote-currency resolution, and exchange-rate lookup.
@@ -20,7 +20,7 @@ Keep DTOs, JPA entities, value objects, pure scoring/domain helpers, and per-sym
 
 ## Market AI service
 
-`MarketAiService` is the public EJB facade used by API resources and websocket endpoints. It coordinates live-symbol lifecycle, chart/signal queries, forecasting, and subscriptions while delegating exchange IO, market context hydration, order-book maintenance, in-memory history, event publishing, and bar persistence to injected collaborator beans. `MarketDataViewService` composes market data with currency conversion for display-ready bars and order-book snapshots so API resources do not perform business calculations.
+`MarketAiService` is the public EJB facade used by API resources and websocket endpoints. It coordinates live-symbol lifecycle, chart/signal queries, forecasting, and subscriptions while delegating exchange IO, market context hydration, order-book maintenance, in-memory history, event publishing, and bar persistence to injected collaborator beans. Live trade-stream and order-book startup work is requested through asynchronous EJB methods so API/websocket open paths can return cached or initializing state without blocking on external exchange connections. `MarketDataViewService` composes market data with currency conversion for display-ready bars and order-book snapshots so API resources do not perform business calculations.
 
 `market-ai-service` is structured into subpackages:
 

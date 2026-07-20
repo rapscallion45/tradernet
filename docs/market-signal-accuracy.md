@@ -25,7 +25,7 @@ The no-key default ingestion currently fetches:
 - Binance USD-M Futures open-interest history for `openInterestChangeZScore`.
 - Alternative.me Fear & Greed data for `sentimentZScore`.
 
-Provider-backed ingestion can still update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. The backend response includes calculated bullish-percent fields and per-input availability flags for UI display so clients do not duplicate scoring formulas or show fallback percentages when data is missing.
+Provider-backed ingestion can still update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. The write payload accepts raw normalized z-score inputs only; the backend response includes calculated bullish-percent fields and per-input availability flags for UI display so clients do not duplicate scoring formulas or show fallback percentages when data is missing.
 
 Runtime switches:
 

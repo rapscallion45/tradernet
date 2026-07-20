@@ -14,22 +14,10 @@ import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import javax.sql.DataSource;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -56,6 +44,10 @@ public class SystemBootstrapService {
     private static final String DEFAULT_STANDARD_USERNAME = "standard";
     private static final String DEFAULT_PASSWORD = "changeme";
     private static final String PASSWORD_HASH_FORMAT_PROBE = "tradernet-password-hash-format-probe";
+    private static final String BOOTSTRAP_DEFAULT_PASSWORD_PROPERTY = "tradernet.bootstrap.defaultPassword";
+    private static final String BOOTSTRAP_DEFAULT_PASSWORD_ENV = "TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD";
+    private static final String BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY = "tradernet.bootstrap.allowDefaultPassword";
+    private static final String BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_ENV = "TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD";
 
     @EJB
     private RoleDao roleDao;
@@ -69,24 +61,21 @@ public class SystemBootstrapService {
     @EJB
     private UserDao userDao;
 
+    @EJB
+    private AuthorizationService authorizationService;
+
     @PersistenceContext(unitName = "tradernet")
     private EntityManager entityManager;
 
-    @Resource(lookup = "java:/jdbc/TradernetDS")
-    private DataSource dataSource;
-
     @PostConstruct
     void bootstrap() {
-        initializeSchemaForH2();
-        ensureCriticalAuthSchema();
-
         RoleEntity allRightsRole = ensureRole(ALL_RIGHTS_ROLE);
         RoleEntity adminRightsRole = ensureRole(ADMIN_RIGHTS_ROLE);
         RoleEntity standardRightsRole = ensureRole(STANDARD_RIGHTS_ROLE);
 
         List<ResourceEntity> resources = ensureProtectedResources();
-        ensureRoleHasResources(allRightsRole, resources);
-        ensureRoleHasResources(adminRightsRole, resources.stream().filter(resource ->
+        ensureRoleIncludesResources(allRightsRole, resources);
+        ensureRoleIncludesResources(adminRightsRole, resources.stream().filter(resource ->
             "users".equals(resource.getPathPrefix()) || "groups".equals(resource.getPathPrefix())
         ).collect(Collectors.toList()));
 
@@ -98,26 +87,22 @@ public class SystemBootstrapService {
         assignRoleToGroup(administratorsGroup, adminRightsRole);
         assignRoleToGroup(standardUsersGroup, standardRightsRole);
 
-        UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
+        final String bootstrapPassword = resolveBootstrapPassword();
 
-        ensureBootstrapCredentialsWhenMissing(superUser, "Super User", DEFAULT_PASSWORD);
-
-        if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
-            superUser.addGroup(superUsersGroup);
-            userDao.save(superUser);
-            LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", SUPER_USERS_GROUP, DEFAULT_SUPER_USER_USERNAME);
+        UserEntity superUser = ensureBootstrapUser(DEFAULT_SUPER_USER_USERNAME, "Super User", bootstrapPassword);
+        if (superUser != null) {
+            ensureUserInGroup(superUser, superUsersGroup, SUPER_USERS_GROUP);
         }
 
-        UserEntity adminUser = userDao.findByUsername(DEFAULT_ADMIN_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_PASSWORD));
-        ensureBootstrapCredentialsWhenMissing(adminUser, "Admin", DEFAULT_PASSWORD);
-        ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
+        UserEntity adminUser = ensureBootstrapUser(DEFAULT_ADMIN_USERNAME, "Admin", bootstrapPassword);
+        if (adminUser != null) {
+            ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
+        }
 
-        UserEntity standardUser = userDao.findByUsername(DEFAULT_STANDARD_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_PASSWORD));
-        ensureBootstrapCredentialsWhenMissing(standardUser, "Standard User", DEFAULT_PASSWORD);
-        ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
+        UserEntity standardUser = ensureBootstrapUser(DEFAULT_STANDARD_USERNAME, "Standard User", bootstrapPassword);
+        if (standardUser != null) {
+            ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
+        }
 
     }
 
@@ -132,10 +117,6 @@ public class SystemBootstrapService {
             });
     }
 
-    private UserEntity createSuperUser(String username, String password) {
-        return createUser(username, "Super User", password);
-    }
-
     private UserEntity createUser(String username, String fullName, String password) {
         UserEntity user = new UserEntity(username);
         user.setPk(nextUserId());
@@ -145,6 +126,35 @@ public class SystemBootstrapService {
         userDao.save(user);
         LOG.info("Created bootstrap user '{}' ({})", username, fullName);
         return user;
+    }
+
+    private UserEntity ensureBootstrapUser(String username, String fullName, String password) {
+        return userDao.findByUsername(username)
+            .map(user -> {
+                if (password == null) {
+                    warnIfBootstrapCredentialsCannotBeInitialized(user);
+                } else {
+                    ensureBootstrapCredentialsWhenMissing(user, fullName, password);
+                }
+                return user;
+            })
+            .orElseGet(() -> {
+                if (password == null) {
+                    LOG.warn("Skipped creating bootstrap user '{}' because no bootstrap password is configured. Set {} "
+                            + "or enable {} only for local/dev environments.",
+                        username, BOOTSTRAP_DEFAULT_PASSWORD_PROPERTY, BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY);
+                    return null;
+                }
+                return createUser(username, fullName, password);
+            });
+    }
+
+    private void warnIfBootstrapCredentialsCannotBeInitialized(UserEntity user) {
+        if (!hasUsablePasswordHash(user.getPasswordHash())) {
+            LOG.warn("Bootstrap user '{}' has no usable password hash, but no bootstrap password is configured. "
+                    + "Credentials were not initialized.",
+                user.getUsername());
+        }
     }
 
     private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String fullName, String password) {
@@ -217,9 +227,32 @@ public class SystemBootstrapService {
             });
     }
 
-    private void ensureRoleHasResources(RoleEntity role, List<ResourceEntity> resources) {
-        role.setResources(new java.util.HashSet<>(resources));
-        roleDao.save(role);
+    private void ensureRoleIncludesResources(RoleEntity role, List<ResourceEntity> resources) {
+        boolean changed = false;
+        for (ResourceEntity resource : resources) {
+            if (!hasResource(role, resource)) {
+                role.addResource(resource);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            roleDao.save(role);
+            authorizationService.invalidate();
+        }
+    }
+
+    private boolean hasResource(RoleEntity role, ResourceEntity resource) {
+        return role.getResources().stream()
+            .anyMatch(existing -> sameResource(existing, resource));
+    }
+
+    private boolean sameResource(ResourceEntity existing, ResourceEntity requested) {
+        if (existing.getId() != null && requested.getId() != null) {
+            return existing.getId().equals(requested.getId());
+        }
+        return Objects.equals(existing.getPathPrefix(), requested.getPathPrefix())
+            && Objects.equals(existing.getName(), requested.getName());
     }
 
     private void assignRoleToGroup(GroupEntity group, RoleEntity role) {
@@ -243,89 +276,42 @@ public class SystemBootstrapService {
         return currentMax + 1;
     }
 
-    private void initializeSchemaForH2() {
-        try (Connection connection = dataSource.getConnection()) {
-            DatabaseMetaData metaData = connection.getMetaData();
-            if (!"H2".equalsIgnoreCase(metaData.getDatabaseProductName())) {
-                return;
-            }
-
-            runSqlScript(connection, "/META-INF/db/schema.sql");
-            runSqlScript(connection, "/META-INF/db/dev-seed.sql");
-            LOG.info("Initialized schema and seed data for H2 datasource.");
-        } catch (SQLException | IOException e) {
-            throw new IllegalStateException("Failed to initialize H2 schema.", e);
+    private String resolveBootstrapPassword() {
+        final String configuredPassword = firstNonBlank(
+            System.getProperty(BOOTSTRAP_DEFAULT_PASSWORD_PROPERTY),
+            System.getenv(BOOTSTRAP_DEFAULT_PASSWORD_ENV)
+        );
+        if (configuredPassword != null) {
+            return configuredPassword;
         }
+
+        if (isDefaultPasswordAllowed()) {
+            LOG.warn("Using insecure bootstrap password fallback because {} or {} is enabled. "
+                    + "Use {} or {} for non-local environments.",
+                BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY,
+                BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_ENV,
+                BOOTSTRAP_DEFAULT_PASSWORD_PROPERTY,
+                BOOTSTRAP_DEFAULT_PASSWORD_ENV);
+            return DEFAULT_PASSWORD;
+        }
+
+        return null;
     }
 
-    private void ensureCriticalAuthSchema() {
-        try (Connection connection = dataSource.getConnection()) {
-            executeSql(connection, "ALTER TABLE tblUsers ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)");
-            executeSql(connection, "CREATE TABLE IF NOT EXISTS tblAuthSessions ("
-                + "token VARCHAR(64) PRIMARY KEY, "
-                + "userId BIGINT NOT NULL, "
-                + "expiresAt TIMESTAMP NOT NULL, "
-                + "CONSTRAINT fk_tblAuthSessions_user FOREIGN KEY (userId) REFERENCES tblUsers(id)"
-                + ")");
-            executeSql(connection, "CREATE INDEX IF NOT EXISTS idx_tblAuthSessions_expiresAt ON tblAuthSessions (expiresAt)");
-            executeSql(connection, "CREATE TABLE IF NOT EXISTS tblPasswordResetSessions ("
-                + "token VARCHAR(64) PRIMARY KEY, "
-                + "username VARCHAR(50) NOT NULL, "
-                + "expiresAt TIMESTAMP NOT NULL"
-                + ")");
-            executeSql(connection,
-                "CREATE INDEX IF NOT EXISTS idx_tblPasswordResetSessions_expiresAt ON tblPasswordResetSessions (expiresAt)");
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to ensure critical auth schema.", e);
-        }
+    private boolean isDefaultPasswordAllowed() {
+        return Boolean.parseBoolean(firstNonBlank(
+            System.getProperty(BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY),
+            System.getenv(BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_ENV),
+            "false"
+        ));
     }
 
-    private void runSqlScript(Connection connection, String scriptPath) throws IOException, SQLException {
-        try (InputStream stream = getClass().getResourceAsStream(scriptPath)) {
-            if (stream == null) {
-                throw new IllegalStateException("Missing SQL script on classpath: " + scriptPath);
-            }
-
-            String script;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                script = reader.lines().collect(Collectors.joining("\n"));
-            }
-
-            for (String statementSql : splitStatements(script)) {
-                executeSql(connection, statementSql);
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
             }
         }
-    }
-
-    private void executeSql(Connection connection, String sql) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(sql);
-        }
-    }
-
-    private List<String> splitStatements(String script) {
-        List<String> statements = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-
-        for (String line : script.split("\\R")) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("--")) {
-                continue;
-            }
-
-            current.append(line).append('\n');
-            if (trimmed.endsWith(";")) {
-                String sql = current.toString().trim();
-                statements.add(sql.substring(0, sql.length() - 1));
-                current.setLength(0);
-            }
-        }
-
-        String trailing = current.toString().trim();
-        if (!trailing.isEmpty()) {
-            statements.add(trailing);
-        }
-
-        return statements;
+        return null;
     }
 }

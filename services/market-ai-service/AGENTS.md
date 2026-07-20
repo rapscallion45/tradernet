@@ -14,6 +14,7 @@
 ## Conventions
 - Keep service-level collaborators EJB-managed; keep per-symbol runtime objects such as aggregators, feature engines, signal engines, trade-stream clients, and order-book clients as plain Java objects unless the container needs to own their lifecycle directly.
 - Keep slow IO outside singleton write locks and request/websocket hot paths. Use managed async EJB methods and cached snapshots for Binance websocket startup, order-book resync, forecast bull-score refreshes, and closed-bar persistence.
+- Isolate in-process market event subscribers. One failing bar/signal listener must not break publishing to other listeners or interrupt ingestion callbacks.
 - Java `HttpClient` websocket text callbacks may deliver one JSON message across multiple `onText` fragments. Accumulate text until `last == true` before parsing market stream payloads.
 - Keep `HOLD` and frontend `No signal` semantics distinct: backend `HOLD` is an emitted `AiSignal`; frontend `No signal` means no signal payload was received yet.
 - Keep market scoring, forecast blending, normalization, and display-ready derived market metrics in this backend module; the frontend should consume these values rather than reimplementing formulas.

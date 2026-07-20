@@ -13,6 +13,7 @@ import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import com.tradernet.marketai.model.MarketTrade;
 import com.tradernet.marketai.orderbook.MarketOrderBookService;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
@@ -20,6 +21,7 @@ import com.tradernet.marketai.stream.BinanceTradeStreamClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
+import jakarta.ejb.Asynchronous;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Lock;
 import jakarta.ejb.LockType;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -83,6 +86,7 @@ public class MarketAiService {
     private final Map<String, BarAggregator> barAggregatorsBySymbol = new ConcurrentHashMap<>();
     private final Map<String, FeatureEngine> featureEnginesBySymbol = new ConcurrentHashMap<>();
     private final Map<String, AiSignalEngine> signalEnginesBySymbol = new ConcurrentHashMap<>();
+    private final Set<String> tradeStartsInFlight = ConcurrentHashMap.newKeySet();
 
     private volatile List<String> cachedSymbols = List.of("BTCUSDT");
     private volatile long cachedSymbolsAtMs = 0L;
@@ -104,6 +108,7 @@ public class MarketAiService {
         barAggregatorsBySymbol.clear();
         featureEnginesBySymbol.clear();
         signalEnginesBySymbol.clear();
+        tradeStartsInFlight.clear();
     }
 
     @Lock(LockType.READ)
@@ -119,8 +124,24 @@ public class MarketAiService {
         signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
         final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BinanceTradeStreamClient());
         if (!client.isRunning()) {
-            final MarketAiService tradeHandler = sessionContext.getBusinessObject(MarketAiService.class);
-            client.start(normalizedSymbol.toLowerCase(Locale.ROOT), tradeHandler::onTrade);
+            requestTradeStart(normalizedSymbol);
+        }
+    }
+
+    @Asynchronous
+    @Lock(LockType.READ)
+    public void startLiveSymbol(String normalizedSymbol) {
+        try {
+            final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(
+                normalizedSymbol,
+                ignored -> new BinanceTradeStreamClient()
+            );
+            if (!client.isRunning()) {
+                final MarketAiService tradeHandler = sessionContext.getBusinessObject(MarketAiService.class);
+                client.start(normalizedSymbol.toLowerCase(Locale.ROOT), tradeHandler::onTrade);
+            }
+        } finally {
+            tradeStartsInFlight.remove(normalizedSymbol);
         }
     }
 
@@ -210,8 +231,8 @@ public class MarketAiService {
     }
 
     @Lock(LockType.READ)
-    public void updateMarketContext(String symbol, MarketContextSnapshot snapshot) {
-        marketContexts.update(symbol, snapshot);
+    public void updateMarketContext(String symbol, MarketContextUpdateRequest request) {
+        marketContexts.update(symbol, request);
     }
 
     @Lock(LockType.READ)
@@ -284,5 +305,17 @@ public class MarketAiService {
         ));
         final Double bullScore = signalBullScoreCache.getScoreOrRequestRefresh(normalizedSymbol, horizonDays, ttlMs);
         return bullScore == null ? features : features.withForecastBullScore(bullScore);
+    }
+
+    private void requestTradeStart(String normalizedSymbol) {
+        if (!tradeStartsInFlight.add(normalizedSymbol)) {
+            return;
+        }
+
+        try {
+            sessionContext.getBusinessObject(MarketAiService.class).startLiveSymbol(normalizedSymbol);
+        } catch (RuntimeException ex) {
+            tradeStartsInFlight.remove(normalizedSymbol);
+        }
     }
 }

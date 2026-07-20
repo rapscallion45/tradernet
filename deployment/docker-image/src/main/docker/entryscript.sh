@@ -57,12 +57,16 @@ wait_for_db() {
 
 configure_runtime_properties() {
   local schema_action="none"
+  local bootstrap_default_password_opt_in=""
 
   if [[ "${DB_TYPE}" == "H2" && "${SCHEMA_AUTO_CREATE_DEV}" == "true" ]]; then
     schema_action="drop-and-create"
+    if [[ -z "${TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD:-}" ]]; then
+      bootstrap_default_password_opt_in=" -Dtradernet.bootstrap.allowDefaultPassword=true"
+    fi
   fi
 
-  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action}"
+  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action}${bootstrap_default_password_opt_in}"
   log "Configured runtime properties: schema-generation=${schema_action}, datasource=java:/jdbc/TradernetDS"
 }
 

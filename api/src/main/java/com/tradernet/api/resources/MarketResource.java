@@ -7,6 +7,7 @@ import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
@@ -94,8 +95,8 @@ public class MarketResource {
     @Path("/context")
     public MarketContextSnapshot updateMarketContext(
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
-            MarketContextSnapshot snapshot) {
-        marketAiService.updateMarketContext(symbol, snapshot);
+            MarketContextUpdateRequest request) {
+        marketAiService.updateMarketContext(symbol, request);
         return marketAiService.getMarketContext(symbol);
     }
 }

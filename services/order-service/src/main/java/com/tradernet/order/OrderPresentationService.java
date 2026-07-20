@@ -3,9 +3,7 @@ package com.tradernet.order;
 import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.jpa.entities.OrderEntity;
-import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.MarketSymbolNormalizer;
-import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.order.dto.OrderSide;
@@ -28,13 +26,11 @@ import static com.tradernet.order.CurrencyRounding.roundCurrency;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class OrderPresentationService {
 
-    private static final int DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS = 1;
-
     @EJB
     private OrderService orderService;
 
     @EJB
-    private MarketAiService marketAiService;
+    private OrderInsightEnrichmentService orderInsightEnrichmentService;
 
     @EJB
     private MarketPriceService marketPriceService;
@@ -52,9 +48,9 @@ public class OrderPresentationService {
     public OrderResponseDto createOrder(long userId, OrderRequestDto request) {
         final String symbol = MarketSymbolNormalizer.normalizeSymbol(request.getSymbol());
         final OrderEntity order = new OrderEntity(symbol, request.getQuantity(), request.getPrice(), toEntitySide(request.getSide()));
-        order.setAiPrediction(resolveAiPrediction(symbol));
-        order.setBullScore(resolveBullScore(symbol));
-        return toResponse(orderService.createOrder(userId, order), CurrencyCode.USD);
+        final OrderEntity created = orderService.createOrder(userId, order);
+        orderInsightEnrichmentService.enrichOrder(created.getId(), symbol);
+        return toResponse(created, CurrencyCode.USD, false);
     }
 
     public Optional<OrderResponseDto> closeOrder(long userId, long orderId) {
@@ -70,6 +66,10 @@ public class OrderPresentationService {
     }
 
     private OrderResponseDto toResponse(OrderEntity order, CurrencyCode displayCurrency) {
+        return toResponse(order, displayCurrency, true);
+    }
+
+    private OrderResponseDto toResponse(OrderEntity order, CurrencyCode displayCurrency, boolean resolveLivePricing) {
         final OrderResponseDto responseDto = new OrderResponseDto();
         final long resolvedId = order.getId() == null ? 0L : order.getId();
         responseDto.setId(resolvedId);
@@ -90,9 +90,14 @@ public class OrderPresentationService {
         final boolean closed = OrderService.CLOSED_STATUS.equals(order.getStatus()) && order.getClosePrice() != null;
         final CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(order.getSymbol());
 
-        final double rawCurrentPrice = closed
-            ? order.getClosePrice()
-            : marketPriceService.resolveCurrentPrice(order.getSymbol(), order.getPrice());
+        final double rawCurrentPrice;
+        if (closed) {
+            rawCurrentPrice = order.getClosePrice();
+        } else if (resolveLivePricing) {
+            rawCurrentPrice = marketPriceService.resolveCurrentPrice(order.getSymbol(), order.getPrice());
+        } else {
+            rawCurrentPrice = order.getPrice();
+        }
         final double rawEntry = order.getPrice();
         final double quantity = order.getQuantity();
 
@@ -127,27 +132,6 @@ public class OrderPresentationService {
             throw new IllegalArgumentException("order side is required");
         }
         return OrderEntity.Side.valueOf(side.name());
-    }
-
-    private Double resolveBullScore(String symbol) {
-        final int horizonDays = Integer.parseInt(System.getProperty(
-            "market.ai.orderBullScoreHorizonDays",
-            String.valueOf(DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS)
-        ));
-        return roundCurrency(marketAiService.getBullScore(symbol, horizonDays));
-    }
-
-    private String resolveAiPrediction(String symbol) {
-        final List<AiSignal> signals = marketAiService.getSignals(symbol, 200);
-        if (signals == null || signals.isEmpty()) {
-            return "HOLD";
-        }
-
-        return signals.stream()
-            .filter(signal -> signal != null && signal.getSide() != null)
-            .max(java.util.Comparator.comparingLong(AiSignal::getEventTime))
-            .map(signal -> signal.getSide().name())
-            .orElse("HOLD");
     }
 
 }

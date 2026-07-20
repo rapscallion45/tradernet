@@ -184,66 +184,6 @@ public class MarketContextSnapshot {
         this.available = available;
     }
 
-    public void setEtfFlowBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setExchangeOutflowBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setFundingRateBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setOpenInterestChangeBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setMvrvBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setLiquidityGrowthBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setSentimentBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setAnyMarketScoreInputAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setEtfFlowAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setExchangeOutflowAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setFundingRateAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setOpenInterestChangeAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setMvrvAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setLiquidityGrowthAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setSentimentAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
     private boolean hasInput(double value) {
         return Math.abs(value) > 0.001;
     }

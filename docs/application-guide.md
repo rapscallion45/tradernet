@@ -58,7 +58,7 @@ HTTP-level API failures use a standard JSON error body:
 | `/api/portfolio` | `PortfolioResource` | Portfolio summary/history views. |
 | `/api/market/bars` | `MarketResource` | Historical/recent market bars for charts. |
 | `/api/market/signals` | `MarketResource` | Recent market AI signals. |
-| `/api/market/context` | `MarketResource` | Get/update normalized market context, including backend-calculated bullish-percent display fields and per-input availability flags. |
+| `/api/market/context` | `MarketResource` | Gets normalized market context with backend-calculated bullish-percent display fields and per-input availability flags. Updates accept mutable z-score inputs only. |
 | `/api/market/forecast` | `MarketResource` | Longer-horizon forecast with bull score, probability, drivers, and narrative. |
 | `/api/market/order-book` | `MarketResource` | Backend-maintained Binance aggregated L2 order book with spread, depth, and synchronization status. |
 | `/api/ws/market` | `MarketStreamEndpoint` | Authenticated websocket stream of market bars and signals. |
@@ -72,6 +72,8 @@ Open BUY/long positions are represented as positive quantities. Open SELL/short 
 ### Order history contract
 
 `GET /api/orders` returns the authenticated user's orders. Supplying a different `userId` is rejected with `403` rather than exposing another user's history. Monetary metrics such as `price`, `currentPrice`, `pnl`, `closePrice`, and `netValue` are returned as numeric values in the response `currency`; clients are responsible for locale-specific date, currency, and percent formatting.
+
+`POST /api/orders` persists the order and opening fill before any non-critical forecast enrichment. Advisory fields such as `aiPrediction` and `bullScore` are populated asynchronously when market/forecast data is available, so the immediate create response can contain null advisory fields while later `GET /api/orders` responses include the stored enrichment.
 
 ### Trade history contract
 
@@ -117,6 +119,24 @@ Example response shape:
 }
 ```
 
+### Market context update contract
+
+`POST /api/market/context?symbol=BTCUSDT` accepts one or more mutable normalized input fields:
+
+```json
+{
+  "etfFlowZScore": 0.4,
+  "exchangeOutflowZScore": 0.1,
+  "fundingRateZScore": -0.2,
+  "openInterestChangeZScore": 0.3,
+  "mvrvZScore": 0.0,
+  "liquidityGrowthZScore": 0.2,
+  "sentimentZScore": 0.5
+}
+```
+
+The response is the hydrated `MarketContextSnapshot`, including derived bullish-percent and availability fields. Derived response fields are read-only; if an older client sends them in a POST body they are ignored.
+
 ### Order book API contract
 
 Request:
@@ -145,7 +165,7 @@ Response fields include:
 
 | Data | Storage | Notes |
 | --- | --- | --- |
-| Users, roles, groups, resources | JPA tables in `data-model` schema | Bootstrapped by `SystemBootstrapService` and seed SQL. User password hashes are stored canonically on `tblUsers.password_hash`. |
+| Users, roles, groups, resources | JPA tables in `data-model` schema | Identity data is seeded by `SystemBootstrapService` and seed SQL. User password hashes are stored canonically on `tblUsers.password_hash`. |
 | Auth sessions | `tblAuthSessions`, `tblPasswordResetSessions` | Full login sessions and short-lived expired-password reset tokens. The `token` columns store token hashes only. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
 | Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
@@ -153,7 +173,7 @@ Response fields include:
 
 Docker Compose uses TimescaleDB/Postgres for durable local development. The named Docker volume `timescaledb_data` is mounted at `/var/lib/postgresql/data`, so orders, trades, users, market bars, and forecast history inputs survive normal container recreation. Do not run `docker compose down -v` unless deleting the database is intentional.
 
-`SystemBootstrapService` defensively ensures the critical login schema exists at startup (`tblUsers.password_hash`, `tblAuthSessions`, and `tblPasswordResetSessions`) so older local databases can still reach the login/password-reset flow. Versioned migration files remain the source of truth for schema history and should still be applied to long-lived databases.
+Schema SQL and versioned migration files in `data-model` are the source of truth for tables, columns, and indexes. Service-layer bootstrap code does not run DDL at application startup; apply migrations to long-lived databases before redeploying schema-dependent code.
 
 The `timescaledb-init.sql` script enables the TimescaleDB extension, creates `market_bars`, converts it into a hypertable, and creates an index for symbol/time lookups.
 
@@ -274,12 +294,16 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | `ADMIN_USERNAME` | `superuser` | WildFly admin username created on startup. |
 | `ADMIN_PASSWORD` | `changeme` | WildFly admin password created on startup. |
 | `SCHEMA_AUTO_CREATE_DEV` | `true` | Allows H2 schema auto-generation in local dev mode. |
+| `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD` | unset | Application bootstrap password for creating or repairing `superuser`, `admin`, and `standard` credentials. Set this explicitly outside local development. |
+| `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD` | `false` | Allows the insecure `changeme` application bootstrap fallback. Docker Compose opts into this for local development; production deployments should leave it disabled and set `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD`. |
 
 ### Auth Java system properties
 
 | Property | Default | Description |
 | --- | --- | --- |
 | `tradernet.auth.cookie.secure` | auto | Forces auth cookies Secure when `true` or explicitly disables Secure for local HTTP when `false`. If unset, HTTPS and `X-Forwarded-Proto: https` requests receive Secure cookies. |
+| `tradernet.bootstrap.defaultPassword` | unset | Java property equivalent of `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD`. |
+| `tradernet.bootstrap.allowDefaultPassword` | `false` | Java property equivalent of `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD`; intended for local/dev only. |
 
 ### Market AI Java system properties
 
@@ -304,7 +328,7 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | `market.ai.signalBullScore.enabled` | `true` | Enables forecast bull-score enrichment for chart BUY/HOLD/SELL signals. |
 | `market.ai.signalBullScoreHorizonDays` | `1` | Forecast horizon used when feeding bull score into chart signal generation. |
 | `market.ai.signalBullScoreTtlMs` | `60000` | Cache TTL for signal bull-score lookups so every closed bar does not call the Python forecasting service. |
-| `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured as `bullScore` when an order is created. |
+| `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured asynchronously as stored order `bullScore` after an order is created. |
 | `market.ai.forecasting.url` | `http://forecasting-service:8000` | Python forecasting service base URL. |
 | `market.ai.ollama.enabled` | `true` | Enables LLM-generated forecast narratives. |
 | `market.ai.ollama.url` | `http://ollama:11434` | Ollama base URL. |
@@ -369,7 +393,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 ### Forecast and order history display
 
 - The charts sidebar shows the current selected symbol forecast in the `TradernetAI Forecast` card, including bull score, positive-return probability, narrative text, a frontend-generated current condition summary derived from backend numeric fields, and a forecast horizon dropdown that refetches the backend forecast for the selected number of days.
-- The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured at order creation time; older rows created before the `bullScore` migration display a muted dash until they have a stored value.
+- The order history table includes a `Bull Score` column. This value is the forecast-derived bull score captured asynchronously after order creation; newly-created or older rows display a muted dash until they have a stored value.
 
 ## 9. Operational safeguards
 
