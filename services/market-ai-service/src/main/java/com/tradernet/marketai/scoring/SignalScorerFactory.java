@@ -9,13 +9,17 @@ public final class SignalScorerFactory {
     }
 
     public static SignalScorer create() {
-        final String scorerType = System.getProperty("market.ai.scorer", "context").trim().toLowerCase();
+        return create(SignalScoringSettings.defaults());
+    }
+
+    public static SignalScorer create(SignalScoringSettings settings) {
+        final String scorerType = settings.getScorerType();
         if ("rules".equals(scorerType)) {
             return new RuleBasedSignalScorer();
         }
         if ("linear".equals(scorerType)) {
-            return new LinearModelSignalScorer();
+            return new LinearModelSignalScorer(settings);
         }
-        return new ContextAwareSignalScorer();
+        return new ContextAwareSignalScorer(settings);
     }
 }

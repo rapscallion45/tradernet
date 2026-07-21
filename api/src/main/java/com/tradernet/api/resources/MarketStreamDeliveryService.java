@@ -2,6 +2,7 @@ package com.tradernet.api.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.api.ApiConfiguration;
 import com.tradernet.marketai.MarketDataViewService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
@@ -23,7 +24,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Delivers market events through bounded per-session queues outside the ingestion callback.
@@ -35,16 +36,19 @@ public class MarketStreamDeliveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MarketStreamDeliveryService.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final int DEFAULT_MAX_PENDING_EVENTS = 128;
     private static final long SEND_TIMEOUT_MS = 5_000L;
 
     @EJB
     private MarketDataViewService marketDataViewService;
 
+    @EJB
+    private ApiConfiguration configuration;
+
     @Resource
     private SessionContext sessionContext;
 
     private final Map<String, ClientChannel> channels = new ConcurrentHashMap<>();
+    private final LongAdder droppedEvents = new LongAdder();
 
     public void register(Session session) {
         if (session == null || !session.isOpen()) {
@@ -53,7 +57,7 @@ public class MarketStreamDeliveryService {
         session.getAsyncRemote().setSendTimeout(SEND_TIMEOUT_MS);
         final ClientChannel previous = channels.put(
             session.getId(),
-            new ClientChannel(session, maxPendingEvents())
+            new ClientChannel(session, configuration.getMaxPendingWebsocketEvents())
         );
         if (previous != null) {
             previous.close();
@@ -89,31 +93,44 @@ public class MarketStreamDeliveryService {
             return;
         }
 
-        while (true) {
-            final PendingEvent event = channel.next();
-            if (event == null) {
-                return;
-            }
+        final PendingEvent event = channel.next();
+        if (event == null) {
+            return;
+        }
 
-            try {
-                final Object payload = event.bar == null
-                    ? event.signal
-                    : marketDataViewService.convertBar(event.bar, event.currency);
-                final String message = OBJECT_MAPPER.writeValueAsString(Map.of(
-                    "type", event.type,
-                    "payload", payload
-                ));
-                channel.session.getAsyncRemote().sendText(message).get(SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                failChannel(sessionId, channel, ex);
-                return;
-            } catch (JsonProcessingException ex) {
-                LOG.warn("Unable to serialize market event for websocket session {}.", sessionId, ex);
-            } catch (Exception ex) {
-                failChannel(sessionId, channel, ex);
-                return;
-            }
+        try {
+            final Object payload = event.bar == null
+                ? event.signal
+                : marketDataViewService.convertBar(event.bar, event.currency);
+            final String message = OBJECT_MAPPER.writeValueAsString(Map.of(
+                "type", event.type,
+                "payload", payload
+            ));
+            final MarketStreamDeliveryService service = sessionContext
+                .getBusinessObject(MarketStreamDeliveryService.class);
+            channel.session.getAsyncRemote().sendText(message, result -> {
+                if (result.isOK()) {
+                    service.drain(sessionId);
+                } else {
+                    service.failDelivery(sessionId, result.getException());
+                }
+            });
+        } catch (JsonProcessingException ex) {
+            LOG.warn("Unable to serialize market event for websocket session {}.", sessionId, ex);
+            sessionContext.getBusinessObject(MarketStreamDeliveryService.class).drain(sessionId);
+        } catch (RuntimeException ex) {
+            failChannel(sessionId, channel, ex);
+        }
+    }
+
+    @Asynchronous
+    public void failDelivery(String sessionId, Throwable error) {
+        final ClientChannel channel = channels.get(sessionId);
+        if (channel != null) {
+            final Exception failure = error instanceof Exception
+                ? (Exception) error
+                : new IllegalStateException("Websocket send failed", error);
+            failChannel(sessionId, channel, failure);
         }
     }
 
@@ -126,7 +143,14 @@ public class MarketStreamDeliveryService {
         if (channel == null) {
             return;
         }
-        if (!channel.offer(event)) {
+        final EnqueueDecision decision = channel.offer(event);
+        if (!decision.accepted) {
+            return;
+        }
+        if (decision.droppedOldest) {
+            recordDroppedEvent(session.getId());
+        }
+        if (!decision.scheduleDrain) {
             return;
         }
 
@@ -135,6 +159,14 @@ public class MarketStreamDeliveryService {
         } catch (RuntimeException ex) {
             channel.cancelDrain();
             failChannel(session.getId(), channel, ex);
+        }
+    }
+
+    private void recordDroppedEvent(String sessionId) {
+        droppedEvents.increment();
+        final long count = droppedEvents.sum();
+        if ((count & (count - 1L)) == 0L) {
+            LOG.warn("Dropped {} queued market websocket events; latest affected session was {}.", count, sessionId);
         }
     }
 
@@ -154,18 +186,6 @@ public class MarketStreamDeliveryService {
         }
     }
 
-    private int maxPendingEvents() {
-        final String configured = System.getProperty(
-            "market.ai.websocket.maxPendingEvents",
-            String.valueOf(DEFAULT_MAX_PENDING_EVENTS)
-        );
-        try {
-            return Math.max(1, Integer.parseInt(configured));
-        } catch (NumberFormatException ex) {
-            return DEFAULT_MAX_PENDING_EVENTS;
-        }
-    }
-
     private static final class ClientChannel {
         private final Session session;
         private final int capacity;
@@ -178,19 +198,21 @@ public class MarketStreamDeliveryService {
             this.capacity = capacity;
         }
 
-        private synchronized boolean offer(PendingEvent event) {
+        private synchronized EnqueueDecision offer(PendingEvent event) {
             if (closed) {
-                return false;
+                return EnqueueDecision.rejected();
             }
+            boolean droppedOldest = false;
             while (pending.size() >= capacity) {
                 pending.removeFirst();
+                droppedOldest = true;
             }
             pending.addLast(event);
             if (draining) {
-                return false;
+                return EnqueueDecision.accepted(false, droppedOldest);
             }
             draining = true;
-            return true;
+            return EnqueueDecision.accepted(true, droppedOldest);
         }
 
         private synchronized PendingEvent next() {
@@ -213,6 +235,26 @@ public class MarketStreamDeliveryService {
             closed = true;
             draining = false;
             pending.clear();
+        }
+    }
+
+    private static final class EnqueueDecision {
+        private final boolean accepted;
+        private final boolean scheduleDrain;
+        private final boolean droppedOldest;
+
+        private EnqueueDecision(boolean accepted, boolean scheduleDrain, boolean droppedOldest) {
+            this.accepted = accepted;
+            this.scheduleDrain = scheduleDrain;
+            this.droppedOldest = droppedOldest;
+        }
+
+        private static EnqueueDecision accepted(boolean scheduleDrain, boolean droppedOldest) {
+            return new EnqueueDecision(true, scheduleDrain, droppedOldest);
+        }
+
+        private static EnqueueDecision rejected() {
+            return new EnqueueDecision(false, false, false);
         }
     }
 

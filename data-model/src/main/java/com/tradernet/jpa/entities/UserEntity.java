@@ -3,6 +3,7 @@ package com.tradernet.jpa.entities;
 import com.tradernet.jpa.common.exception.ObjectNotFoundException;
 import com.tradernet.jpa.entities.generic.IdentifiedEntity;
 import com.tradernet.jpa.enums.UserStatus;
+import com.tradernet.jpa.identity.UsernameNormalizer;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,8 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.QueryHint;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
@@ -32,6 +35,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.time.Instant;
 import java.util.stream.Collectors;
 
 import static com.tradernet.jpa.entities.util.RelationshipUpdateUtil.updateRelationship;
@@ -43,8 +47,8 @@ import static com.tradernet.jpa.entities.util.RelationshipUpdateUtil.updateRelat
 @Cacheable
 @Table(name = "tblUsers")
 @NamedQueries({
-    @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE LOWER(u.username) = :username", hints = {
-        @QueryHint(name = "org.hibernate.cacheable", value = "true")}), // LOWER is used in conjunction with toLowerCase() on input parameter - we don't want to compare in a case-sensitive manner
+    @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE u.normalizedUsername = :username", hints = {
+        @QueryHint(name = "org.hibernate.cacheable", value = "true")}),
     @NamedQuery(name = "GetUsersInType", query = "SELECT u FROM UserEntity u WHERE u.type = :userstatus"),
     @NamedQuery(name = "GetUsersNotInTypes", query = "SELECT u FROM UserEntity u WHERE u.type not in (:userstatuses) ORDER BY u.username")
 })
@@ -72,6 +76,10 @@ public class UserEntity implements IdentifiedEntity {
     @NotNull
     @Size(max = 50)
     private String username;
+    @NotNull
+    @Size(max = 100)
+    @Column(name = "username_normalized", nullable = false, unique = true, length = 100)
+    private String normalizedUsername;
     @Size(max = 255)
     @Column(name = "password_hash")
     private String passwordHash;
@@ -84,6 +92,7 @@ public class UserEntity implements IdentifiedEntity {
     private Date lastLogin;
     @NotNull
     private int incorrectLoginAttempts;
+    private Instant lockoutUntil;
     @NotNull
     private boolean bypassLockout;
     @NotNull
@@ -103,9 +112,6 @@ public class UserEntity implements IdentifiedEntity {
     private Integer passwordExpiresInDays;
 
     @Transient
-    private boolean isLockedOut; //todo refactor this variable into a new enum which represents state of password - normal/inWarningPeriod/expired etc
-
-    @Transient
     private boolean bypassServerLockout;
 
     public UserEntity() {
@@ -115,8 +121,14 @@ public class UserEntity implements IdentifiedEntity {
      * Initialises the object with the given username, and {@link com.tradernet.jpa.enums.UserStatus#STANDARD}
      */
     public UserEntity(String username) {
-        this.username = username;
+        setUsername(username);
         this.setStatus(UserStatus.STANDARD);
+    }
+
+    @PrePersist
+    @PreUpdate
+    void normalizeUsername() {
+        normalizedUsername = UsernameNormalizer.normalize(username);
     }
 
     /**
@@ -224,7 +236,7 @@ public class UserEntity implements IdentifiedEntity {
 
     public void registerSuccessfulLogin() {
         log.debug("Resetting incorrect login attempts and updating lastLogin for user: ${user.getUsername}");
-        resetIncorrectLoginAttempts();
+        clearLockout();
         updateLastLogin();
     }
 
@@ -328,6 +340,11 @@ public class UserEntity implements IdentifiedEntity {
 
     public void setUsername(String username) {
         this.username = username;
+        this.normalizedUsername = UsernameNormalizer.normalize(username);
+    }
+
+    public String getNormalizedUsername() {
+        return normalizedUsername;
     }
 
     public String getPasswordHash() {
@@ -458,11 +475,24 @@ public class UserEntity implements IdentifiedEntity {
     }
 
     public boolean isLockedOut() {
-        return isLockedOut;
+        return isLockedOutAt(Instant.now());
     }
 
-    public void setLockedOut(boolean isLockedOut) {
-        this.isLockedOut = isLockedOut;
+    public boolean isLockedOutAt(Instant timestamp) {
+        return lockoutUntil != null && timestamp != null && lockoutUntil.isAfter(timestamp);
+    }
+
+    public Instant getLockoutUntil() {
+        return lockoutUntil;
+    }
+
+    public void setLockoutUntil(Instant lockoutUntil) {
+        this.lockoutUntil = lockoutUntil;
+    }
+
+    public void clearLockout() {
+        lockoutUntil = null;
+        resetIncorrectLoginAttempts();
     }
 
     public int getIncorrectLoginAttempts() {
@@ -579,7 +609,7 @@ public class UserEntity implements IdentifiedEntity {
             ", changePasswordNextLogin=" + changePasswordNextLogin +
             ", passwordExpired=" + passwordExpired +
             ", passwordExpiresInDays=" + passwordExpiresInDays +
-            ", isLockedOut=" + isLockedOut +
+            ", lockoutUntil=" + lockoutUntil +
             ", isExternalIdentity=" + isExternalIdentity +
             '}';
     }

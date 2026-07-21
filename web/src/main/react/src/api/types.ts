@@ -9,6 +9,7 @@ export type ApiErrorBody = {
     code?: string
     errorMessage?: string
     timestamp?: number
+    referenceId?: string
   }
 }
 
@@ -187,8 +188,8 @@ export type LoginResponse = {
 export enum LoginStatus {
   Success = "SUCCESS",
   IncorrectCredentials = "INCORRECT_CREDENTIALS",
-  UserNotFound = "USER_NOT_FOUND",
   InvalidRequest = "INVALID_REQUEST",
+  RateLimited = "RATE_LIMITED",
   AccountPasswordExpired = "ACCOUNT_PASSWORD_EXPIRED",
   Unknown = "UNKNOWN",
 }
@@ -205,22 +206,11 @@ export type SessionInfo = {
 }
 
 export type ForgotPasswordData = {
-  username: string
   newPassword: string
 }
 
 export type MessageResponse = {
   message: string
-}
-
-/** Reset password validation settings */
-export type PasswordSettings = {
-  alphasAndNumericsEnabled: boolean
-  minLength: number
-  maxLength: number
-  repetitionThreshold: number
-  startsWithAlphaEnabled: boolean
-  upperAndLowerAlphasEnabled: boolean
 }
 
 /**

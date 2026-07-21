@@ -12,11 +12,13 @@ public interface PasswordResetSessionDao {
 
     void save(PasswordResetSessionEntity session);
 
+    Optional<PasswordResetSessionEntity> findByUserIdForUpdate(long userId);
+
+    Optional<PasswordResetSessionEntity> findByTokenHash(String tokenHash);
+
     Optional<PasswordResetSessionEntity> findByTokenHashForUpdate(String tokenHash);
 
-    void deleteByTokenHash(String tokenHash);
-
-    void deleteByUsername(String username);
+    void deleteByUserId(long userId);
 
     int deleteExpired(Instant now);
 }

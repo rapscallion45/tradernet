@@ -4,19 +4,22 @@ import com.tradernet.jpa.entities.ResourceEntity;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * DAO for protected resources/entities.
  */
 public interface ResourceDao {
 
-    void save(ResourceEntity resource);
+    ResourceEntity save(ResourceEntity resource);
 
     List<ResourceEntity> findAll();
 
-    List<ResourceEntity> findAllWithRoles();
+    List<ResourceEntity> findMatchingWithRoles(Set<String> pathPrefixes, String httpMethod);
 
     Optional<ResourceEntity> findByName(String name);
+
+    List<ResourceEntity> findByNames(Set<String> names);
 
     Optional<ResourceEntity> findByPathPrefix(String pathPrefix);
 }

@@ -10,7 +10,9 @@ import java.util.regex.Pattern;
  */
 public final class ChartInterval {
 
-    private static final Pattern TOKEN_PATTERN = Pattern.compile("^(\\d+)([A-Z]{1,2})$");
+    public static final String VALIDATION_PATTERN = "(?i)[1-9][0-9]*(S|M|MIN|H|D|N|MO|Y)";
+
+    private static final Pattern TOKEN_PATTERN = Pattern.compile("^(\\d+)(S|M|MIN|H|D|N|MO|Y)$");
 
     private static final long SECOND_MS = 1_000L;
     private static final long MINUTE_MS = 60_000L;

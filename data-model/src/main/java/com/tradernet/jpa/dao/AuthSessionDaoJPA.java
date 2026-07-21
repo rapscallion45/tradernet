@@ -40,9 +40,13 @@ public class AuthSessionDaoJPA implements AuthSessionDao {
     }
 
     @Override
-    public int deleteExpired(Instant now) {
-        return entityManager.createQuery("DELETE FROM AuthSessionEntity s WHERE s.expiresAt <= :now")
+    public int deleteExpired(Instant now, Instant idleCutoff) {
+        return entityManager.createQuery(
+                "DELETE FROM AuthSessionEntity s "
+                    + "WHERE s.expiresAt <= :now OR s.lastAccessedAt <= :idleCutoff"
+            )
             .setParameter("now", now)
+            .setParameter("idleCutoff", idleCutoff)
             .executeUpdate();
     }
 }

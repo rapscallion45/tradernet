@@ -18,5 +18,5 @@ public interface AuthSessionDao {
 
     void deleteByUserId(long userId);
 
-    int deleteExpired(Instant now);
+    int deleteExpired(Instant now, Instant idleCutoff);
 }

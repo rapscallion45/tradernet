@@ -15,6 +15,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 import java.util.List;
 
@@ -52,9 +54,14 @@ public class RoleResource {
     @Path("/{name}")
     public Response updateRole(
         @NotBlank(message = "name is required") @PathParam("name") String name,
-        @NotNull(message = "Request body is required") @Valid UpdateRoleRequestDto request
+        @NotNull(message = "Request body is required") @Valid UpdateRoleRequestDto request,
+        @Context SecurityContext securityContext
     ) {
-        return roleManagementService.updateRole(name, request.getResourceNames())
+        return roleManagementService.updateRole(
+                name,
+                request.getResourceNames(),
+                AuthenticatedRequest.requireAuthenticatedUser(securityContext)
+            )
             .map(role -> Response.ok(role).build())
             .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Role not found"));
     }

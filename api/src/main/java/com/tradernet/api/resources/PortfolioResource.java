@@ -1,8 +1,10 @@
 package com.tradernet.api.resources;
 
+import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.order.PortfolioService;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -26,6 +28,7 @@ public class PortfolioResource {
     @GET
     public Response getPortfolio(
         @Context SecurityContext securityContext,
+        @Pattern(regexp = CurrencyCode.VALIDATION_PATTERN, message = "currency is invalid")
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);

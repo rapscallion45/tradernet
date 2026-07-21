@@ -15,7 +15,7 @@ public interface GroupDao {
      *
      * @param group group to save
      */
-    void save(GroupEntity group);
+    GroupEntity save(GroupEntity group);
 
     /**
      * Retrieves all groups.
@@ -31,6 +31,8 @@ public interface GroupDao {
      * @return group if found
      */
     Optional<GroupEntity> findById(long id);
+
+    Optional<GroupEntity> findByIdForUpdate(long id);
 
     /**
      * Retrieves a group by name.

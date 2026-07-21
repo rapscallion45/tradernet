@@ -20,6 +20,9 @@ public enum CurrencyCode {
     ZAR,
     AED;
 
+    public static final String VALIDATION_PATTERN =
+        "(?i)(USD|EUR|GBP|JPY|CAD|AUD|CHF|INR|BRL|MXN|CNY|KRW|SGD|HKD|ZAR|AED)";
+
     public static CurrencyCode parseOrDefault(String raw, CurrencyCode fallback) {
         if (raw == null || raw.isBlank()) {
             return fallback;

@@ -1,5 +1,7 @@
 package com.tradernet.api.resources;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Standard JSON error payload for HTTP-level API failures.
  */
@@ -11,7 +13,11 @@ public class ApiErrorDto {
     }
 
     public ApiErrorDto(int status, String code, String errorMessage) {
-        this.error = new ErrorBody(status, code, errorMessage, System.currentTimeMillis());
+        this(status, code, errorMessage, null);
+    }
+
+    public ApiErrorDto(int status, String code, String errorMessage, String referenceId) {
+        this.error = new ErrorBody(status, code, errorMessage, System.currentTimeMillis(), referenceId);
     }
 
     public ErrorBody getError() {
@@ -27,15 +33,18 @@ public class ApiErrorDto {
         private String code;
         private String errorMessage;
         private long timestamp;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String referenceId;
 
         public ErrorBody() {
         }
 
-        public ErrorBody(int status, String code, String errorMessage, long timestamp) {
+        public ErrorBody(int status, String code, String errorMessage, long timestamp, String referenceId) {
             this.status = status;
             this.code = code;
             this.errorMessage = errorMessage;
             this.timestamp = timestamp;
+            this.referenceId = referenceId;
         }
 
         public int getStatus() {
@@ -68,6 +77,14 @@ public class ApiErrorDto {
 
         public void setTimestamp(long timestamp) {
             this.timestamp = timestamp;
+        }
+
+        public String getReferenceId() {
+            return referenceId;
+        }
+
+        public void setReferenceId(String referenceId) {
+            this.referenceId = referenceId;
         }
     }
 }

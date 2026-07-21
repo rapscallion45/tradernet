@@ -2,13 +2,15 @@ package com.tradernet.user;
 
 import com.tradernet.jpa.dao.UserDao;
 import com.tradernet.jpa.entities.UserEntity;
+import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.UserProfileDto;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /**
@@ -20,131 +22,117 @@ import java.util.stream.Collectors;
 @Stateless
 public class UserService {
 
-    private static final int DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 5;
-    private static final String UNKNOWN_USER_PASSWORD_HASH = BCrypt.hashpw(
-        "tradernet-unknown-user-password",
-        BCrypt.gensalt()
-    );
-
     @EJB
     private UserDao userDao;
 
-    /**
-     * Finds a user by their username.
-     *
-     * @param username The username to search for
-     * @return Optional containing the User if found, empty otherwise
-     */
-    public Optional<UserEntity> findByUsername(String username) {
-        if (username == null || username.isBlank()) {
-            return Optional.empty();
-        }
+    @EJB
+    private UserSecurityConfiguration configuration;
 
-        return userDao.findByUsername(username);
+    @EJB
+    private PasswordSecurityService passwordSecurityService;
+
+    @EJB
+    private AuthenticationAuditService auditService;
+
+    public UserService() {
     }
 
-    /**
-     * Finds a user by username and eagerly loads roles to avoid lazy-loading issues
-     * when accessed outside of an active persistence context.
-     *
-     * @param username The username to search for
-     * @return Optional containing the User if found, empty otherwise
-     */
-    public Optional<UserEntity> findByUsernameWithRoles(String username) {
-        if (username == null || username.isBlank()) {
-            return Optional.empty();
-        }
-
-        return userDao.findByUsernameWithRoles(username);
+    UserService(UserSecurityConfiguration configuration) {
+        this.configuration = configuration;
+        this.passwordSecurityService = new PasswordSecurityService(configuration);
+        this.auditService = new AuthenticationAuditService();
     }
 
-    /**
-     * Finds all users and eagerly loads roles.
-     *
-     * @return List of users with roles loaded
-     */
-    public List<UserEntity> findAllWithRoles() {
-        return userDao.findAllWithRoles();
+    UserService(UserDao userDao, UserSecurityConfiguration configuration) {
+        this.userDao = userDao;
+        this.configuration = configuration;
+        this.passwordSecurityService = new PasswordSecurityService(configuration);
+        this.auditService = new AuthenticationAuditService();
     }
 
     public List<UserProfileDto> getUserProfiles() {
-        return findAllWithRoles().stream()
+        return userDao.findAllWithRoles().stream()
             .map(UserDtoMapper::toUserProfile)
             .collect(Collectors.toList());
     }
 
-    /**
-     * Finds a user by id and eagerly loads roles.
-     *
-     * @param id User id
-     * @return Optional containing the User if found, empty otherwise
-     */
-    public Optional<UserEntity> findByIdWithRoles(long id) {
-        return userDao.findByIdWithRoles(id);
-    }
-
     public Optional<UserProfileDto> getUserProfile(long id) {
-        return findByIdWithRoles(id).map(UserDtoMapper::toUserProfile);
+        return userDao.findByIdWithRoles(id).map(UserDtoMapper::toUserProfile);
     }
 
     public Optional<UserProfileDto> getUserProfileByUsername(String username) {
-        return findByUsernameWithRoles(username).map(UserDtoMapper::toUserProfile);
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+        return userDao.findByUsernameWithRoles(username).map(UserDtoMapper::toUserProfile);
     }
 
-    public Optional<UserEntity> findAuthenticatedUser(String username, String password) {
-        if (password == null || password.isBlank()) {
+    public Optional<AuthenticatedUser> authenticateUser(String username, String password) {
+        return authenticateUser(username, password, null);
+    }
+
+    public Optional<AuthenticatedUser> authenticateUser(String username, String password, String sourceAddress) {
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<UserEntity> candidate = findByUsernameWithRoles(username);
+        final Optional<UserEntity> candidate = userDao.findByUsernameWithRolesForUpdate(username);
         if (candidate.isEmpty()) {
-            BCrypt.checkpw(password, UNKNOWN_USER_PASSWORD_HASH);
+            passwordSecurityService.performUnknownUserCheck(password);
             return Optional.empty();
         }
 
         final UserEntity user = candidate.get();
-        if (!passwordMatches(user, password)) {
-            user.setIncorrectLoginAttempts(Math.min(
-                maxFailedLoginAttempts(),
-                user.getIncorrectLoginAttempts() + 1
-            ));
-            userDao.save(user);
+        final Instant now = Instant.now();
+        final boolean expiredLockoutCleared = clearExpiredLockout(user, now);
+        final boolean passwordMatches = passwordSecurityService.matches(password, user.getPasswordHash());
+
+        if (!user.isBypassLockout() && user.isLockedOutAt(now)) {
+            auditService.record("account_lockout", "rejected", user.getUsername(), sourceAddress, "active_lockout");
             return Optional.empty();
         }
-        if (!isAccountAccessible(user)) {
+        if (!hasUsableAccountState(user) || user.isExternalIdentity()) {
+            if (expiredLockoutCleared) {
+                userDao.save(user);
+            }
+            return Optional.empty();
+        }
+        if (!passwordMatches) {
+            final boolean newlyLocked = registerFailedLogin(user, now);
+            userDao.save(user);
+            if (newlyLocked) {
+                auditService.record("account_lockout", "applied", user.getUsername(), sourceAddress, "failure_threshold");
+            }
             return Optional.empty();
         }
 
         user.registerSuccessfulLogin();
+        if (!user.isChangePasswordNextLogin() && passwordSecurityService.needsRehash(user.getPasswordHash())) {
+            user.setPasswordHash(passwordSecurityService.hashPassword(password));
+        }
         userDao.save(user);
-        return Optional.of(user);
+        return Optional.of(new AuthenticatedUser(
+            UserDtoMapper.toAuthUser(user),
+            user.isChangePasswordNextLogin()
+        ));
+    }
+
+    public Optional<AuthUserDto> getSessionEligibleUser(long userId) {
+        return userDao.findByIdWithRoles(userId)
+            .filter(this::isSessionEligible)
+            .map(UserDtoMapper::toAuthUser);
     }
 
     /**
      * Applies the same persisted account policy to login and existing-session checks.
      */
-    public boolean isAccountAccessible(UserEntity user) {
-        if (user == null || user.isDeleted() || user.isDisabled() || user.isAccountExpired() || user.isLockedOut()) {
-            return false;
-        }
-        return user.isBypassLockout() || user.getIncorrectLoginAttempts() < maxFailedLoginAttempts();
+    boolean isAccountAccessible(UserEntity user) {
+        return hasUsableAccountState(user)
+            && (user.isBypassLockout() || !user.isLockedOutAt(Instant.now()));
     }
 
-    public boolean isSessionEligible(UserEntity user) {
+    boolean isSessionEligible(UserEntity user) {
         return isAccountAccessible(user) && !user.isChangePasswordNextLogin();
-    }
-
-    private boolean passwordMatches(UserEntity user, String password) {
-        String passwordHash = user.getPasswordHash();
-        if (passwordHash == null || passwordHash.isBlank()) {
-            return false;
-        }
-
-        try {
-            return BCrypt.checkpw(password, passwordHash);
-        } catch (IllegalArgumentException ex) {
-            return false;
-        }
     }
 
     /**
@@ -153,31 +141,52 @@ public class UserService {
      * @param username    The username to reset
      * @param newPassword The new plain-text password
      */
-    public long resetPassword(String username, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("newPassword is required");
+    public OptionalLong resetPassword(long userId, String newPassword) {
+        if (userId <= 0) {
+            return OptionalLong.empty();
         }
 
-        UserEntity user = findByUsername(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        user.setPasswordHash(hashedPassword);
+        final Optional<UserEntity> foundUser = userDao.findByIdForUpdate(userId);
+        if (foundUser.isEmpty()) {
+            return OptionalLong.empty();
+        }
+
+        final UserEntity user = foundUser.get();
+        if (!hasUsableAccountState(user) || user.isExternalIdentity()) {
+            return OptionalLong.empty();
+        }
+        passwordSecurityService.validateNewPassword(user.getUsername(), newPassword);
+        user.setPasswordHash(passwordSecurityService.hashPassword(newPassword));
         user.setChangePasswordNextLogin(false);
-        user.resetIncorrectLoginAttempts();
+        user.clearLockout();
         userDao.save(user);
-        return user.getPk();
+        return OptionalLong.of(user.getPk());
     }
 
-    private int maxFailedLoginAttempts() {
-        final String configured = System.getProperty(
-            "tradernet.auth.maxFailedLoginAttempts",
-            String.valueOf(DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS)
-        );
-        try {
-            return Math.max(1, Integer.parseInt(configured));
-        } catch (NumberFormatException ex) {
-            return DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS;
+    private boolean hasUsableAccountState(UserEntity user) {
+        return user != null && !user.isSystem() && !user.isDeleted() && !user.isDisabled() && !user.isAccountExpired();
+    }
+
+    private boolean clearExpiredLockout(UserEntity user, Instant now) {
+        final Instant lockoutUntil = user.getLockoutUntil();
+        if (lockoutUntil == null || lockoutUntil.isAfter(now)) {
+            return false;
         }
+        user.clearLockout();
+        return true;
+    }
+
+    private boolean registerFailedLogin(UserEntity user, Instant now) {
+        final int failedAttempts = Math.min(
+            configuration.getMaxFailedLoginAttempts(),
+            user.getIncorrectLoginAttempts() + 1
+        );
+        user.setIncorrectLoginAttempts(failedAttempts);
+        if (!user.isBypassLockout() && failedAttempts >= configuration.getMaxFailedLoginAttempts()) {
+            user.setLockoutUntil(now.plus(configuration.getLockoutDuration()));
+            return true;
+        }
+        return false;
     }
 
 }

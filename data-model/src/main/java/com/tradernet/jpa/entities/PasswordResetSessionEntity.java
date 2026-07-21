@@ -15,11 +15,21 @@ import java.time.Instant;
 public class PasswordResetSessionEntity {
 
     @Id
-    @Column(name = "token")
+    private long userId;
+
+    @Column(name = "token", nullable = false, unique = true, length = 64)
     private String tokenHash;
 
-    private String username;
+    @Column(nullable = false)
     private Instant expiresAt;
+
+    public long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(long userId) {
+        this.userId = userId;
+    }
 
     public String getTokenHash() {
         return tokenHash;
@@ -27,14 +37,6 @@ public class PasswordResetSessionEntity {
 
     public void setTokenHash(String tokenHash) {
         this.tokenHash = tokenHash;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public Instant getExpiresAt() {

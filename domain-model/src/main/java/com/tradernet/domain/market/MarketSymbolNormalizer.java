@@ -7,6 +7,8 @@ import java.util.Locale;
  */
 public final class MarketSymbolNormalizer {
 
+    public static final String VALIDATION_PATTERN = "[A-Za-z0-9]{5,20}";
+
     private MarketSymbolNormalizer() {
     }
 

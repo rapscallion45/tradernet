@@ -4,9 +4,11 @@ import com.tradernet.jpa.entities.RoleEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * JPA implementation of RoleDao using Hibernate.
@@ -18,8 +20,12 @@ public class RoleDaoJPA implements RoleDao {
     private EntityManager entityManager;
 
     @Override
-    public void save(RoleEntity role) {
-        entityManager.merge(role);
+    public RoleEntity save(RoleEntity role) {
+        if (role.getId() == null) {
+            entityManager.persist(role);
+            return role;
+        }
+        return entityManager.merge(role);
     }
 
     @Override
@@ -46,11 +52,34 @@ public class RoleDaoJPA implements RoleDao {
     }
 
     @Override
+    public Optional<RoleEntity> findByNameWithResourcesForUpdate(String name) {
+        final Optional<RoleEntity> locked = entityManager.createQuery(
+                "SELECT r FROM RoleEntity r WHERE r.name = :name",
+                RoleEntity.class
+            )
+            .setParameter("name", name)
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .getResultStream()
+            .findFirst();
+        return locked.isEmpty() ? Optional.empty() : findByNameWithResources(name);
+    }
+
+    @Override
     public Optional<RoleEntity> findByName(String name) {
         return entityManager.createQuery("SELECT r FROM RoleEntity r WHERE r.name = :name", RoleEntity.class)
             .setParameter("name", name)
             .getResultStream()
             .findFirst();
+    }
+
+    @Override
+    public List<RoleEntity> findByNames(Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return entityManager.createQuery("SELECT r FROM RoleEntity r WHERE r.name IN :names", RoleEntity.class)
+            .setParameter("names", names)
+            .getResultList();
     }
 
     @Override

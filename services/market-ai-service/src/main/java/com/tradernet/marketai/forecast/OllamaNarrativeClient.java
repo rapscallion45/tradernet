@@ -2,8 +2,10 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.MarketAiConfiguration;
 import com.tradernet.marketai.model.ExplanationItem;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
@@ -31,23 +33,23 @@ public class OllamaNarrativeClient {
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final URI generateUri = URI.create(System.getProperty("market.ai.ollama.url", "http://ollama:11434")).resolve("/api/generate");
-    private final String model = System.getProperty("market.ai.ollama.model", "gemma4:e4b");
+    @EJB
+    private MarketAiConfiguration configuration;
 
     public String summarize(MarketForecast forecast) {
-        if (!Boolean.parseBoolean(System.getProperty("market.ai.ollama.enabled", "true"))) {
+        if (!configuration.isOllamaEnabled()) {
             return fallbackNarrative(forecast);
         }
 
         final Map<String, Object> requestBody = new LinkedHashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", configuration.getOllamaModel());
         requestBody.put("stream", false);
         requestBody.put("prompt", prompt(forecast));
         requestBody.put("options", Map.of("temperature", 0.2, "num_predict", 80));
 
         try {
             final String json = objectMapper.writeValueAsString(requestBody);
-            final HttpRequest request = HttpRequest.newBuilder(generateUri)
+            final HttpRequest request = HttpRequest.newBuilder(configuration.getOllamaBaseUri().resolve("/api/generate"))
                     .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json))

@@ -1,12 +1,16 @@
 package com.tradernet.marketai.context;
 
 import com.tradernet.domain.market.MarketSymbolNormalizer;
+import com.tradernet.marketai.MarketAiConfiguration;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketContextUpdateRequest;
+import jakarta.annotation.Resource;
+import jakarta.ejb.Asynchronous;
 import jakarta.ejb.ConcurrencyManagement;
 import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Singleton;
+import jakarta.ejb.SessionContext;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 
@@ -23,9 +27,16 @@ public class MarketContextService {
 
     private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
     private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
+    private final Set<String> refreshesInFlight = ConcurrentHashMap.newKeySet();
 
     @EJB
     private MarketContextDataIngestionClient contextDataIngestionClient;
+
+    @EJB
+    private MarketAiConfiguration configuration;
+
+    @Resource
+    private SessionContext sessionContext;
 
     public MarketContextRegistry registry() {
         return marketContextRegistry;
@@ -49,27 +60,22 @@ public class MarketContextService {
     }
 
     public MarketContextSnapshot get(String symbol) {
-        return getHydrated(symbol);
-    }
-
-    public MarketContextSnapshot getHydrated(String symbol) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         registerSymbol(normalizedSymbol);
-        MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
+        final MarketContextSnapshot snapshot = marketContextRegistry.get(normalizedSymbol);
         if (!snapshot.isAvailable()) {
-            hydrate(normalizedSymbol);
-            snapshot = marketContextRegistry.get(normalizedSymbol);
+            requestHydration(normalizedSymbol);
         }
         return snapshot;
     }
 
     public void refresh() {
-        if (!Boolean.parseBoolean(System.getProperty("market.ai.context.ingestion.enabled", "true"))) {
+        if (!configuration.isContextIngestionEnabled()) {
             return;
         }
 
         contextRefreshSymbols.addAll(marketContextRegistry.symbols());
-        contextRefreshSymbols.forEach(this::hydrate);
+        contextRefreshSymbols.forEach(this::requestHydration);
     }
 
     public void update(String symbol, MarketContextUpdateRequest request) {
@@ -87,6 +93,28 @@ public class MarketContextService {
         registerSymbol(normalizedSymbol);
         final MarketContextSnapshot current = marketContextRegistry.get(normalizedSymbol);
         marketContextRegistry.update(normalizedSymbol, request.toSnapshot(current));
+    }
+
+    @Asynchronous
+    public void hydrateAsync(String symbol) {
+        try {
+            hydrate(symbol);
+        } finally {
+            refreshesInFlight.remove(symbol);
+        }
+    }
+
+    private void requestHydration(String symbol) {
+        if (!configuration.isContextIngestionEnabled() || symbol == null || symbol.isBlank()
+            || !refreshesInFlight.add(symbol)) {
+            return;
+        }
+
+        try {
+            sessionContext.getBusinessObject(MarketContextService.class).hydrateAsync(symbol);
+        } catch (RuntimeException ex) {
+            refreshesInFlight.remove(symbol);
+        }
     }
 
     private void hydrate(String symbol) {

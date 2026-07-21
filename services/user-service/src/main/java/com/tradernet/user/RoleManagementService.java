@@ -4,11 +4,11 @@ import com.tradernet.jpa.dao.ResourceDao;
 import com.tradernet.jpa.dao.RoleDao;
 import com.tradernet.jpa.entities.ResourceEntity;
 import com.tradernet.jpa.entities.RoleEntity;
+import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.RoleDto;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +27,25 @@ public class RoleManagementService {
     private ResourceDao resourceDao;
 
     @EJB
-    private AuthorizationService authorizationService;
+    private AccessControlAssignmentService assignmentService;
+
+    @EJB
+    private AuthenticationAuditService auditService;
+
+    public RoleManagementService() {
+    }
+
+    RoleManagementService(
+        RoleDao roleDao,
+        ResourceDao resourceDao,
+        AccessControlAssignmentService assignmentService,
+        AuthenticationAuditService auditService
+    ) {
+        this.roleDao = roleDao;
+        this.resourceDao = resourceDao;
+        this.assignmentService = assignmentService;
+        this.auditService = auditService;
+    }
 
     public List<RoleDto> getRoles() {
         return roleDao.findAllWithResources().stream()
@@ -46,12 +64,28 @@ public class RoleManagementService {
             .collect(Collectors.toList());
     }
 
-    public Optional<RoleDto> updateRole(String name, Set<String> resourceNames) {
-        return getRoleEntity(name)
+    public Optional<RoleDto> updateRole(String name, Set<String> resourceNames, AuthUserDto actor) {
+        if (!SecurityRoleNames.hasRole(actor, SecurityRoleNames.ALL_RIGHTS)) {
+            auditService.record(
+                "authorization_change",
+                "rejected",
+                actor == null ? null : actor.getUsername(),
+                null,
+                "role_administration_requires_all_rights"
+            );
+            throw new AuthorizationDeniedException("Role administration requires ALL Rights");
+        }
+        return roleDao.findByNameWithResourcesForUpdate(name)
             .map(role -> {
-                role.setResources(resolveResources(resourceNames));
+                role.setResources(assignmentService.resolveResources(resourceNames));
                 roleDao.save(role);
-                authorizationService.invalidate();
+                auditService.record(
+                    "authorization_change",
+                    "success",
+                    actor.getUsername(),
+                    null,
+                    "role_" + role.getName()
+                );
                 return UserDtoMapper.toRole(role);
             });
     }
@@ -60,20 +94,4 @@ public class RoleManagementService {
         return roleDao.findByNameWithResources(name);
     }
 
-    private Set<ResourceEntity> resolveResources(Set<String> resourceNames) {
-        if (resourceNames == null || resourceNames.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        Set<ResourceEntity> resources = new HashSet<>();
-        for (String resourceName : resourceNames) {
-            if (resourceName == null || resourceName.isBlank()) {
-                throw new InvalidAccessControlAssignmentException("Resource name is required");
-            }
-            ResourceEntity resource = resourceDao.findByName(resourceName)
-                .orElseThrow(() -> new InvalidAccessControlAssignmentException("Resource not found: " + resourceName));
-            resources.add(resource);
-        }
-        return resources;
-    }
 }

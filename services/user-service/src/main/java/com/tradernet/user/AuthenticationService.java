@@ -1,14 +1,14 @@
 package com.tradernet.user;
 
-import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.dto.LoginStatus;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
- * Owns login workflow decisions and session token creation.
+ * Owns login, password-reset, throttling, audit, and session workflow decisions.
  */
 @Stateless
 public class AuthenticationService {
@@ -19,40 +19,85 @@ public class AuthenticationService {
     @EJB
     private AuthSessionService authSessionService;
 
-    public AuthenticationResult login(String username, String password) {
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+    @EJB
+    private PasswordSecurityService passwordSecurityService;
+
+    @EJB
+    private AuthenticationRateLimitService rateLimitService;
+
+    @EJB
+    private AuthenticationAuditService auditService;
+
+    public AuthenticationResult login(String username, String password, String sourceAddress) {
+        final RateLimitDecision rateLimit = rateLimitService.checkLogin(sourceAddress);
+        if (!rateLimit.isAllowed()) {
+            auditService.record("login", "rejected", username, sourceAddress, "source_rate_limited");
+            return AuthenticationResult.rateLimited(rateLimit.getRetryAfterSeconds());
+        }
+
+        if (username == null || username.isBlank() || username.length() > 50
+            || password == null || password.isBlank()) {
+            auditService.record("login", "rejected", username, sourceAddress, "invalid_request");
             return AuthenticationResult.status(LoginStatus.INVALID_REQUEST);
         }
 
-        Optional<UserEntity> authenticatedUser = userService.findAuthenticatedUser(username, password);
-        if (authenticatedUser.isEmpty()) {
+        if (!passwordSecurityService.isLoginInputSupported(password)) {
+            passwordSecurityService.performUnknownUserCheck(password);
+            auditService.record("login", "rejected", username, sourceAddress, "incorrect_credentials");
             return AuthenticationResult.status(LoginStatus.INCORRECT_CREDENTIALS);
         }
 
-        UserEntity user = authenticatedUser.get();
-        if (user.isChangePasswordNextLogin()) {
-            return AuthenticationResult.passwordExpired(authSessionService.createPasswordResetSession(user.getUsername()));
+        final Optional<AuthenticatedUser> authenticatedUser = userService.authenticateUser(username, password, sourceAddress);
+        if (authenticatedUser.isEmpty()) {
+            auditService.record("login", "rejected", username, sourceAddress, "incorrect_credentials");
+            return AuthenticationResult.status(LoginStatus.INCORRECT_CREDENTIALS);
         }
 
-        return AuthenticationResult.success(authSessionService.createSession(UserDtoMapper.toAuthUser(user)));
+        final AuthenticatedUser authentication = authenticatedUser.get();
+        if (authentication.isPasswordChangeRequired()) {
+            final String resetToken = authSessionService.createPasswordResetSession(authentication.getUser().getId());
+            auditService.record("login", "challenge", username, sourceAddress, "password_change_required");
+            return AuthenticationResult.passwordExpired(resetToken);
+        }
+
+        authSessionService.removePasswordResetSessionForUser(authentication.getUser().getId());
+        final String sessionToken = authSessionService.createSession(authentication.getUser());
+        auditService.record("login", "success", username, sourceAddress, "authenticated");
+        return AuthenticationResult.success(sessionToken);
     }
 
-    public PasswordResetResult resetPassword(String resetToken, String username, String newPassword) {
-        if (username == null || username.isBlank() || newPassword == null || newPassword.isBlank()) {
+    public PasswordResetResult resetPassword(String resetToken, String newPassword, String sourceAddress) {
+        final RateLimitDecision rateLimit = rateLimitService.checkPasswordReset(sourceAddress);
+        if (!rateLimit.isAllowed()) {
+            auditService.record("password_reset", "rejected", null, sourceAddress, "source_rate_limited");
+            return PasswordResetResult.rateLimited(rateLimit.getRetryAfterSeconds());
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            auditService.record("password_reset", "rejected", null, sourceAddress, "invalid_request");
             return PasswordResetResult.invalidRequest();
         }
 
-        if (!authSessionService.consumePasswordResetSession(resetToken, username)) {
+        final OptionalLong resetUserId = authSessionService.consumePasswordResetSession(resetToken);
+        if (resetUserId.isEmpty()) {
+            auditService.record("password_reset", "rejected", null, sourceAddress, "invalid_session");
             return PasswordResetResult.invalidSession();
         }
 
-        try {
-            final long userId = userService.resetPassword(username, newPassword);
-            authSessionService.removeSessionsForUser(userId);
-        } catch (IllegalArgumentException ex) {
-            return PasswordResetResult.userNotFound(ex.getMessage());
+        final long userId = resetUserId.getAsLong();
+        final OptionalLong updatedUserId = userService.resetPassword(userId, newPassword);
+        if (updatedUserId.isEmpty()) {
+            auditService.record("password_reset", "rejected", Long.toString(userId), sourceAddress, "account_ineligible");
+            return PasswordResetResult.invalidSession();
         }
+        authSessionService.removeSessionsForUser(userId);
+        auditService.record("password_reset", "success", Long.toString(userId), sourceAddress, "password_changed");
+        return PasswordResetResult.success(userId);
+    }
 
-        return PasswordResetResult.success();
+    public void logout(String sessionId, String passwordResetToken, String sourceAddress) {
+        authSessionService.removeSession(sessionId);
+        authSessionService.removePasswordResetSession(passwordResetToken);
+        auditService.record("logout", "success", null, sourceAddress, "client_requested");
     }
 }

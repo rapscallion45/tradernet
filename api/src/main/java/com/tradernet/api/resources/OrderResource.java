@@ -1,12 +1,15 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.order.OrderPresentationService;
+import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.DefaultValue;
@@ -37,14 +40,11 @@ public class OrderResource {
     @GET
     public Response getOrders(
         @Context SecurityContext securityContext,
-        @QueryParam("userId") Long userId,
+        @Pattern(regexp = CurrencyCode.VALIDATION_PATTERN, message = "currency is invalid")
         @DefaultValue("USD") @QueryParam("currency") String currency
     ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
         long authenticatedUserId = authUser.getId();
-        if (userId != null && userId != authenticatedUserId) {
-            return ApiErrors.response(Response.Status.FORBIDDEN, "Cannot list orders for another user");
-        }
 
         List<OrderResponseDto> response = orderPresentationService.getOrdersForUser(authenticatedUserId, currency);
         return Response.ok(response).build();
@@ -66,13 +66,9 @@ public class OrderResource {
     @Path("/{orderId}/close")
     public Response closeOrder(
         @Context SecurityContext securityContext,
-        @PathParam("orderId") Long orderId
+        @Positive(message = "orderId must be greater than 0") @PathParam("orderId") long orderId
     ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
-
-        if (orderId == null || orderId <= 0) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "orderId must be greater than 0");
-        }
 
         return orderPresentationService.closeOrder(authUser.getId(), orderId)
             .map(response -> Response.ok(response).build())

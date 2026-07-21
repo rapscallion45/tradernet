@@ -2,9 +2,11 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.MarketAiConfiguration;
 import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
@@ -32,12 +34,14 @@ public class ForecastingClient {
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final URI baseUri = URI.create(System.getProperty("market.ai.forecasting.url", "http://forecasting-service:8000"));
+    @EJB
+    private MarketAiConfiguration configuration;
 
     public MarketForecast forecast(String symbol, int horizonDays, MarketContextSnapshot context) {
         final String normalizedSymbol = symbol == null || symbol.isBlank() ? "BTCUSDT" : symbol.trim().toUpperCase();
         final int boundedHorizonDays = Math.max(1, Math.min(horizonDays, 365));
-        final URI uri = baseUri.resolve("/forecast?symbol=" + encode(normalizedSymbol) + "&horizon_days=" + boundedHorizonDays);
+        final URI uri = configuration.getForecastingBaseUri()
+            .resolve("/forecast?symbol=" + encode(normalizedSymbol) + "&horizon_days=" + boundedHorizonDays);
         final HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(20))
                 .header("Accept", "application/json")

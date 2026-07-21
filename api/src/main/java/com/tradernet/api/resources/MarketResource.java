@@ -1,15 +1,25 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.currencyconversion.CurrencyConversionService;
+import com.tradernet.currencyconversion.CurrencyCode;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.MarketAiService;
 import com.tradernet.marketai.MarketDataViewService;
 import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
+import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
 import jakarta.ejb.EJB;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -41,9 +51,14 @@ public class MarketResource {
     @GET
     @Path("/bars")
     public List<MarketBar> getBars(
+            @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @NotBlank @Size(max = 8) @Pattern(regexp = ChartInterval.VALIDATION_PATTERN, message = "interval is invalid")
             @DefaultValue("1S") @QueryParam("interval") String interval,
+            @Min(value = 1, message = "limit must be at least 1")
+            @Max(value = 1_000, message = "limit must not exceed 1000")
             @DefaultValue("500") @QueryParam("limit") int limit,
+            @Pattern(regexp = CurrencyCode.VALIDATION_PATTERN, message = "currency is invalid")
             @DefaultValue("USD") @QueryParam("currency") String currency) {
         return marketDataViewService.getBars(symbol, interval, limit, currency);
     }
@@ -63,21 +78,30 @@ public class MarketResource {
     @GET
     @Path("/signals")
     public List<AiSignal> getSignals(
+            @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @Min(value = 1, message = "limit must be at least 1")
+            @Max(value = 1_000, message = "limit must not exceed 1000")
             @DefaultValue("200") @QueryParam("limit") int limit) {
         return marketAiService.getSignals(symbol, limit);
     }
 
     @GET
     @Path("/context")
-    public MarketContextSnapshot getMarketContext(@DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol) {
+    public MarketContextSnapshot getMarketContext(
+        @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
+        @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol
+    ) {
         return marketAiService.getMarketContext(symbol);
     }
 
     @GET
     @Path("/forecast")
     public MarketForecast getForecast(
+            @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @Min(value = 1, message = "horizonDays must be at least 1")
+            @Max(value = 365, message = "horizonDays must not exceed 365")
             @DefaultValue("1") @QueryParam("horizonDays") int horizonDays) {
         return marketAiService.getForecast(symbol, horizonDays);
     }
@@ -85,8 +109,12 @@ public class MarketResource {
     @GET
     @Path("/order-book")
     public OrderBookSnapshot getOrderBook(
+            @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
+            @Min(value = 1, message = "levels must be at least 1")
+            @Max(value = 200, message = "levels must not exceed 200")
             @DefaultValue("12") @QueryParam("levels") int levels,
+            @Pattern(regexp = CurrencyCode.VALIDATION_PATTERN, message = "currency is invalid")
             @DefaultValue("USD") @QueryParam("currency") String currency) {
         return marketDataViewService.getOrderBook(symbol, levels, currency);
     }
@@ -94,8 +122,9 @@ public class MarketResource {
     @POST
     @Path("/context")
     public MarketContextSnapshot updateMarketContext(
+            @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
-            MarketContextUpdateRequest request) {
+            @NotNull(message = "market context payload is required") @Valid MarketContextUpdateRequest request) {
         marketAiService.updateMarketContext(symbol, request);
         return marketAiService.getMarketContext(symbol);
     }

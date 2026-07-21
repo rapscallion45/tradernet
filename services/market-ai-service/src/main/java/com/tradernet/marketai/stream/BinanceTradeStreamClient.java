@@ -23,16 +23,21 @@ public class BinanceTradeStreamClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final String webSocketBaseUrl;
 
     private volatile WebSocket webSocket;
     private volatile boolean running;
+
+    public BinanceTradeStreamClient(String webSocketBaseUrl) {
+        this.webSocketBaseUrl = webSocketBaseUrl;
+    }
 
     public synchronized void start(String symbol, Consumer<MarketTrade> listener) {
         if (running) {
             return;
         }
         final String stream = symbol.toLowerCase(Locale.ROOT) + "@trade";
-        final URI endpoint = URI.create(getWebSocketBaseUrl() + "/" + stream);
+        final URI endpoint = URI.create(webSocketBaseUrl + "/" + stream);
         running = true;
 
         try {
@@ -102,9 +107,4 @@ public class BinanceTradeStreamClient {
         }
     }
 
-    private String getWebSocketBaseUrl() {
-        final String rawUrl = System.getProperty("market.ai.binance.wsBaseUrl", "wss://stream.binance.com:9443/ws");
-        final String trimmed = rawUrl.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
-    }
 }

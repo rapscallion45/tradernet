@@ -3,6 +3,7 @@ package com.tradernet.order.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -13,9 +14,11 @@ import java.util.Objects;
 public class OrderRequestDto implements Serializable {
 
     @NotBlank(message = "symbol is required")
+    @Pattern(regexp = com.tradernet.domain.market.MarketSymbolNormalizer.VALIDATION_PATTERN,
+        message = "symbol is invalid")
     private String symbol;
 
-    @NotNull(message = "position is required")
+    @NotNull(message = "side is required")
     private OrderSide side;
 
     @NotNull(message = "quantity must be greater than 0")

@@ -15,6 +15,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 import java.util.List;
 
@@ -46,9 +48,15 @@ public class GroupResource {
     @Path("/{id}")
     public Response updateGroup(
         @Positive(message = "id must be greater than 0") @PathParam("id") long id,
-        @NotNull(message = "Request body is required") @Valid UpdateGroupRequestDto request
+        @NotNull(message = "Request body is required") @Valid UpdateGroupRequestDto request,
+        @Context SecurityContext securityContext
     ) {
-        return groupManagementService.updateGroup(id, request.getUsernames(), request.getRoleNames())
+        return groupManagementService.updateGroup(
+                id,
+                request.getUsernames(),
+                request.getRoleNames(),
+                AuthenticatedRequest.requireAuthenticatedUser(securityContext)
+            )
             .map(group -> Response.ok(group).build())
             .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
     }

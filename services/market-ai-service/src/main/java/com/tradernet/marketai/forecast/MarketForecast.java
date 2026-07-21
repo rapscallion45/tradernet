@@ -41,6 +41,19 @@ public class MarketForecast {
                 "Forecast is temporarily unavailable while model services warm up.");
     }
 
+    public MarketForecast copy() {
+        return new MarketForecast(
+            symbol,
+            horizonDays,
+            probabilityPositiveReturn,
+            expectedReturn,
+            bullScore,
+            model,
+            drivers,
+            narrative
+        );
+    }
+
     public String getSymbol() {
         return symbol;
     }

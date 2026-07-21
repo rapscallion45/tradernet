@@ -2,6 +2,7 @@ package com.tradernet.marketai.orderbook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.domain.market.MarketSymbolNormalizer;
+import com.tradernet.marketai.MarketAiConfiguration;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import jakarta.ejb.Asynchronous;
@@ -33,6 +34,9 @@ public class MarketOrderBookService {
 
     @Resource
     private SessionContext sessionContext;
+
+    @jakarta.ejb.EJB
+    private MarketAiConfiguration configuration;
 
     @Lock(LockType.READ)
     public OrderBookSnapshot getOrderBook(String symbol, int levels) {
@@ -82,7 +86,11 @@ public class MarketOrderBookService {
                 key,
                 httpClient,
                 objectMapper,
-                reason -> requestSync(service, key)
+                reason -> requestSync(service, key),
+                configuration.getBinanceRestBaseUrl(),
+                configuration.getBinanceWebSocketBaseUrl(),
+                configuration.getOrderBookSnapshotLimit(),
+                configuration.getOrderBookStaleAfterMs()
             )
         );
     }

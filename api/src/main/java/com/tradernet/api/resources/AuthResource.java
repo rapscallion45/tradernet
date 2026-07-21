@@ -1,29 +1,31 @@
 package com.tradernet.api.resources;
 
+import com.tradernet.api.ApiConfiguration;
 import com.tradernet.user.AuthenticationResult;
 import com.tradernet.user.AuthenticationService;
 import com.tradernet.user.AuthSessionService;
 import com.tradernet.user.PasswordResetResult;
-import com.tradernet.user.dto.ForgotPasswordRequestDto;
+import com.tradernet.user.UserSecurityConfiguration;
 import com.tradernet.user.dto.AuthUserDto;
+import com.tradernet.user.dto.ForgotPasswordRequestDto;
 import com.tradernet.user.dto.LoginRequestDto;
 import com.tradernet.user.dto.LoginResponseDto;
 import com.tradernet.user.dto.LoginStatus;
 import com.tradernet.user.dto.MessageResponseDto;
 import jakarta.ejb.EJB;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
 
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -36,7 +38,6 @@ public class AuthResource {
 
     public static final String SESSION_COOKIE_NAME = "tradernet_session";
     public static final String PASSWORD_RESET_COOKIE_NAME = "tradernet_password_reset";
-    private static final String COOKIE_SECURE_PROPERTY = "tradernet.auth.cookie.secure";
 
     @EJB
     private AuthSessionService authSessionService;
@@ -44,30 +45,43 @@ public class AuthResource {
     @EJB
     private AuthenticationService authenticationService;
 
+    @EJB
+    private ApiConfiguration configuration;
+
+    @EJB
+    private UserSecurityConfiguration userSecurityConfiguration;
+
+    @EJB
+    private MarketWebSocketSessionRegistry marketWebSocketSessionRegistry;
+
     @POST
     @Path("/login")
-    public Response login(
-        LoginRequestDto request,
-        @jakarta.ws.rs.core.Context HttpHeaders headers,
-        @jakarta.ws.rs.core.Context UriInfo uriInfo
-    ) {
+    public Response login(@Valid LoginRequestDto request, @Context HttpServletRequest servletRequest) {
         if (request == null) {
-            return Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST)).build();
+            return noStore(Response.ok(new LoginResponseDto(LoginStatus.INVALID_REQUEST))).build();
         }
 
-        final boolean secureCookie = useSecureCookies(headers, uriInfo);
-        AuthenticationResult result = authenticationService.login(request.getUsername(), request.getPassword());
+        final boolean secureCookie = configuration.useSecureCookies();
+        final AuthenticationResult result = authenticationService.login(
+            request.getUsername(),
+            request.getPassword(),
+            sourceAddress(servletRequest)
+        );
+        if (result.getStatus() == LoginStatus.RATE_LIMITED) {
+            return noStore(ApiErrors.status(Response.Status.TOO_MANY_REQUESTS, "Too many login attempts"))
+                .header("Retry-After", result.getRetryAfterSeconds())
+                .build();
+        }
         if (result.getStatus() == LoginStatus.ACCOUNT_PASSWORD_EXPIRED) {
-            return Response.ok(new LoginResponseDto(LoginStatus.ACCOUNT_PASSWORD_EXPIRED))
+            return noStore(Response.ok(new LoginResponseDto(LoginStatus.ACCOUNT_PASSWORD_EXPIRED)))
                 .cookie(passwordResetCookie(result.getPasswordResetToken(), secureCookie), clearSessionCookie(secureCookie))
                 .build();
         }
-
         if (result.getStatus() != LoginStatus.SUCCESS) {
-            return Response.ok(new LoginResponseDto(result.getStatus())).build();
+            return noStore(Response.ok(new LoginResponseDto(result.getStatus()))).build();
         }
 
-        return Response.ok(new LoginResponseDto(LoginStatus.SUCCESS))
+        return noStore(Response.ok(new LoginResponseDto(LoginStatus.SUCCESS)))
             .cookie(sessionCookie(result.getSessionToken(), secureCookie), clearPasswordResetCookie(secureCookie))
             .build();
     }
@@ -77,17 +91,12 @@ public class AuthResource {
     public Response logout(
         @CookieParam(SESSION_COOKIE_NAME) String sessionId,
         @CookieParam(PASSWORD_RESET_COOKIE_NAME) String passwordResetToken,
-        @jakarta.ws.rs.core.Context HttpHeaders headers,
-        @jakarta.ws.rs.core.Context UriInfo uriInfo
+        @Context HttpServletRequest servletRequest
     ) {
-        if (sessionId != null) {
-            authSessionService.removeSession(sessionId);
-        }
-        if (passwordResetToken != null) {
-            authSessionService.removePasswordResetSession(passwordResetToken);
-        }
-        final boolean secureCookie = useSecureCookies(headers, uriInfo);
-        return Response.ok(new MessageResponseDto("Logged out"))
+        authenticationService.logout(sessionId, passwordResetToken, sourceAddress(servletRequest));
+        marketWebSocketSessionRegistry.closeBySessionToken(sessionId);
+        final boolean secureCookie = configuration.useSecureCookies();
+        return noStore(Response.ok(new MessageResponseDto("Logged out")))
             .cookie(clearSessionCookie(secureCookie), clearPasswordResetCookie(secureCookie))
             .build();
     }
@@ -95,116 +104,95 @@ public class AuthResource {
     @GET
     @Path("/session")
     public Response getSession(@CookieParam(SESSION_COOKIE_NAME) String sessionId) {
-        Optional<AuthUserDto> user = authSessionService.getSessionUser(sessionId);
+        final Optional<AuthUserDto> user = authSessionService.getSessionUser(sessionId);
         if (user.isEmpty()) {
-            return ApiErrors.response(Response.Status.UNAUTHORIZED, "Not authenticated");
+            return noStore(ApiErrors.status(Response.Status.UNAUTHORIZED, "Not authenticated")).build();
         }
-
-        return Response.ok(user.get()).build();
+        return noStore(Response.ok(user.get())).build();
     }
 
     @POST
     @Path("/forgot-password")
     public Response forgotPassword(
         @CookieParam(PASSWORD_RESET_COOKIE_NAME) String passwordResetToken,
-        ForgotPasswordRequestDto request,
-        @jakarta.ws.rs.core.Context HttpHeaders headers,
-        @jakarta.ws.rs.core.Context UriInfo uriInfo
+        @Valid ForgotPasswordRequestDto request,
+        @Context HttpServletRequest servletRequest
     ) {
-        final boolean secureCookie = useSecureCookies(headers, uriInfo);
+        final boolean secureCookie = configuration.useSecureCookies();
         if (request == null) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "Forgot password payload is required");
+            return noStore(ApiErrors.status(Response.Status.BAD_REQUEST, "Password reset payload is required")).build();
         }
 
-        String username = request.getUsername();
-        String newPassword = request.getNewPassword();
-        PasswordResetResult result = authenticationService.resetPassword(passwordResetToken, username, newPassword);
+        final PasswordResetResult result = authenticationService.resetPassword(
+            passwordResetToken,
+            request.getNewPassword(),
+            sourceAddress(servletRequest)
+        );
+        if (result.getStatus() == PasswordResetResult.Status.RATE_LIMITED) {
+            return noStore(ApiErrors.status(Response.Status.TOO_MANY_REQUESTS, result.getMessage()))
+                .header("Retry-After", result.getRetryAfterSeconds())
+                .build();
+        }
         if (result.getStatus() == PasswordResetResult.Status.INVALID_REQUEST) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, result.getMessage());
+            return noStore(ApiErrors.status(Response.Status.BAD_REQUEST, result.getMessage())).build();
         }
-
         if (result.getStatus() == PasswordResetResult.Status.INVALID_SESSION) {
-            return ApiErrors.status(Response.Status.UNAUTHORIZED, result.getMessage())
+            return noStore(ApiErrors.status(Response.Status.UNAUTHORIZED, "Password reset session is invalid or expired"))
                 .cookie(clearPasswordResetCookie(secureCookie))
                 .build();
         }
 
-        if (result.getStatus() == PasswordResetResult.Status.USER_NOT_FOUND) {
-            return ApiErrors.status(Response.Status.NOT_FOUND, result.getMessage())
-                .cookie(clearPasswordResetCookie(secureCookie))
-                .build();
-        }
-
-        return Response.ok(new MessageResponseDto(result.getMessage()))
+        marketWebSocketSessionRegistry.closeByUserId(result.getUserId());
+        return noStore(Response.ok(new MessageResponseDto(result.getMessage())))
             .cookie(clearPasswordResetCookie(secureCookie))
             .build();
     }
 
-    private static NewCookie sessionCookie(String token, boolean secure) {
+    static NewCookie sessionCookie(String token, boolean secure) {
         return new NewCookie.Builder(SESSION_COOKIE_NAME)
             .value(token)
             .path("/")
-            .maxAge((int) AuthSessionService.SESSION_DURATION.getSeconds())
             .secure(secure)
             .httpOnly(true)
-            .sameSite(NewCookie.SameSite.LAX)
+            .sameSite(NewCookie.SameSite.STRICT)
             .build();
     }
 
-    private static NewCookie passwordResetCookie(String token, boolean secure) {
+    private NewCookie passwordResetCookie(String token, boolean secure) {
         return new NewCookie.Builder(PASSWORD_RESET_COOKIE_NAME)
             .value(token)
             .path("/")
-            .maxAge((int) AuthSessionService.PASSWORD_RESET_DURATION.getSeconds())
+            .maxAge((int) userSecurityConfiguration.getPasswordResetDuration().getSeconds())
             .secure(secure)
             .httpOnly(true)
-            .sameSite(NewCookie.SameSite.LAX)
+            .sameSite(NewCookie.SameSite.STRICT)
             .build();
     }
 
-    private static NewCookie clearSessionCookie(boolean secure) {
-        return new NewCookie.Builder(SESSION_COOKIE_NAME)
+    static NewCookie clearSessionCookie(boolean secure) {
+        return expiredCookie(SESSION_COOKIE_NAME, secure);
+    }
+
+    static NewCookie clearPasswordResetCookie(boolean secure) {
+        return expiredCookie(PASSWORD_RESET_COOKIE_NAME, secure);
+    }
+
+    private static NewCookie expiredCookie(String name, boolean secure) {
+        return new NewCookie.Builder(name)
             .value("")
             .path("/")
             .maxAge(0)
             .secure(secure)
             .httpOnly(true)
-            .sameSite(NewCookie.SameSite.LAX)
+            .sameSite(NewCookie.SameSite.STRICT)
             .build();
     }
 
-    private static NewCookie clearPasswordResetCookie(boolean secure) {
-        return new NewCookie.Builder(PASSWORD_RESET_COOKIE_NAME)
-            .value("")
-            .path("/")
-            .maxAge(0)
-            .secure(secure)
-            .httpOnly(true)
-            .sameSite(NewCookie.SameSite.LAX)
-            .build();
+    private static Response.ResponseBuilder noStore(Response.ResponseBuilder response) {
+        return response.header("Cache-Control", "no-store").header("Pragma", "no-cache");
     }
 
-    private static boolean useSecureCookies(HttpHeaders headers, UriInfo uriInfo) {
-        final String configured = System.getProperty(COOKIE_SECURE_PROPERTY);
-        if (configured != null && !configured.isBlank()) {
-            return Boolean.parseBoolean(configured);
-        }
-
-        if (uriInfo != null && "https".equalsIgnoreCase(uriInfo.getRequestUri().getScheme())) {
-            return true;
-        }
-
-        final String forwardedProto = headers == null ? null : headers.getHeaderString("X-Forwarded-Proto");
-        if (forwardedProto == null || forwardedProto.isBlank()) {
-            return false;
-        }
-
-        for (String value : forwardedProto.split(",")) {
-            if ("https".equals(value.trim().toLowerCase(Locale.ROOT))) {
-                return true;
-            }
-        }
-        return false;
+    private static String sourceAddress(HttpServletRequest request) {
+        return request == null ? null : request.getRemoteAddr();
     }
-
 }

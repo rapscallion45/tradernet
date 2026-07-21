@@ -17,7 +17,10 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
         final Response.StatusType statusInfo = response == null
             ? Response.Status.INTERNAL_SERVER_ERROR
             : response.getStatusInfo();
-        return Response.status(statusInfo)
+        final Response.ResponseBuilder builder = response == null
+            ? Response.status(statusInfo)
+            : Response.fromResponse(response);
+        return builder
             .entity(ApiErrors.dto(statusInfo, message(exception, statusInfo)))
             .build();
     }

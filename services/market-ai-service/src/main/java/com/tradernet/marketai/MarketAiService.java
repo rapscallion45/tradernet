@@ -6,9 +6,8 @@ import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
 import com.tradernet.marketai.engine.FeatureEngine;
 import com.tradernet.marketai.engine.MarketEventPublisher;
-import com.tradernet.marketai.forecast.ForecastingClient;
 import com.tradernet.marketai.forecast.MarketForecast;
-import com.tradernet.marketai.forecast.OllamaNarrativeClient;
+import com.tradernet.marketai.forecast.MarketForecastService;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.FeatureSnapshot;
@@ -50,9 +49,6 @@ import java.util.stream.Collectors;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MarketAiService {
 
-    private static final int DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS = 1;
-    private static final long DEFAULT_SIGNAL_BULL_SCORE_TTL_MS = Duration.ofMinutes(1).toMillis();
-
     @EJB
     private MarketContextService marketContexts;
 
@@ -63,13 +59,10 @@ public class MarketAiService {
     private MarketOrderBookService orderBooks;
 
     @EJB
-    private ForecastingClient forecastingClient;
+    private MarketForecastService marketForecastService;
 
     @EJB
-    private OllamaNarrativeClient ollamaNarrativeClient;
-
-    @EJB
-    private SignalBullScoreCache signalBullScoreCache;
+    private MarketAiConfiguration configuration;
 
     @EJB
     private MarketHistoryBuffer history;
@@ -94,9 +87,9 @@ public class MarketAiService {
 
     @PostConstruct
     public void start() {
-        final String symbol = System.getProperty("market.ai.symbol", "btcusdt");
+        final String symbol = configuration.getDefaultSymbol();
         marketContexts.registerSymbols(symbol);
-        marketContexts.registerSymbols(System.getProperty("market.ai.context.symbols", symbol));
+        marketContexts.registerSymbols(configuration.getContextSymbols());
         ensureLiveSymbol(symbol);
         refreshMarketContexts();
     }
@@ -122,8 +115,14 @@ public class MarketAiService {
         marketContexts.registerSymbol(normalizedSymbol);
         barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
         featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContexts.registry()));
-        signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
-        final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BinanceTradeStreamClient());
+        signalEnginesBySymbol.computeIfAbsent(
+            normalizedSymbol,
+            ignored -> new AiSignalEngine(configuration.getScoringSettings())
+        );
+        final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(
+            normalizedSymbol,
+            ignored -> new BinanceTradeStreamClient(configuration.getBinanceWebSocketBaseUrl())
+        );
         if (!client.isRunning()) {
             requestTradeStart(normalizedSymbol);
         }
@@ -135,7 +134,7 @@ public class MarketAiService {
         try {
             final BinanceTradeStreamClient client = binanceClientsBySymbol.computeIfAbsent(
                 normalizedSymbol,
-                ignored -> new BinanceTradeStreamClient()
+                ignored -> new BinanceTradeStreamClient(configuration.getBinanceWebSocketBaseUrl())
             );
             if (!client.isRunning()) {
                 final MarketAiService tradeHandler = sessionContext.getBusinessObject(MarketAiService.class);
@@ -206,11 +205,7 @@ public class MarketAiService {
 
     @Lock(LockType.READ)
     public MarketForecast getForecast(String symbol, int horizonDays) {
-        final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
-        final MarketContextSnapshot snapshot = marketContexts.getHydrated(normalizedSymbol);
-        final MarketForecast forecast = forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot);
-        forecast.setNarrative(ollamaNarrativeClient.summarize(forecast));
-        return forecast;
+        return marketForecastService.getForecast(symbol, horizonDays);
     }
 
     @Lock(LockType.READ)
@@ -220,9 +215,7 @@ public class MarketAiService {
 
     @Lock(LockType.READ)
     public double getBullScore(String symbol, int horizonDays) {
-        final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
-        final MarketContextSnapshot snapshot = marketContexts.getHydrated(normalizedSymbol);
-        return forecastingClient.forecast(normalizedSymbol, horizonDays, snapshot).getBullScore();
+        return marketForecastService.getForecast(symbol, horizonDays).getBullScore();
     }
 
     @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)
@@ -257,7 +250,7 @@ public class MarketAiService {
     }
 
     private List<AiSignal> generateSignalsFromRemoteBars(String normalizedSymbol, int limit) {
-        marketContexts.getHydrated(normalizedSymbol);
+        marketContexts.get(normalizedSymbol);
         final int remoteLimit = Math.max(50, Math.min(500, limit * 20));
         final List<MarketBar> remoteBars = marketDataClient.fetchKlines(normalizedSymbol, ChartInterval.parse("1MIN"), remoteLimit);
         if (remoteBars.isEmpty()) {
@@ -265,7 +258,7 @@ public class MarketAiService {
         }
 
         final FeatureEngine remoteFeatureEngine = new FeatureEngine(marketContexts.registry());
-        final AiSignalEngine remoteSignalEngine = new AiSignalEngine();
+        final AiSignalEngine remoteSignalEngine = new AiSignalEngine(configuration.getScoringSettings());
         final List<AiSignal> generatedSignals = remoteBars.stream()
             .map(bar -> enrichWithSignalBullScore(remoteFeatureEngine.onClosedBar(bar)))
             .map(remoteSignalEngine::evaluate)
@@ -279,7 +272,10 @@ public class MarketAiService {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(trade.getSymbol());
         final BarAggregator symbolBarAggregator = barAggregatorsBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new BarAggregator(1_000L));
         final FeatureEngine symbolFeatureEngine = featureEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new FeatureEngine(marketContexts.registry()));
-        final AiSignalEngine symbolSignalEngine = signalEnginesBySymbol.computeIfAbsent(normalizedSymbol, ignored -> new AiSignalEngine());
+        final AiSignalEngine symbolSignalEngine = signalEnginesBySymbol.computeIfAbsent(
+            normalizedSymbol,
+            ignored -> new AiSignalEngine(configuration.getScoringSettings())
+        );
         final MarketBar closed = symbolBarAggregator.ingest(trade);
         final MarketBar forming = symbolBarAggregator.snapshotForming();
         if (forming != null) {
@@ -304,17 +300,16 @@ public class MarketAiService {
     }
 
     private FeatureSnapshot enrichWithSignalBullScore(FeatureSnapshot features) {
-        if (features == null || !Boolean.parseBoolean(System.getProperty("market.ai.signalBullScore.enabled", "true"))) {
+        if (features == null || !configuration.isSignalBullScoreEnabled()) {
             return features;
         }
 
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(features.getSymbol());
-        final long ttlMs = Long.parseLong(System.getProperty("market.ai.signalBullScoreTtlMs", String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_TTL_MS)));
-        final int horizonDays = Integer.parseInt(System.getProperty(
-            "market.ai.signalBullScoreHorizonDays",
-            String.valueOf(DEFAULT_SIGNAL_BULL_SCORE_HORIZON_DAYS)
-        ));
-        final Double bullScore = signalBullScoreCache.getScoreOrRequestRefresh(normalizedSymbol, horizonDays, ttlMs);
+        final Double bullScore = marketForecastService.getCachedBullScoreOrRequestRefresh(
+            normalizedSymbol,
+            configuration.getSignalBullScoreHorizonDays(),
+            configuration.getSignalBullScoreTtlMs()
+        );
         return bullScore == null ? features : features.withForecastBullScore(bullScore);
     }
 

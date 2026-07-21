@@ -5,9 +5,9 @@ import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -21,31 +21,47 @@ public class PasswordResetSessionDaoJPA implements PasswordResetSessionDao {
 
     @Override
     public void save(PasswordResetSessionEntity session) {
-        entityManager.persist(session);
+        if (!entityManager.contains(session)) {
+            entityManager.persist(session);
+        }
     }
 
     @Override
-    public Optional<PasswordResetSessionEntity> findByTokenHashForUpdate(String tokenHash) {
+    public Optional<PasswordResetSessionEntity> findByUserIdForUpdate(long userId) {
         return Optional.ofNullable(entityManager.find(
             PasswordResetSessionEntity.class,
-            tokenHash,
+            userId,
             LockModeType.PESSIMISTIC_WRITE
         ));
     }
 
     @Override
-    public void deleteByTokenHash(String tokenHash) {
-        PasswordResetSessionEntity session = entityManager.find(PasswordResetSessionEntity.class, tokenHash);
-        if (session != null) {
-            entityManager.remove(session);
-        }
+    public Optional<PasswordResetSessionEntity> findByTokenHashForUpdate(String tokenHash) {
+        return tokenQuery(tokenHash)
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .getResultStream()
+            .findFirst();
     }
 
     @Override
-    public void deleteByUsername(String username) {
-        entityManager.createQuery("DELETE FROM PasswordResetSessionEntity s WHERE LOWER(s.username) = :username")
-            .setParameter("username", username.toLowerCase(Locale.ROOT))
-            .executeUpdate();
+    public Optional<PasswordResetSessionEntity> findByTokenHash(String tokenHash) {
+        return tokenQuery(tokenHash).getResultStream().findFirst();
+    }
+
+    private TypedQuery<PasswordResetSessionEntity> tokenQuery(String tokenHash) {
+        return entityManager.createQuery(
+                "SELECT s FROM PasswordResetSessionEntity s WHERE s.tokenHash = :tokenHash",
+                PasswordResetSessionEntity.class
+            )
+            .setParameter("tokenHash", tokenHash);
+    }
+
+    @Override
+    public void deleteByUserId(long userId) {
+        PasswordResetSessionEntity session = entityManager.find(PasswordResetSessionEntity.class, userId);
+        if (session != null) {
+            entityManager.remove(session);
+        }
     }
 
     @Override

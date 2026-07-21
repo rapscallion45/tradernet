@@ -14,13 +14,6 @@ import java.util.List;
  */
 public class ContextAwareSignalScorer implements SignalScorer {
 
-    private static final int DEFAULT_BUY_SCORE_THRESHOLD = 54;
-    private static final int DEFAULT_SELL_SCORE_THRESHOLD = 46;
-    private static final int DEFAULT_BUY_EXTREME_THRESHOLD = 64;
-    private static final int DEFAULT_SELL_EXTREME_THRESHOLD = 36;
-    private static final double DEFAULT_FORECAST_WEIGHT = 0.45;
-    private static final double DEFAULT_FORECAST_NEUTRAL_BAND = 8.0;
-
     private final SignalScorer technicalScorer;
     private final MarketRegimeScoreEngine regimeScoreEngine;
     private final int buyScoreThreshold;
@@ -31,18 +24,30 @@ public class ContextAwareSignalScorer implements SignalScorer {
     private final double forecastNeutralBand;
 
     public ContextAwareSignalScorer() {
-        this(new LinearModelSignalScorer(), new MarketRegimeScoreEngine());
+        this(SignalScoringSettings.defaults());
     }
 
     public ContextAwareSignalScorer(SignalScorer technicalScorer, MarketRegimeScoreEngine regimeScoreEngine) {
+        this(technicalScorer, regimeScoreEngine, SignalScoringSettings.defaults());
+    }
+
+    public ContextAwareSignalScorer(SignalScoringSettings settings) {
+        this(new LinearModelSignalScorer(settings), new MarketRegimeScoreEngine(), settings);
+    }
+
+    private ContextAwareSignalScorer(
+        SignalScorer technicalScorer,
+        MarketRegimeScoreEngine regimeScoreEngine,
+        SignalScoringSettings settings
+    ) {
         this.technicalScorer = technicalScorer;
         this.regimeScoreEngine = regimeScoreEngine;
-        this.buyScoreThreshold = Integer.parseInt(System.getProperty("market.ai.context.buyScoreThreshold", String.valueOf(DEFAULT_BUY_SCORE_THRESHOLD)));
-        this.sellScoreThreshold = Integer.parseInt(System.getProperty("market.ai.context.sellScoreThreshold", String.valueOf(DEFAULT_SELL_SCORE_THRESHOLD)));
-        this.buyExtremeThreshold = Integer.parseInt(System.getProperty("market.ai.context.buyExtremeThreshold", String.valueOf(DEFAULT_BUY_EXTREME_THRESHOLD)));
-        this.sellExtremeThreshold = Integer.parseInt(System.getProperty("market.ai.context.sellExtremeThreshold", String.valueOf(DEFAULT_SELL_EXTREME_THRESHOLD)));
-        this.forecastWeight = clamp(Double.parseDouble(System.getProperty("market.ai.context.forecastWeight", String.valueOf(DEFAULT_FORECAST_WEIGHT))), 0.0, 1.0);
-        this.forecastNeutralBand = Math.max(0.0, Double.parseDouble(System.getProperty("market.ai.context.forecastNeutralBand", String.valueOf(DEFAULT_FORECAST_NEUTRAL_BAND))));
+        this.buyScoreThreshold = settings.getContextBuyScoreThreshold();
+        this.sellScoreThreshold = settings.getContextSellScoreThreshold();
+        this.buyExtremeThreshold = settings.getContextBuyExtremeThreshold();
+        this.sellExtremeThreshold = settings.getContextSellExtremeThreshold();
+        this.forecastWeight = settings.getForecastWeight();
+        this.forecastNeutralBand = settings.getForecastNeutralBand();
     }
 
     @Override

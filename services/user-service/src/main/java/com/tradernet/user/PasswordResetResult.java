@@ -9,31 +9,35 @@ public class PasswordResetResult {
         SUCCESS,
         INVALID_REQUEST,
         INVALID_SESSION,
-        USER_NOT_FOUND
+        RATE_LIMITED
     }
 
     private final Status status;
     private final String message;
+    private final long retryAfterSeconds;
+    private final long userId;
 
-    private PasswordResetResult(Status status, String message) {
+    private PasswordResetResult(Status status, String message, long retryAfterSeconds, long userId) {
         this.status = status;
         this.message = message;
+        this.retryAfterSeconds = retryAfterSeconds;
+        this.userId = userId;
     }
 
-    public static PasswordResetResult success() {
-        return new PasswordResetResult(Status.SUCCESS, "Password reset");
+    public static PasswordResetResult success(long userId) {
+        return new PasswordResetResult(Status.SUCCESS, "Password reset", 0, userId);
     }
 
     public static PasswordResetResult invalidRequest() {
-        return new PasswordResetResult(Status.INVALID_REQUEST, "username and newPassword are required");
+        return new PasswordResetResult(Status.INVALID_REQUEST, "newPassword is required", 0, 0);
     }
 
     public static PasswordResetResult invalidSession() {
-        return new PasswordResetResult(Status.INVALID_SESSION, "Password reset session is invalid or expired");
+        return new PasswordResetResult(Status.INVALID_SESSION, "Password reset session is invalid or expired", 0, 0);
     }
 
-    public static PasswordResetResult userNotFound(String message) {
-        return new PasswordResetResult(Status.USER_NOT_FOUND, message);
+    public static PasswordResetResult rateLimited(long retryAfterSeconds) {
+        return new PasswordResetResult(Status.RATE_LIMITED, "Too many password reset attempts", retryAfterSeconds, 0);
     }
 
     public Status getStatus() {
@@ -42,5 +46,13 @@ public class PasswordResetResult {
 
     public String getMessage() {
         return message;
+    }
+
+    public long getRetryAfterSeconds() {
+        return retryAfterSeconds;
+    }
+
+    public long getUserId() {
+        return userId;
     }
 }

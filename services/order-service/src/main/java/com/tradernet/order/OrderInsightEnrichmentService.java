@@ -24,13 +24,14 @@ import static com.tradernet.order.CurrencyRounding.roundCurrency;
 public class OrderInsightEnrichmentService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderInsightEnrichmentService.class);
-    private static final int DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS = 1;
-
     @EJB
     private MarketAiService marketAiService;
 
     @EJB
     private OrderService orderService;
+
+    @EJB
+    private OrderConfiguration configuration;
 
     @Asynchronous
     public void enrichOrder(long orderId, String symbol) {
@@ -58,11 +59,7 @@ public class OrderInsightEnrichmentService {
 
     private Double resolveBullScore(String symbol) {
         try {
-            final int horizonDays = Integer.parseInt(System.getProperty(
-                "market.ai.orderBullScoreHorizonDays",
-                String.valueOf(DEFAULT_ORDER_BULL_SCORE_HORIZON_DAYS)
-            ));
-            return roundCurrency(marketAiService.getBullScore(symbol, horizonDays));
+            return roundCurrency(marketAiService.getBullScore(symbol, configuration.getBullScoreHorizonDays()));
         } catch (RuntimeException ex) {
             LOG.warn("Unable to enrich order with bull score for symbol {}.", symbol, ex);
             return null;

@@ -1,9 +1,11 @@
 package com.tradernet.api.resources;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.trade.TradeExecutionService;
 import com.tradernet.trade.dto.TradeResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -28,6 +30,7 @@ public class TradeResource {
     @GET
     public Response getTrades(
         @Context SecurityContext securityContext,
+        @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
         @QueryParam("symbol") String symbol
     ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);

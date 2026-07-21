@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.model.ChartInterval;
 import com.tradernet.marketai.model.MarketBar;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 
@@ -30,6 +31,9 @@ public class BinanceMarketDataClient {
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @EJB
+    private MarketAiConfiguration configuration;
 
     public List<String> fetchExchangeSymbols() {
         final HttpRequest request = HttpRequest.newBuilder(URI.create(getBinanceRestBaseUrl() + "/api/v3/exchangeInfo"))
@@ -120,8 +124,6 @@ public class BinanceMarketDataClient {
     }
 
     private String getBinanceRestBaseUrl() {
-        final String rawUrl = System.getProperty("market.ai.binance.restBaseUrl", "https://api.binance.com");
-        final String trimmed = rawUrl.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+        return configuration.getBinanceRestBaseUrl();
     }
 }

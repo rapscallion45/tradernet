@@ -4,6 +4,7 @@ import com.tradernet.jpa.entities.UserEntity;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Data Access Object (DAO) interface for users.
@@ -32,6 +33,8 @@ public interface UserDao {
      */
     Optional<UserEntity> findById(long id);
 
+    Optional<UserEntity> findByIdForUpdate(long id);
+
     /**
      * Retrieves a user by username.
      *
@@ -39,6 +42,8 @@ public interface UserDao {
      * @return user if found
      */
     Optional<UserEntity> findByUsername(String username);
+
+    List<UserEntity> findByUsernames(Set<String> usernames);
 
     /**
      * Retrieves all users with their effective role relationships initialized.
@@ -62,6 +67,14 @@ public interface UserDao {
      * @return user if found
      */
     Optional<UserEntity> findByUsernameWithRoles(String username);
+
+    /**
+     * Locks a user for an authentication-state update and initializes effective roles.
+     *
+     * @param username username to search
+     * @return locked user if found
+     */
+    Optional<UserEntity> findByUsernameWithRolesForUpdate(String username);
 
     /**
      * Deletes all users.

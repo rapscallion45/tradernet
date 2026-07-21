@@ -4,6 +4,7 @@ import com.tradernet.jpa.entities.RoleEntity;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Data Access Object (DAO) interface for roles.
@@ -15,7 +16,7 @@ public interface RoleDao {
      *
      * @param role role to save
      */
-    void save(RoleEntity role);
+    RoleEntity save(RoleEntity role);
 
     /**
      * Retrieves all roles.
@@ -37,6 +38,8 @@ public interface RoleDao {
      */
     Optional<RoleEntity> findByNameWithResources(String name);
 
+    Optional<RoleEntity> findByNameWithResourcesForUpdate(String name);
+
     /**
      * Retrieves a role by name.
      *
@@ -44,6 +47,8 @@ public interface RoleDao {
      * @return role if found
      */
     Optional<RoleEntity> findByName(String name);
+
+    List<RoleEntity> findByNames(Set<String> names);
 
     /**
      * Deletes all roles.

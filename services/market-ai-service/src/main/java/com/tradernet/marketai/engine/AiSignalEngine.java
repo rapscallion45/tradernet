@@ -6,6 +6,7 @@ import com.tradernet.marketai.model.SignalSide;
 import com.tradernet.marketai.scoring.ScoreResult;
 import com.tradernet.marketai.scoring.SignalScorer;
 import com.tradernet.marketai.scoring.SignalScorerFactory;
+import com.tradernet.marketai.scoring.SignalScoringSettings;
 
 /**
  * Signal engine that applies cooldown/threshold guardrails around a pluggable scorer.
@@ -20,6 +21,10 @@ public class AiSignalEngine {
 
     public AiSignalEngine() {
         this(SignalScorerFactory.create());
+    }
+
+    public AiSignalEngine(SignalScoringSettings settings) {
+        this(SignalScorerFactory.create(settings));
     }
 
     public AiSignalEngine(SignalScorer scorer) {

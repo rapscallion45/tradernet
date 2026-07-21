@@ -5,6 +5,7 @@ import com.tradernet.jpa.enums.UserStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -13,12 +14,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UserServiceAccountPolicyTest {
 
     private static final String MAX_ATTEMPTS_PROPERTY = "tradernet.auth.maxFailedLoginAttempts";
+    private static final String ARGON2_MEMORY_PROPERTY = "tradernet.auth.password.argon2.memoryKiB";
+    private static final String ARGON2_ITERATIONS_PROPERTY = "tradernet.auth.password.argon2.iterations";
 
-    private final UserService userService = new UserService();
+    private final UserSecurityConfiguration configuration = new UserSecurityConfiguration();
+    private final UserService userService;
+
+    UserServiceAccountPolicyTest() {
+        System.setProperty(ARGON2_MEMORY_PROPERTY, "12288");
+        System.setProperty(ARGON2_ITERATIONS_PROPERTY, "1");
+        configuration.load();
+        userService = new UserService(configuration);
+    }
 
     @AfterEach
     void clearConfiguration() {
         System.clearProperty(MAX_ATTEMPTS_PROPERTY);
+        System.clearProperty(ARGON2_MEMORY_PROPERTY);
+        System.clearProperty(ARGON2_ITERATIONS_PROPERTY);
+        configuration.load();
     }
 
     @Test
@@ -31,7 +45,7 @@ class UserServiceAccountPolicyTest {
     }
 
     @Test
-    void rejectsPersistedAndTransientAccountBlocks() {
+    void rejectsPersistedAccountBlocks() {
         UserEntity disabled = activeUser();
         disabled.setStatus(UserStatus.DISABLED);
         assertFalse(userService.isAccountAccessible(disabled));
@@ -41,19 +55,27 @@ class UserServiceAccountPolicyTest {
         assertFalse(userService.isAccountAccessible(expired));
 
         UserEntity locked = activeUser();
-        locked.setLockedOut(true);
+        locked.setLockoutUntil(Instant.now().plusSeconds(60));
         assertFalse(userService.isAccountAccessible(locked));
     }
 
     @Test
-    void appliesTheConfiguredFailedAttemptLimitUnlessBypassed() {
-        System.setProperty(MAX_ATTEMPTS_PROPERTY, "3");
+    void appliesPersistedTemporaryLockoutUnlessBypassed() {
         UserEntity user = activeUser();
-        user.setIncorrectLoginAttempts(3);
+        user.setLockoutUntil(Instant.now().plusSeconds(60));
 
         assertFalse(userService.isAccountAccessible(user));
 
         user.setBypassLockout(true);
+        assertTrue(userService.isAccountAccessible(user));
+    }
+
+    @Test
+    void acceptsAnAccountAfterItsTemporaryLockoutExpires() {
+        UserEntity user = activeUser();
+        user.setIncorrectLoginAttempts(5);
+        user.setLockoutUntil(Instant.now().minusSeconds(1));
+
         assertTrue(userService.isAccountAccessible(user));
     }
 

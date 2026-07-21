@@ -24,19 +24,21 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 3. API resources validate query/body data and delegate to service modules.
 4. Service modules use DAO interfaces from `data-model` for durable application state; DAO implementations exclusively own JPA/JDBC database access.
 5. Market AI also consumes Binance trade streams, maintains Binance order books, builds bars, computes features, emits signals, and stores closed bars in `market_bars`.
-6. Forecast requests call the Python forecasting service, enrich the forecast with current market context, and optionally ask Ollama/Gemma for a narrative.
+6. Forecast reads return a cached snapshot immediately. A single-flight asynchronous EJB refresh hydrates context, calls the Python forecasting service, and optionally asks Ollama/Gemma for a narrative.
 
 ## 3. Main API surfaces
 
-Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. Session state is persisted in the database and role-policy lookup is owned by `user-service`, while the API filter and websocket handshake only enforce those service decisions. The market websocket at `/api/ws/market` requires the same cookie during the websocket handshake. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
+Except for `/api/health` and authentication routes, REST endpoints require a valid `tradernet_session` cookie. Session state is persisted in the database and role-policy lookup is owned by `user-service`, while the API filter and websocket handshake enforce those service decisions. Persisted policies include HTTP method and normalized path, so read and mutation permissions can differ. The market websocket at `/api/ws/market` requires the same cookie, an allowed browser origin, and the persisted `GET market` role; logout and password reset close affected connections immediately, while other eligibility changes are revalidated every 30 seconds. Command-line smoke tests should call `/api/auth/login` first and then reuse the returned cookie for protected endpoints such as `/api/market/forecast`.
 
-Every session lookup reloads the current user policy. Disabling, deleting, expiring, or locking an account, reaching the failed-login limit, or requiring a password change therefore invalidates existing sessions as well as blocking new logins. Invalid sessions are removed when encountered, and expired auth/reset rows are deleted by a scheduled cleanup every 15 minutes.
+Every session lookup reloads the current user policy. Disabling, deleting, expiring, temporarily locking an account, or requiring a password change therefore invalidates a session when it is next used. Sessions have both an absolute and idle expiry. Reaching the failed-login threshold stores `lockoutUntil`; attempts during the active lockout do not extend it, and login becomes available automatically after expiry. Database-backed per-source throttles apply across application nodes. Invalid sessions are removed when encountered, and scheduled cleanup removes expired auth/reset/throttle rows.
 
-Clean bootstrap role defaults are additive: `ALL Rights` receives every protected resource, `Admin Rights` receives the standard trading resources plus users/groups, and `Standard Rights` receives orders, portfolio, trades, and market. Existing custom assignments are preserved.
+On first creation, `ALL Rights` receives every protected resource, `Admin Rights` receives the standard trading resources plus users/groups, and `Standard Rights` receives orders, portfolio, trades, and market. These relationships are seed data, so later administrative removals survive restart. Group mutation services prevent `Admin Rights` users from granting or modifying `ALL Rights` assignments.
 
 An expired-password login returns `ACCOUNT_PASSWORD_EXPIRED` and sets a short-lived, HTTP-only `tradernet_password_reset` cookie rather than a full session. Reuse that temporary cookie only for `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
-Auth/session cookies are HttpOnly and SameSite=Lax. The Secure attribute is enabled automatically for HTTPS or `X-Forwarded-Proto: https` requests, and can be forced with `tradernet.auth.cookie.secure`. Raw session/reset bearer tokens are never stored server-side; `tblAuthSessions.token` and `tblPasswordResetSessions.token` contain token hashes.
+New passwords are checked centrally in `user-service`: defaults allow 15 to 128 Unicode characters and at most 512 normalized UTF-8 bytes, common/breached and username-containing values are rejected, and no arbitrary composition rule is imposed. New hashes use Argon2id; a successful login transparently upgrades a compatible legacy BCrypt hash.
+
+Auth/session cookies are non-persistent, HttpOnly, SameSite=Strict, and Secure by default. Local HTTP must explicitly disable Secure cookies. Auth responses are not cacheable, and raw session/reset bearer tokens are never stored server-side; `tblAuthSessions.token` and `tblPasswordResetSessions.token` contain token hashes. Full security behavior and settings are documented in [authentication security](authentication-security.md).
 
 HTTP-level API failures use a standard JSON error body. Jakarta Bean Validation failures on request DTOs and invalid market-context updates are mapped to this contract with JAX-RS exception mappers:
 
@@ -51,6 +53,8 @@ HTTP-level API failures use a standard JSON error body. Jakarta Bean Validation 
 }
 ```
 
+Unexpected exceptions return the same shape with status `500`, a generic client-safe message, and `error.referenceId`. The same value is returned in `X-Error-Reference` and written beside the full server-side exception so operators can correlate a report without exposing implementation details.
+
 | API | Resource | Purpose |
 | --- | --- | --- |
 | `GET /api/health` | `HealthResource` | Basic application smoke check. |
@@ -63,7 +67,7 @@ HTTP-level API failures use a standard JSON error body. Jakarta Bean Validation 
 | `/api/portfolio` | `PortfolioResource` | Portfolio summary/history views. |
 | `/api/market/bars` | `MarketResource` | Historical/recent market bars for charts. |
 | `/api/market/signals` | `MarketResource` | Recent market AI signals. |
-| `/api/market/context` | `MarketResource` | Gets normalized market context with backend-calculated bullish-percent display fields and per-input availability flags. Updates accept mutable z-score inputs only. |
+| `/api/market/context` | `MarketResource` | Gets normalized market context with backend-calculated bullish-percent display fields and per-input availability flags. Administrator-only updates accept mutable z-score inputs. |
 | `/api/market/forecast` | `MarketResource` | Longer-horizon forecast with bull score, probability, drivers, and narrative. |
 | `/api/market/order-book` | `MarketResource` | Backend-maintained Binance aggregated L2 order book with spread, depth, and synchronization status. |
 | `/api/ws/market` | `MarketStreamEndpoint` | Authenticated websocket stream of market bars and signals. |
@@ -78,7 +82,7 @@ Open BUY/long positions are represented as positive quantities. Open SELL/short 
 
 ### Order history contract
 
-`GET /api/orders` returns the authenticated user's orders. Supplying a different `userId` is rejected with `403` rather than exposing another user's history. Each order uses `id` as its single canonical identifier; the former duplicate `orderId` response alias is not emitted. Monetary metrics such as `price`, `currentPrice`, `pnl`, `closePrice`, and `netValue` are returned as numeric values in the response `currency`; clients are responsible for locale-specific date, currency, and percent formatting.
+`GET /api/orders` returns the authenticated user's orders and does not accept a user selector. Each order uses `id` as its single canonical identifier; the former duplicate `orderId` response alias is not emitted. Monetary metrics such as `price`, `currentPrice`, `pnl`, `closePrice`, and `netValue` are returned as numeric values in the response `currency`; clients are responsible for locale-specific date, currency, and percent formatting.
 
 `POST /api/orders` persists the order and opening fill before any non-critical forecast enrichment. Advisory fields such as `aiPrediction` and `bullScore` are populated asynchronously when market/forecast data is available, so the immediate create response can contain null advisory fields while later `GET /api/orders` responses include the stored enrichment.
 
@@ -128,7 +132,7 @@ Example response shape:
 
 ### Market context update contract
 
-`POST /api/market/context?symbol=BTCUSDT` accepts one or more mutable normalized input fields:
+Administrators can call `POST /api/market/context?symbol=BTCUSDT` with one or more mutable normalized input fields. Standard users have read-only market access and cannot mutate this application-wide context:
 
 ```json
 {
@@ -172,8 +176,8 @@ Response fields include:
 
 | Data | Storage | Notes |
 | --- | --- | --- |
-| Users, roles, groups, resources | JPA tables in `data-model` schema | Identity data is seeded by `SystemBootstrapService` through DAOs. User IDs are database-generated and password hashes are stored canonically on `tblUsers.password_hash`. |
-| Auth sessions | `tblAuthSessions`, `tblPasswordResetSessions` | Accessed through dedicated DAOs. The `token` columns store hashes of full login-session and short-lived reset tokens only. |
+| Users, roles, groups, resources | JPA tables in `data-model` schema | Identity data is seeded by `SystemBootstrapService` through DAOs. User IDs are database-generated, canonical usernames are uniquely indexed, and password hashes are stored on `tblUsers.password_hash`. |
+| Authentication state | `tblAuthSessions`, `tblPasswordResetSessions`, `tblAuthenticationRateLimits` | Dedicated DAOs store only token/source hashes. Reset state is limited to one row per user. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
 | Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
 | Market bars | `market_bars` | Closed bars flow through `MarketAiService -> MarketBarStorageService -> MarketBarDao`; the Python forecasting repository reads them. |
@@ -279,13 +283,13 @@ $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-Re
 If login returns `ACCOUNT_PASSWORD_EXPIRED`, reset the password with the same cookie jar/session and retry login:
 
 ```powershell
-Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}' -WebSession $session
-Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"newPassword":"Local-Portfolio-Password-2026"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"Local-Portfolio-Password-2026"}' -WebSession $session
 ```
 
 ```bash
-curl -b /tmp/tradernet.cookies -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
-curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"changeme"}' http://localhost:8080/api/auth/login
+curl -b /tmp/tradernet.cookies -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"newPassword":"Local-Portfolio-Password-2026"}' http://localhost:8080/api/auth/forgot-password
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"Local-Portfolio-Password-2026"}' http://localhost:8080/api/auth/login
 ```
 
 ## 6. Runtime configuration reference
@@ -300,19 +304,39 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | `DB_NAME` | `tradernet` | Database name. |
 | `DB_USER` | `tradernet`/`sa` | Database username. |
 | `DB_PASSWORD` | environment-specific | Database password. |
-| `ADMIN_USERNAME` | `superuser` | WildFly admin username created on startup. |
-| `ADMIN_PASSWORD` | `changeme` | WildFly admin password created on startup. |
+| `ADMIN_USERNAME` | unset | Optional WildFly management username; configure with `ADMIN_PASSWORD` only when remote management is required. |
+| `ADMIN_PASSWORD` | unset | WildFly management secret. It has no default and must come from secret management outside local Compose. |
 | `SCHEMA_AUTO_CREATE_DEV` | `true` | Allows H2 schema auto-generation in local dev mode. |
-| `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD` | unset | Application bootstrap password for creating or repairing `superuser`, `admin`, and `standard` credentials. Set this explicitly outside local development. |
-| `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD` | `false` | Allows the insecure `changeme` application bootstrap fallback. Docker Compose opts into this for local development; production deployments should leave it disabled and set `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD`. |
+| `TRADERNET_BOOTSTRAP_SUPERUSER_PASSWORD` | unset | Account-specific bootstrap secret for `superuser`. |
+| `TRADERNET_BOOTSTRAP_ADMIN_PASSWORD` | unset | Optional, separate bootstrap secret for `admin`. |
+| `TRADERNET_BOOTSTRAP_STANDARD_PASSWORD` | unset | Optional, separate bootstrap secret for `standard`. |
+| `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD` | `false` | Enables the insecure shared `changeme` fallback for local development only. |
+| `TRADERNET_AUTH_COOKIE_SECURE` | `true` | Set `false` only for explicit local HTTP. |
+| `TRADERNET_AUTH_WEBSOCKET_ALLOWED_ORIGINS` | same origin | Optional comma-separated browser-origin allowlist for proxy or multi-origin deployments. |
 
 ### Auth Java system properties
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `tradernet.auth.cookie.secure` | auto | Forces auth cookies Secure when `true` or explicitly disables Secure for local HTTP when `false`. If unset, HTTPS and `X-Forwarded-Proto: https` requests receive Secure cookies. |
-| `tradernet.auth.maxFailedLoginAttempts` | `5` | Number of persisted failed password checks allowed before account/session access is blocked. Successful authentication or password reset clears the counter; `bypassLockout` accounts ignore this threshold. |
-| `tradernet.bootstrap.defaultPassword` | unset | Java property equivalent of `TRADERNET_BOOTSTRAP_DEFAULT_PASSWORD`. |
+| `tradernet.auth.cookie.secure` | `true` | Secure cookie flag; malformed values fail startup. |
+| `tradernet.auth.websocket.allowedOrigins` | same origin | Java-property form of the WebSocket origin allowlist. |
+| `tradernet.auth.maxFailedLoginAttempts` | `5` | Failed password checks allowed before a temporary account lockout. Values are bounded from 1 to 20. |
+| `tradernet.auth.lockoutDurationSeconds` | `900` | Persisted temporary lockout duration. Values are bounded from 30 seconds to 24 hours; attempts during the lockout do not extend it. |
+| `tradernet.auth.password.minimumLength` | `15` | Minimum Unicode character count for a new password. Values are bounded from 12 to 64. |
+| `tradernet.auth.password.maximumLength` | `128` | Maximum normalized Unicode character count. |
+| `tradernet.auth.password.maximumBytes` | `512` | Maximum normalized UTF-8 byte length. |
+| `tradernet.auth.password.argon2.memoryKiB` | `19456` | Argon2id memory cost. |
+| `tradernet.auth.password.argon2.iterations` | `2` | Argon2id iteration count. |
+| `tradernet.auth.password.argon2.parallelism` | `1` | Argon2id lanes. |
+| `tradernet.auth.password.blocklistPath` | unset | Additional UTF-8 breached/common-password file. |
+| `tradernet.auth.rateLimit.login.maxAttempts` | `60` | Login attempts per source and five-minute window. |
+| `tradernet.auth.rateLimit.passwordReset.maxAttempts` | `20` | Reset attempts per source and five-minute window. |
+| `tradernet.auth.rateLimit.windowSeconds` | `300` | Source-throttle counting window. |
+| `tradernet.auth.rateLimit.blockSeconds` | `900` | Source-throttle block duration. |
+| `tradernet.auth.session.absoluteSeconds` | `28800` | Absolute authenticated-session lifetime. |
+| `tradernet.auth.session.idleSeconds` | `1800` | Idle authenticated-session lifetime. |
+| `tradernet.auth.passwordReset.durationSeconds` | `600` | Password reset lifetime. |
+| `tradernet.bootstrap.superuserPassword` | unset | Java property for the `superuser` bootstrap secret; equivalent account-specific properties exist for `admin` and `standard`. |
 | `tradernet.bootstrap.allowDefaultPassword` | `false` | Java property equivalent of `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD`; intended for local/dev only. |
 
 ### Market AI Java system properties
@@ -339,6 +363,7 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | `market.ai.signalBullScore.enabled` | `true` | Enables forecast bull-score enrichment for chart BUY/HOLD/SELL signals. |
 | `market.ai.signalBullScoreHorizonDays` | `1` | Forecast horizon used when feeding bull score into chart signal generation. |
 | `market.ai.signalBullScoreTtlMs` | `60000` | Cache TTL for signal bull-score lookups so every closed bar does not call the Python forecasting service. |
+| `market.ai.forecast.ttlMs` | `60000` | Stale-while-revalidate TTL for forecast API snapshots. Expired snapshots remain readable while one managed refresh runs. |
 | `market.ai.orderBullScoreHorizonDays` | `1` | Forecast horizon captured asynchronously as stored order `bullScore` after an order is created. |
 | `market.ai.forecasting.url` | `http://forecasting-service:8000` | Python forecasting service base URL. |
 | `market.ai.ollama.enabled` | `true` | Enables LLM-generated forecast narratives. |
@@ -361,12 +386,12 @@ The real-time chart BUY/HOLD/SELL signal and the forecast card are related but s
 - Forecast cards and order-history `Bull Score` use the forecast endpoint. The default UI/order/signal horizon is 1 day for daily trading, and the forecast card lets the user select supported horizons such as 1, 3, 7, 14, or 30 days without changing the selected symbol.
 - A high forecast bull score pulls the effective context score toward BUY, a low bull score pulls it toward SELL, and a score near 50 falls inside the neutral band and biases directional technical votes back to HOLD. The chart signal uses an async cache for this score, refreshed according to `market.ai.signalBullScoreTtlMs`, so live websocket trade handling does not call the forecasting service on every closed bar.
 
-The forecasting path is designed to degrade gracefully:
+The forecasting path is designed to degrade gracefully without chaining provider latency onto REST requests:
 
-1. Java requests a forecast from the Python service.
-2. If Python is unavailable or returns an error, Java returns a context-based fallback forecast.
-3. Java sends structured forecast data to Ollama/Gemma.
-4. If Ollama is disabled, unavailable, or returns an empty/error response, Java returns deterministic narrative text. If Ollama returns hardcoded Bitcoin wording, Java normalizes the narrative back to the selected forecast symbol before returning it.
+1. Java returns the latest cached forecast, or a deterministic unavailable snapshot while the cache is cold.
+2. One asynchronous EJB refresh reads the current context snapshot and requests a forecast from Python.
+3. If Python is unavailable or returns an error, the refresh stores a context-based fallback forecast.
+4. The background refresh sends structured forecast data to Ollama/Gemma. If Ollama is disabled, unavailable, or returns an empty/error response, Java stores deterministic narrative text. If Ollama returns hardcoded Bitcoin wording, Java normalizes the narrative back to the selected forecast symbol.
 
 The default Python service is intentionally lightweight and follows `FastAPI route -> ForecastService -> TimescalePriceHistoryRepository -> database`. Binance fallback access is isolated in `BinanceMarketDataClient`. The service first reads recent closes from `market_bars`; if a selected symbol has insufficient TimescaleDB history, it falls back to recent Binance 1-minute klines for that symbol. If neither source has enough data, it returns a neutral 50 bull score instead of a hardcoded bullish forecast. It then computes a momentum/volatility fallback forecast and exposes stable hooks for production images that install TimesFM or Chronos.
 
@@ -395,7 +420,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - The chart legend appends the latest signal model version and up to five prioritized structured signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context note keys such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
 - The chart interval selector stores the user's last selected interval in browser local storage and falls back to `1S` when no saved or valid interval exists.
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change. Closed/error streams are detected by a managed scheduler and requested for reconnection.
-- Market publisher callbacks only enqueue websocket work. Currency conversion, JSON serialization, and network sends use bounded per-session queues on a managed asynchronous EJB boundary, isolating ingestion from slow or disconnected browsers.
+- Market publisher callbacks only enqueue websocket work. Currency conversion and JSON serialization use bounded per-session queues on a managed asynchronous EJB boundary; send-completion callbacks advance the queue without blocking an EJB worker. Slow queues discard their oldest event and maintain a drop count.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
 - Closed live bars are published to chart subscribers immediately and persisted asynchronously for downstream forecasting history.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.

@@ -10,14 +10,12 @@ import java.util.Set;
 
 final class AuthenticatedRequest {
 
-    static final String AUTH_USER_PROPERTY = "tradernet.authUser";
     private static final String AUTHENTICATION_SCHEME = "TRADERNET_SESSION";
 
     private AuthenticatedRequest() {
     }
 
     static void setAuthenticatedUser(ContainerRequestContext requestContext, AuthUserDto authUser) {
-        requestContext.setProperty(AUTH_USER_PROPERTY, authUser);
         requestContext.setSecurityContext(new AuthenticatedUserSecurityContext(authUser, requestContext.getSecurityContext()));
     }
 
@@ -77,10 +75,7 @@ final class AuthenticatedRequest {
             }
 
             Set<String> roleNames = principal.getAuthUser().getRoleNames();
-            if (roleNames != null && roleNames.contains(role)) {
-                return true;
-            }
-            return delegate != null && delegate.isUserInRole(role);
+            return roleNames != null && roleNames.contains(role);
         }
 
         @Override

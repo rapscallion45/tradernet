@@ -6,7 +6,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * JPA implementation of resource DAO.
@@ -18,8 +20,12 @@ public class ResourceDaoJPA implements ResourceDao {
     private EntityManager entityManager;
 
     @Override
-    public void save(ResourceEntity resource) {
-        entityManager.merge(resource);
+    public ResourceEntity save(ResourceEntity resource) {
+        if (resource.getId() == null) {
+            entityManager.persist(resource);
+            return resource;
+        }
+        return entityManager.merge(resource);
     }
 
     @Override
@@ -28,8 +34,22 @@ public class ResourceDaoJPA implements ResourceDao {
     }
 
     @Override
-    public List<ResourceEntity> findAllWithRoles() {
-        return entityManager.createQuery("SELECT DISTINCT r FROM ResourceEntity r LEFT JOIN FETCH r.roles", ResourceEntity.class).getResultList();
+    public List<ResourceEntity> findMatchingWithRoles(Set<String> pathPrefixes, String httpMethod) {
+        if (pathPrefixes == null || pathPrefixes.isEmpty()) {
+            return List.of();
+        }
+
+        return entityManager.createQuery(
+                "SELECT DISTINCT r FROM ResourceEntity r "
+                    + "LEFT JOIN FETCH r.roles "
+                    + "WHERE r.pathPrefix IN :pathPrefixes "
+                    + "AND (r.httpMethod IS NULL OR TRIM(r.httpMethod) = '' OR TRIM(r.httpMethod) = '*' "
+                    + "OR UPPER(TRIM(r.httpMethod)) = :httpMethod)",
+                ResourceEntity.class
+            )
+            .setParameter("pathPrefixes", pathPrefixes)
+            .setParameter("httpMethod", normalizeMethod(httpMethod))
+            .getResultList();
     }
 
     @Override
@@ -41,10 +61,24 @@ public class ResourceDaoJPA implements ResourceDao {
     }
 
     @Override
+    public List<ResourceEntity> findByNames(Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return entityManager.createQuery("SELECT r FROM ResourceEntity r WHERE r.name IN :names", ResourceEntity.class)
+            .setParameter("names", names)
+            .getResultList();
+    }
+
+    @Override
     public Optional<ResourceEntity> findByPathPrefix(String pathPrefix) {
         return entityManager.createQuery("SELECT r FROM ResourceEntity r WHERE r.pathPrefix = :pathPrefix", ResourceEntity.class)
             .setParameter("pathPrefix", pathPrefix)
             .getResultStream()
             .findFirst();
+    }
+
+    private String normalizeMethod(String httpMethod) {
+        return httpMethod == null ? "" : httpMethod.trim().toUpperCase(Locale.ROOT);
     }
 }

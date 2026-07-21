@@ -25,7 +25,7 @@ The no-key default ingestion currently fetches:
 - Binance USD-M Futures open-interest history for `openInterestChangeZScore`.
 - Alternative.me Fear & Greed data for `sentimentZScore`.
 
-Provider-backed ingestion can still update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. The write payload accepts raw normalized z-score inputs only; the backend response includes calculated bullish-percent fields and per-input availability flags for UI display so clients do not duplicate scoring formulas or show fallback percentages when data is missing.
+Administrators can update richer context through `POST /market/context` for ETF/fund flows, exchange outflows, MVRV valuation, and macro liquidity. Standard users have read-only market access. The write payload accepts raw normalized z-score inputs only; the backend response includes calculated bullish-percent fields and per-input availability flags for UI display so clients do not duplicate scoring formulas or show fallback percentages when data is missing.
 
 Runtime switches:
 
@@ -64,13 +64,13 @@ The default scorer is now context-aware. Existing scorers are still available:
 
 ## Forecasting and Gemma 4 narrative layer
 
-Tradernet also exposes a forecast path through `GET /api/market/forecast?symbol=BTCUSDT&horizonDays=1` for the default daily-trading view; callers can still request longer horizons with `horizonDays`.
+Tradernet also exposes a cache-first forecast path through `GET /api/market/forecast?symbol=BTCUSDT&horizonDays=1` for the default daily-trading view; callers can still request longer horizons with `horizonDays`. REST requests receive the latest immutable snapshot immediately, or a deterministic unavailable snapshot while the cache is cold. Expired entries remain readable while one asynchronous EJB refresh runs.
 
-1. The Java market AI service hydrates the same market context used by the real-time signal scorer.
-2. `ForecastingClient` calls the Python forecasting service (`market.ai.forecasting.url`, default `http://forecasting-service:8000`).
+1. `MarketForecastService` coalesces refresh requests per symbol and horizon and hydrates the same market context used by the real-time signal scorer in the background.
+2. `ForecastingClient` calls the Python forecasting service (`market.ai.forecasting.url`, default `http://forecasting-service:8000`) from that managed asynchronous boundary.
 3. The Python service reads recent bars from Postgres/TimescaleDB, falls back to recent Binance 1-minute klines when the selected symbol has insufficient TimescaleDB history, and returns a probability of positive return, expected return, bull score, model name, and driver labels that Java adapts into structured API driver objects. If both data sources are insufficient, it returns a neutral forecast rather than a hardcoded bullish score. It ships with a statistical fallback and stable adapter hooks for `FORECAST_BACKEND=timesfm` or `FORECAST_BACKEND=chronos` custom images.
 4. `OllamaNarrativeClient` sends the structured forecast to Ollama (`market.ai.ollama.url`, default `http://ollama:11434`) using Gemma 4 (`market.ai.ollama.model`, default `gemma4:e4b`).
-5. If Ollama or the Python service is unavailable, the API returns a deterministic fallback sentence so the UI can continue rendering. Java also normalizes Ollama text back to the selected symbol if the model emits hardcoded Bitcoin wording.
+5. If Ollama or the Python service is unavailable, the refresh stores a deterministic fallback so the UI can continue rendering without provider latency on the request thread. Java also normalizes Ollama text back to the selected symbol if the model emits hardcoded Bitcoin wording.
 
 Example narrative shape:
 
@@ -89,6 +89,7 @@ Runtime switches:
 - `-Dmarket.ai.signalBullScore.enabled=true` enables bull-score enrichment for chart signals.
 - `-Dmarket.ai.signalBullScoreHorizonDays=1` chooses the forecast horizon used by chart signals.
 - `-Dmarket.ai.signalBullScoreTtlMs=60000` caches bull-score lookups for one minute.
+- `-Dmarket.ai.forecast.ttlMs=60000` controls the stale-while-revalidate forecast snapshot TTL.
 - `-Dmarket.ai.forecasting.url=http://forecasting-service:8000` points Java at the Python service.
 - `-Dmarket.ai.ollama.enabled=false` disables LLM narratives and uses deterministic text.
 - `-Dmarket.ai.ollama.url=http://ollama:11434` points Java at Ollama.

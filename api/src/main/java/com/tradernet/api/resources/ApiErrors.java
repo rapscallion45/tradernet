@@ -23,7 +23,11 @@ final class ApiErrors {
     }
 
     static ApiErrorDto dto(int status, String code, String message) {
+        return dto(status, code, message, null);
+    }
+
+    static ApiErrorDto dto(int status, String code, String message, String referenceId) {
         final String resolvedMessage = message == null || message.isBlank() ? code : message;
-        return new ApiErrorDto(status, code, resolvedMessage);
+        return new ApiErrorDto(status, code, resolvedMessage, referenceId);
     }
 }
