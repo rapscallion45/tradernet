@@ -1,9 +1,9 @@
-package com.tradernet.marketai;
+package com.tradernet.domain.market;
 
 import java.util.Locale;
 
 /**
- * Normalizes market symbols and quote-currency query values used across market collaborators.
+ * Canonical normalization for market symbols and quote currencies shared across bounded contexts.
  */
 public final class MarketSymbolNormalizer {
 
@@ -31,10 +31,6 @@ public final class MarketSymbolNormalizer {
         }
 
         final String upper = rawCurrency.trim().toUpperCase(Locale.ROOT);
-        if ("USD".equals(upper)) {
-            return "USDT";
-        }
-
-        return upper;
+        return "USD".equals(upper) ? "USDT" : upper;
     }
 }

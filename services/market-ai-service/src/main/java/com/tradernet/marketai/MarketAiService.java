@@ -1,5 +1,6 @@
 package com.tradernet.marketai;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.context.MarketContextService;
 import com.tradernet.marketai.engine.AiSignalEngine;
 import com.tradernet.marketai.engine.BarAggregator;
@@ -74,7 +75,7 @@ public class MarketAiService {
     private MarketHistoryBuffer history;
 
     @EJB
-    private MarketBarPersistence barPersistence;
+    private MarketBarStorageService barStorageService;
 
     @EJB
     private MarketEventPublisher publisher;
@@ -230,6 +231,16 @@ public class MarketAiService {
         marketContexts.refresh();
     }
 
+    @Schedule(hour = "*", minute = "*", second = "*/10", persistent = false)
+    @Lock(LockType.READ)
+    public void reconnectTradeStreams() {
+        binanceClientsBySymbol.forEach((symbol, client) -> {
+            if (!client.isRunning()) {
+                requestTradeStart(symbol);
+            }
+        });
+    }
+
     @Lock(LockType.READ)
     public void updateMarketContext(String symbol, MarketContextUpdateRequest request) {
         marketContexts.update(symbol, request);
@@ -280,7 +291,7 @@ public class MarketAiService {
         }
 
         history.appendBar(closed);
-        barPersistence.storeAsync(closed);
+        barStorageService.storeAsync(closed);
 
         final FeatureSnapshot features = enrichWithSignalBullScore(symbolFeatureEngine.onClosedBar(closed));
         final AiSignal signal = symbolSignalEngine.evaluate(features);

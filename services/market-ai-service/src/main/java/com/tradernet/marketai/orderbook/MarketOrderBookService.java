@@ -1,7 +1,7 @@
 package com.tradernet.marketai.orderbook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import jakarta.ejb.Asynchronous;
@@ -40,7 +40,7 @@ public class MarketOrderBookService {
         final BinanceOrderBookClient client = clientFor(normalizedSymbol);
         requestStart(normalizedSymbol);
         if (client.shouldRetrySync()) {
-            requestSync(normalizedSymbol);
+            requestSync(sessionContext.getBusinessObject(MarketOrderBookService.class), normalizedSymbol);
         }
         return client.getSnapshot(levels);
     }
@@ -75,9 +75,15 @@ public class MarketOrderBookService {
     }
 
     private BinanceOrderBookClient clientFor(String normalizedSymbol) {
+        final MarketOrderBookService service = sessionContext.getBusinessObject(MarketOrderBookService.class);
         return clientsBySymbol.computeIfAbsent(
             normalizedSymbol,
-            key -> new BinanceOrderBookClient(key, httpClient, objectMapper)
+            key -> new BinanceOrderBookClient(
+                key,
+                httpClient,
+                objectMapper,
+                reason -> requestSync(service, key)
+            )
         );
     }
 
@@ -93,13 +99,13 @@ public class MarketOrderBookService {
         }
     }
 
-    private void requestSync(String normalizedSymbol) {
+    private void requestSync(MarketOrderBookService service, String normalizedSymbol) {
         if (!syncsInFlight.add(normalizedSymbol)) {
             return;
         }
 
         try {
-            sessionContext.getBusinessObject(MarketOrderBookService.class).retryOrderBookSync(normalizedSymbol);
+            service.retryOrderBookSync(normalizedSymbol);
         } catch (RuntimeException ex) {
             syncsInFlight.remove(normalizedSymbol);
         }

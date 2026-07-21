@@ -9,7 +9,6 @@ import java.util.Objects;
  */
 public class OrderResponseDto implements Serializable {
     private long id;
-    private long orderId;
     private long userId;
     private String symbol;
     private String side;
@@ -33,8 +32,6 @@ public class OrderResponseDto implements Serializable {
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
-    public long getOrderId() { return orderId; }
-    public void setOrderId(long orderId) { this.orderId = orderId; }
     public long getUserId() { return userId; }
     public void setUserId(long userId) { this.userId = userId; }
     public String getSymbol() { return symbol; }
@@ -75,7 +72,7 @@ public class OrderResponseDto implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OrderResponseDto that = (OrderResponseDto) o;
-        return id == that.id && orderId == that.orderId && userId == that.userId && Objects.equals(symbol, that.symbol)
+        return id == that.id && userId == that.userId && Objects.equals(symbol, that.symbol)
             && Objects.equals(side, that.side) && Objects.equals(currency, that.currency)
             && Objects.equals(quantity, that.quantity) && Objects.equals(price, that.price)
             && Objects.equals(status, that.status) && Objects.equals(createdAt, that.createdAt)
@@ -92,7 +89,7 @@ public class OrderResponseDto implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, orderId, userId, symbol, side, currency, quantity, price, status, createdAt, closedAt, currentPrice,
+        return Objects.hash(id, userId, symbol, side, currency, quantity, price, status, createdAt, closedAt, currentPrice,
             pnl, pnlPercent, timing, aiPrediction, bullScore, closePrice, netValue);
     }
 }

@@ -3,7 +3,7 @@ package com.tradernet.order;
 import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.jpa.entities.OrderEntity;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.order.dto.OrderSide;
@@ -73,7 +73,6 @@ public class OrderPresentationService {
         final OrderResponseDto responseDto = new OrderResponseDto();
         final long resolvedId = order.getId() == null ? 0L : order.getId();
         responseDto.setId(resolvedId);
-        responseDto.setOrderId(resolvedId);
         responseDto.setUserId(order.getUserId() == null ? 0L : order.getUserId());
         responseDto.setSymbol(order.getSymbol());
         responseDto.setSide(order.getSide() == null ? null : order.getSide().name());

@@ -68,10 +68,10 @@ public class GroupManagementService {
         Set<UserEntity> users = new HashSet<>();
         for (String username : usernames) {
             if (username == null || username.isBlank()) {
-                throw new IllegalArgumentException("Username is required");
+                throw new InvalidAccessControlAssignmentException("Username is required");
             }
             UserEntity user = userService.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+                .orElseThrow(() -> new InvalidAccessControlAssignmentException("User not found: " + username));
             users.add(user);
         }
         return users;
@@ -85,10 +85,10 @@ public class GroupManagementService {
         Set<RoleEntity> roles = new HashSet<>();
         for (String roleName : roleNames) {
             if (roleName == null || roleName.isBlank()) {
-                throw new IllegalArgumentException("Role name is required");
+                throw new InvalidAccessControlAssignmentException("Role name is required");
             }
             RoleEntity role = roleDao.findByName(roleName)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
+                .orElseThrow(() -> new InvalidAccessControlAssignmentException("Role not found: " + roleName));
             roles.add(role);
         }
         return roles;

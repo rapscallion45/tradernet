@@ -6,6 +6,7 @@ import com.tradernet.order.dto.OrderResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.DefaultValue;
@@ -50,29 +51,11 @@ public class OrderResource {
     }
 
     @POST
-    public Response createOrder(@Context SecurityContext securityContext, @Valid OrderRequestDto request) {
-        if (request == null) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "Order payload is required");
-        }
-
+    public Response createOrder(
+        @Context SecurityContext securityContext,
+        @NotNull(message = "Order payload is required") @Valid OrderRequestDto request
+    ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
-
-        String symbol = request.getSymbol();
-        if (symbol == null || symbol.isBlank()) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "symbol is required");
-        }
-
-        if (request.getSide() == null) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "position is required");
-        }
-
-        if (request.getQuantity() == null || request.getQuantity() <= 0) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "quantity must be greater than 0");
-        }
-
-        if (request.getPrice() == null || request.getPrice() <= 0) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "price must be greater than 0");
-        }
 
         return Response.status(Response.Status.CREATED)
             .entity(orderPresentationService.createOrder(authUser.getId(), request))

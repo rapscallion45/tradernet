@@ -4,6 +4,9 @@ import com.tradernet.user.GroupManagementService;
 import com.tradernet.user.dto.GroupDto;
 import com.tradernet.user.dto.UpdateGroupRequestDto;
 import jakarta.ejb.EJB;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -33,7 +36,7 @@ public class GroupResource {
 
     @GET
     @Path("/{id}")
-    public Response getGroup(@PathParam("id") long id) {
+    public Response getGroup(@Positive(message = "id must be greater than 0") @PathParam("id") long id) {
         return groupManagementService.getGroup(id)
             .map(group -> Response.ok(group).build())
             .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
@@ -41,17 +44,12 @@ public class GroupResource {
 
     @PUT
     @Path("/{id}")
-    public Response updateGroup(@PathParam("id") long id, UpdateGroupRequestDto request) {
-        if (request == null) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, "Request body is required");
-        }
-
-        try {
-            return groupManagementService.updateGroup(id, request.getUsernames(), request.getRoleNames())
-                .map(group -> Response.ok(group).build())
-                .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
-        } catch (IllegalArgumentException ex) {
-            return ApiErrors.response(Response.Status.BAD_REQUEST, ex.getMessage());
-        }
+    public Response updateGroup(
+        @Positive(message = "id must be greater than 0") @PathParam("id") long id,
+        @NotNull(message = "Request body is required") @Valid UpdateGroupRequestDto request
+    ) {
+        return groupManagementService.updateGroup(id, request.getUsernames(), request.getRoleNames())
+            .map(group -> Response.ok(group).build())
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
     }
 }

@@ -7,12 +7,12 @@ This document explains persistence and runtime packaging.
 `data-model/` contains:
 
 - JPA entities for active backend domains such as users, roles, groups, orders, trades, resources, auth sessions, and market data compatibility tables.
-- DAO interfaces and JPA implementations.
+- DAO interfaces and JPA/JDBC implementations, including identity tokens and market-bar persistence.
 - Persistence configuration (`persistence.xml`).
 - SQL schema, seed resources, and versioned migrations for local/dev bootstrapping and long-lived database upgrades.
 - Supporting utilities and exceptions.
 
-This module is shared by service modules so persistence concerns stay centralized.
+This module is shared by service modules so persistence concerns stay centralized. Service and API modules do not issue JPQL/SQL or inject `EntityManager`/`DataSource`; they delegate durable operations through these DAOs.
 
 ## Deployment modules
 

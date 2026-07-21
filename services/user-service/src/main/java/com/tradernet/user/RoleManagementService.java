@@ -68,10 +68,10 @@ public class RoleManagementService {
         Set<ResourceEntity> resources = new HashSet<>();
         for (String resourceName : resourceNames) {
             if (resourceName == null || resourceName.isBlank()) {
-                throw new IllegalArgumentException("Resource name is required");
+                throw new InvalidAccessControlAssignmentException("Resource name is required");
             }
             ResourceEntity resource = resourceDao.findByName(resourceName)
-                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceName));
+                .orElseThrow(() -> new InvalidAccessControlAssignmentException("Resource not found: " + resourceName));
             resources.add(resource);
         }
         return resources;

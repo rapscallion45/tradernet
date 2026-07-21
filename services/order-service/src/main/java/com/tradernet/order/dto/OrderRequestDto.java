@@ -12,16 +12,18 @@ import java.util.Objects;
  */
 public class OrderRequestDto implements Serializable {
 
-    @NotBlank
+    @NotBlank(message = "symbol is required")
     private String symbol;
 
-    @NotNull
+    @NotNull(message = "position is required")
     private OrderSide side;
 
-    @Positive
+    @NotNull(message = "quantity must be greater than 0")
+    @Positive(message = "quantity must be greater than 0")
     private Double quantity;
 
-    @Positive
+    @NotNull(message = "price must be greater than 0")
+    @Positive(message = "price must be greater than 0")
     private Double price;
 
     public OrderRequestDto() {

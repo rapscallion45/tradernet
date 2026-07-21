@@ -12,8 +12,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -64,9 +62,6 @@ public class SystemBootstrapService {
     @EJB
     private AuthorizationService authorizationService;
 
-    @PersistenceContext(unitName = "tradernet")
-    private EntityManager entityManager;
-
     @PostConstruct
     void bootstrap() {
         RoleEntity allRightsRole = ensureRole(ALL_RIGHTS_ROLE);
@@ -75,9 +70,14 @@ public class SystemBootstrapService {
 
         List<ResourceEntity> resources = ensureProtectedResources();
         ensureRoleIncludesResources(allRightsRole, resources);
-        ensureRoleIncludesResources(adminRightsRole, resources.stream().filter(resource ->
-            "users".equals(resource.getPathPrefix()) || "groups".equals(resource.getPathPrefix())
-        ).collect(Collectors.toList()));
+        ensureRoleIncludesResources(adminRightsRole, resources.stream()
+            .filter(resource -> isStandardResource(resource)
+                || "users".equals(resource.getPathPrefix())
+                || "groups".equals(resource.getPathPrefix()))
+            .collect(Collectors.toList()));
+        ensureRoleIncludesResources(standardRightsRole, resources.stream()
+            .filter(this::isStandardResource)
+            .collect(Collectors.toList()));
 
         GroupEntity superUsersGroup = ensureGroup(SUPER_USERS_GROUP);
         GroupEntity administratorsGroup = ensureGroup(ADMINISTRATORS_GROUP);
@@ -119,11 +119,10 @@ public class SystemBootstrapService {
 
     private UserEntity createUser(String username, String fullName, String password) {
         UserEntity user = new UserEntity(username);
-        user.setPk(nextUserId());
         user.setFullName(fullName);
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setChangePasswordNextLogin(true);
-        userDao.save(user);
+        user = userDao.save(user);
         LOG.info("Created bootstrap user '{}' ({})", username, fullName);
         return user;
     }
@@ -255,6 +254,14 @@ public class SystemBootstrapService {
             && Objects.equals(existing.getName(), requested.getName());
     }
 
+    private boolean isStandardResource(ResourceEntity resource) {
+        final String pathPrefix = resource.getPathPrefix();
+        return "orders".equals(pathPrefix)
+            || "portfolio".equals(pathPrefix)
+            || "trades".equals(pathPrefix)
+            || "market".equals(pathPrefix);
+    }
+
     private void assignRoleToGroup(GroupEntity group, RoleEntity role) {
         if (group.getRoles().stream().noneMatch(existing -> role.getName().equals(existing.getName()))) {
             group.addRole(role);
@@ -268,12 +275,6 @@ public class SystemBootstrapService {
             userDao.save(user);
             LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", groupName, user.getUsername());
         }
-    }
-
-    private long nextUserId() {
-        Long currentMax = entityManager.createQuery("SELECT COALESCE(MAX(u.id), 0) FROM UserEntity u", Long.class)
-            .getSingleResult();
-        return currentMax + 1;
     }
 
     private String resolveBootstrapPassword() {

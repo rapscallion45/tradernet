@@ -2,7 +2,7 @@ package com.tradernet.marketai.orderbook;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.stream.WebSocketTextMessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +28,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 /**
  * Maintains a Binance aggregated L2 order book using the documented snapshot + diff-depth flow.
@@ -49,6 +50,7 @@ public class BinanceOrderBookClient {
     private final String wsBaseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final Consumer<String> resyncRequester;
     private final int exchangeSnapshotLimit;
     private final long staleAfterMs;
     private final NavigableMap<BigDecimal, BigDecimal> bids = new TreeMap<>(Comparator.reverseOrder());
@@ -66,10 +68,16 @@ public class BinanceOrderBookClient {
     private long resyncCount;
     private String lastError;
 
-    public BinanceOrderBookClient(String symbol, HttpClient httpClient, ObjectMapper objectMapper) {
+    public BinanceOrderBookClient(
+        String symbol,
+        HttpClient httpClient,
+        ObjectMapper objectMapper,
+        Consumer<String> resyncRequester
+    ) {
         this.symbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
+        this.resyncRequester = resyncRequester;
         this.restBaseUrl = normalizeBaseUrl(System.getProperty("market.ai.binance.restBaseUrl", "https://api.binance.com"));
         this.wsBaseUrl = normalizeBaseUrl(System.getProperty("market.ai.binance.wsBaseUrl", "wss://stream.binance.com:9443/ws"));
         this.exchangeSnapshotLimit = normalizeExchangeSnapshotLimit(systemInt("market.ai.orderBook.snapshotLimit", DEFAULT_EXCHANGE_SNAPSHOT_LIMIT));
@@ -91,6 +99,7 @@ public class BinanceOrderBookClient {
                 lastStartAttemptAtMs = now;
                 running = true;
                 streamSynchronized = false;
+                bufferedUpdates.clear();
             }
 
             final WebSocket socket = httpClient.newWebSocketBuilder().buildAsync(endpoint, new WebSocket.Listener() {
@@ -264,22 +273,23 @@ public class BinanceOrderBookClient {
             }
         }
 
-        resyncAfterGap(resyncReason);
+        requestResyncAfterGap(resyncReason);
     }
 
-    private void resyncAfterGap(String reason) {
+    private void requestResyncAfterGap(String reason) {
         synchronized (this) {
             lastError = "Missed Binance depth update; resyncing from REST snapshot (" + reason + ")";
             resyncCount++;
+            streamSynchronized = false;
+            bufferedUpdates.clear();
         }
-        resync("gap");
+        resyncRequester.accept("gap");
     }
 
     private void resync(String reason) {
         synchronized (this) {
             lastSyncAttemptAtMs = System.currentTimeMillis();
             streamSynchronized = false;
-            bufferedUpdates.clear();
         }
 
         final SnapshotData snapshot = fetchSnapshot();

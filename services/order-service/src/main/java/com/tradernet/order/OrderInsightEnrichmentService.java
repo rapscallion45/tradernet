@@ -1,7 +1,7 @@
 package com.tradernet.order;
 
 import com.tradernet.marketai.MarketAiService;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.AiSignal;
 import jakarta.ejb.Asynchronous;
 import jakarta.ejb.EJB;

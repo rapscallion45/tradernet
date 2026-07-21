@@ -30,10 +30,6 @@ public class AuthenticationService {
         }
 
         UserEntity user = authenticatedUser.get();
-        if (isAccountBlocked(user)) {
-            return AuthenticationResult.status(LoginStatus.INCORRECT_CREDENTIALS);
-        }
-
         if (user.isChangePasswordNextLogin()) {
             return AuthenticationResult.passwordExpired(authSessionService.createPasswordResetSession(user.getUsername()));
         }
@@ -46,22 +42,17 @@ public class AuthenticationService {
             return PasswordResetResult.invalidRequest();
         }
 
-        if (!authSessionService.isValidPasswordResetSession(resetToken, username)) {
+        if (!authSessionService.consumePasswordResetSession(resetToken, username)) {
             return PasswordResetResult.invalidSession();
         }
 
         try {
-            userService.resetPassword(username, newPassword);
+            final long userId = userService.resetPassword(username, newPassword);
+            authSessionService.removeSessionsForUser(userId);
         } catch (IllegalArgumentException ex) {
-            authSessionService.removePasswordResetSession(resetToken);
             return PasswordResetResult.userNotFound(ex.getMessage());
         }
 
-        authSessionService.removePasswordResetSession(resetToken);
         return PasswordResetResult.success();
-    }
-
-    private boolean isAccountBlocked(UserEntity user) {
-        return user.isDeleted() || user.isDisabled() || user.isAccountExpired() || user.isLockedOut();
     }
 }

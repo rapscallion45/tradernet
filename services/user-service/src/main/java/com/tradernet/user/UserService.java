@@ -1,10 +1,10 @@
 package com.tradernet.user;
 
+import com.tradernet.jpa.dao.UserDao;
 import com.tradernet.jpa.entities.UserEntity;
 import com.tradernet.user.dto.UserProfileDto;
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.util.List;
@@ -15,18 +15,19 @@ import java.util.stream.Collectors;
  * Service for managing application users.
  * <p>
  * Provides methods for retrieving users by username or id,
- * and resolving authenticated users for the login workflow. Uses JPA with Hibernate
- * and BCrypt for password hashing.
+ * and resolving authenticated users for the login workflow.
  */
 @Stateless
 public class UserService {
 
+    private static final int DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final String UNKNOWN_USER_PASSWORD_HASH = BCrypt.hashpw(
+        "tradernet-unknown-user-password",
+        BCrypt.gensalt()
+    );
 
-    /**
-     * EntityManager instance for database operations.
-     */
-    @PersistenceContext(unitName = "tradernet")
-    private EntityManager entityManager;
+    @EJB
+    private UserDao userDao;
 
     /**
      * Finds a user by their username.
@@ -39,10 +40,7 @@ public class UserService {
             return Optional.empty();
         }
 
-        return entityManager.createNamedQuery("GetUserByUsername", UserEntity.class)
-            .setParameter("username", username.toLowerCase())
-            .getResultStream()
-            .findFirst();
+        return userDao.findByUsername(username);
     }
 
     /**
@@ -57,19 +55,7 @@ public class UserService {
             return Optional.empty();
         }
 
-        return entityManager.createQuery(
-                "select distinct u from UserEntity u " +
-                    "left join fetch u.roles " +
-                    "left join fetch u.groups " +
-                    "left join fetch u.groups.roles " +
-                    "left join fetch u.groups.parents " +
-                    "left join fetch u.groups.parents.roles " +
-                    "where lower(u.username) = :username",
-                UserEntity.class
-            )
-            .setParameter("username", username.toLowerCase())
-            .getResultStream()
-            .findFirst();
+        return userDao.findByUsernameWithRoles(username);
     }
 
     /**
@@ -78,17 +64,7 @@ public class UserService {
      * @return List of users with roles loaded
      */
     public List<UserEntity> findAllWithRoles() {
-        return entityManager.createQuery(
-                "select distinct u from UserEntity u " +
-                    "left join fetch u.roles " +
-                    "left join fetch u.groups " +
-                    "left join fetch u.groups.roles " +
-                    "left join fetch u.groups.parents " +
-                    "left join fetch u.groups.parents.roles " +
-                    "order by u.username",
-                UserEntity.class
-            )
-            .getResultList();
+        return userDao.findAllWithRoles();
     }
 
     public List<UserProfileDto> getUserProfiles() {
@@ -104,19 +80,7 @@ public class UserService {
      * @return Optional containing the User if found, empty otherwise
      */
     public Optional<UserEntity> findByIdWithRoles(long id) {
-        return entityManager.createQuery(
-                "select distinct u from UserEntity u " +
-                    "left join fetch u.roles " +
-                    "left join fetch u.groups " +
-                    "left join fetch u.groups.roles " +
-                    "left join fetch u.groups.parents " +
-                    "left join fetch u.groups.parents.roles " +
-                    "where u.id = :id",
-                UserEntity.class
-            )
-            .setParameter("id", id)
-            .getResultStream()
-            .findFirst();
+        return userDao.findByIdWithRoles(id);
     }
 
     public Optional<UserProfileDto> getUserProfile(long id) {
@@ -132,8 +96,42 @@ public class UserService {
             return Optional.empty();
         }
 
-        return findByUsernameWithRoles(username)
-            .filter(user -> passwordMatches(user, password));
+        final Optional<UserEntity> candidate = findByUsernameWithRoles(username);
+        if (candidate.isEmpty()) {
+            BCrypt.checkpw(password, UNKNOWN_USER_PASSWORD_HASH);
+            return Optional.empty();
+        }
+
+        final UserEntity user = candidate.get();
+        if (!passwordMatches(user, password)) {
+            user.setIncorrectLoginAttempts(Math.min(
+                maxFailedLoginAttempts(),
+                user.getIncorrectLoginAttempts() + 1
+            ));
+            userDao.save(user);
+            return Optional.empty();
+        }
+        if (!isAccountAccessible(user)) {
+            return Optional.empty();
+        }
+
+        user.registerSuccessfulLogin();
+        userDao.save(user);
+        return Optional.of(user);
+    }
+
+    /**
+     * Applies the same persisted account policy to login and existing-session checks.
+     */
+    public boolean isAccountAccessible(UserEntity user) {
+        if (user == null || user.isDeleted() || user.isDisabled() || user.isAccountExpired() || user.isLockedOut()) {
+            return false;
+        }
+        return user.isBypassLockout() || user.getIncorrectLoginAttempts() < maxFailedLoginAttempts();
+    }
+
+    public boolean isSessionEligible(UserEntity user) {
+        return isAccountAccessible(user) && !user.isChangePasswordNextLogin();
     }
 
     private boolean passwordMatches(UserEntity user, String password) {
@@ -155,7 +153,7 @@ public class UserService {
      * @param username    The username to reset
      * @param newPassword The new plain-text password
      */
-    public void resetPassword(String username, String newPassword) {
+    public long resetPassword(String username, String newPassword) {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("newPassword is required");
         }
@@ -165,7 +163,21 @@ public class UserService {
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         user.setPasswordHash(hashedPassword);
         user.setChangePasswordNextLogin(false);
-        entityManager.merge(user);
+        user.resetIncorrectLoginAttempts();
+        userDao.save(user);
+        return user.getPk();
+    }
+
+    private int maxFailedLoginAttempts() {
+        final String configured = System.getProperty(
+            "tradernet.auth.maxFailedLoginAttempts",
+            String.valueOf(DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS)
+        );
+        try {
+            return Math.max(1, Integer.parseInt(configured));
+        } catch (NumberFormatException ex) {
+            return DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS;
+        }
     }
 
 }

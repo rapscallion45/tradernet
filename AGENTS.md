@@ -5,6 +5,7 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 
 ## Project map
 - `web/`: React/Vite frontend served in development or packaged into the backend WAR.
+- `domain-model/`: persistence-neutral shared domain values and canonical normalization used across service boundaries.
 - `api/`: Jakarta REST and websocket boundary. Keep request/session handling here and delegate business logic to services.
 - `services/`: business modules for orders, trades, users, currency conversion, and market AI.
 - `data-model/`: JPA entities, DAOs, persistence configuration, schema SQL, seed SQL, and migrations.
@@ -20,6 +21,8 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 - Use container-managed Jakarta EJBs for service-layer collaborators. Prefer `@Stateless` for business operations, persistence workflows, external gateways, and mapper/orchestration services. Use `@Singleton` only for intentional application-wide shared state, caches, registries, subscriptions, or lifecycle owners, and make concurrency/locking decisions explicit.
 - Keep blocking IO out of singleton locks, websocket callbacks, and request hot paths where practical. Use container-managed asynchronous EJB boundaries plus cached/snapshot responses for market streams, order-book startup/resync, forecast enrichment, and background persistence.
 - API resources should inject service-layer EJBs with `@EJB`. Do not inject DAOs directly into resources; keep persistence access behind the owning service module.
+- Enforce `REST/resource -> service -> DAO -> database` for durable Java state. Service modules must not inject `EntityManager` or `DataSource`, issue JPQL/SQL, or own JDBC code; put DAO contracts and their JPA/JDBC implementations in `data-model` and inject them into services with `@EJB`.
+- Services that do not access durable state, such as external market gateways, caches, and pure calculations, do not need artificial DAOs. Keep those collaborators behind focused service/gateway interfaces instead.
 - Keep repeated JAX-RS response patterns centralized. Prefer small request helpers and `ExceptionMapper` implementations for common auth/error handling instead of duplicating optional-user/401/403 response construction across resources.
 - Return standard JSON HTTP errors with `ApiErrorDto`/`ApiErrors` or registered JAX-RS `ExceptionMapper` implementations. Keep success/message DTOs for successful auth workflows, but do not return plain strings or empty bodies for API errors.
 - Do not expose JPA entities, JPA enums, or persistence implementation types in API or cross-service contracts. Define service DTOs, command objects, and service-owned enums, then map to/from entities inside the owning service module.
@@ -28,7 +31,15 @@ Applies to the whole repository unless a deeper `AGENTS.md` overrides it.
 - When returning model drivers, signal notes, diagnostics, or explanations, use structured fields such as `key`, `label`, `value`, and `numericValue` rather than concatenated display strings like `foo=1.23`.
 - Persist password hashes canonically on `tblUsers.password_hash`. Do not reintroduce password-list tables, password-history APIs, or `/api/passwords`-style endpoints unless a future security design explicitly requires audited password history with hashes only.
 - Store only hashes of auth-session and password-reset bearer tokens server-side. Auth cookies must be HttpOnly, SameSite-aware, and Secure in HTTPS deployments, with local HTTP development handled by explicit configuration rather than weakening production defaults.
+- Revalidate persisted user status, expiry, lockout/failed-attempt state, and password-change requirements whenever an auth session is resolved. Failed logins must update the canonical user counter, successful authentication must reset it, reset tokens must be consumed atomically, and expired auth/reset rows must be cleaned on a scheduled service path.
+- Use Jakarta Bean Validation on JAX-RS request DTOs and central `ExceptionMapper` implementations for common validation failures. Do not duplicate the same null/range checks manually in resources unless the check depends on authenticated or persisted state.
+- Keep websocket publisher callbacks non-blocking: callbacks may filter and enqueue only. Perform currency conversion, serialization, and network sends through bounded per-client queues on managed asynchronous service boundaries, and unregister queues when sessions close.
+- Order-book websocket callbacks must request snapshot recovery through an asynchronous EJB proxy; never perform synchronous REST resync directly on a Java websocket callback thread. Live exchange clients must have a managed reconnect policy after close or error.
+- Batch historical exchange-rate requests over the required date range before portfolio valuation. Never cache static fallback FX rates as authoritative historical data; retain fallback provenance through short TTLs so provider recovery can replace them.
+- Track market-context input availability explicitly. A valid z-score of zero is present neutral data, not missing data; partial updates must preserve availability for fields they do not replace.
+- Keep one canonical field for each API concept. Do not publish compatibility aliases such as both `id` and `orderId` on the same resource DTO unless a documented, time-bounded version migration requires them.
 - Keep schema ownership in `data-model`. Service-layer startup/bootstrap code may seed required identity/domain data, but must not run DDL, replay `schema.sql`, or hardcode migration-style `ALTER TABLE`/`CREATE TABLE` statements.
+- Keep independently deployed services layered too. FastAPI routes delegate to application services; application services use repository adapters for database access and separate gateways for external providers.
 - Do not rely on insecure bootstrap passwords by default. Application bootstrap users must use an explicitly configured password outside local development; any `changeme` fallback must require an explicit local/dev opt-in.
 - Keep order placement on the persistence path. Non-critical advisory enrichment such as AI prediction and forecast bull score should run asynchronously after the order and fill have been persisted.
 - Keep read and write DTOs separate where response models expose derived/read-only fields. Market context writes accept mutable normalized inputs; derived bullish-percent and availability fields are response-only.

@@ -15,7 +15,7 @@ public interface UserDao {
      *
      * @param user user to save
      */
-    void save(UserEntity user);
+    UserEntity save(UserEntity user);
 
     /**
      * Retrieves all users.
@@ -39,6 +39,29 @@ public interface UserDao {
      * @return user if found
      */
     Optional<UserEntity> findByUsername(String username);
+
+    /**
+     * Retrieves all users with their effective role relationships initialized.
+     *
+     * @return users ordered by username
+     */
+    List<UserEntity> findAllWithRoles();
+
+    /**
+     * Retrieves a user by id with their effective role relationships initialized.
+     *
+     * @param id user identifier
+     * @return user if found
+     */
+    Optional<UserEntity> findByIdWithRoles(long id);
+
+    /**
+     * Retrieves a user by username with their effective role relationships initialized.
+     *
+     * @param username username to search
+     * @return user if found
+     */
+    Optional<UserEntity> findByUsernameWithRoles(String username);
 
     /**
      * Deletes all users.

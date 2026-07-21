@@ -1,5 +1,6 @@
 package com.tradernet.marketai;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import jakarta.ejb.Lock;

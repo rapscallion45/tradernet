@@ -7,6 +7,8 @@ import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -26,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.EnumMap;
 
@@ -34,9 +38,13 @@ import java.util.EnumMap;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class CurrencyConversionService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(CurrencyConversionService.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final MathContext MC = MathContext.DECIMAL64;
     private static final int CURRENCY_SCALE = 2;
+    private static final long CURRENT_RATE_TTL_MS = Duration.ofHours(1).toMillis();
+    private static final long FALLBACK_RATE_TTL_MS = Duration.ofMinutes(1).toMillis();
+    private static final String FRANKFURTER_V2_RATES_URL = "https://api.frankfurter.dev/v2/rates";
 
     private static final Map<CurrencyCode, BigDecimal> USD_BASED_FALLBACK_RATES = new EnumMap<>(CurrencyCode.class);
 
@@ -60,7 +68,7 @@ public class CurrencyConversionService {
     }
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-    private final Map<String, BigDecimal> rateCache = new ConcurrentHashMap<>();
+    private final Map<String, CachedRate> rateCache = new ConcurrentHashMap<>();
 
     public List<String> getSupportedCurrencies() {
         final HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.frankfurter.app/currencies"))
@@ -138,14 +146,17 @@ public class CurrencyConversionService {
         }
 
         String cacheKey = from.name() + "_" + to.name() + "_" + LocalDate.ofInstant(timestamp, ZoneOffset.UTC);
-        BigDecimal cached = rateCache.get(cacheKey);
+        CachedRate cached = rateCache.get(cacheKey);
+        if (cached != null && cached.isFresh()) {
+            return cached.rate;
+        }
         if (cached != null) {
-            return cached;
+            rateCache.remove(cacheKey, cached);
         }
 
         BigDecimal direct = fetchRate(from, to, timestamp);
         if (direct != null) {
-            rateCache.put(cacheKey, direct);
+            cacheProviderRate(cacheKey, direct, LocalDate.ofInstant(timestamp, ZoneOffset.UTC));
             return direct;
         }
 
@@ -153,13 +164,56 @@ public class CurrencyConversionService {
             BigDecimal fromToUsd = getRate(from, CurrencyCode.USD, timestamp);
             BigDecimal usdToTarget = getRate(CurrencyCode.USD, to, timestamp);
             BigDecimal cross = fromToUsd.multiply(usdToTarget, MC);
-            rateCache.put(cacheKey, cross);
+            rateCache.put(cacheKey, CachedRate.fallback(cross));
             return cross;
         }
 
         BigDecimal fallback = getFallbackRate(from, to);
-        rateCache.put(cacheKey, fallback);
+        rateCache.put(cacheKey, CachedRate.fallback(fallback));
+        LOG.warn("Using short-lived fallback FX rate for {} to {} on {}.", from, to, LocalDate.ofInstant(timestamp, ZoneOffset.UTC));
         return fallback;
+    }
+
+    /**
+     * Warms a complete daily rate range with one provider request.
+     */
+    public void prefetchRates(CurrencyCode from, CurrencyCode to, Instant start, Instant end) {
+        if (from == to || start == null || end == null) {
+            return;
+        }
+
+        final LocalDate startDate = LocalDate.ofInstant(start, ZoneOffset.UTC);
+        final LocalDate endDate = LocalDate.ofInstant(end, ZoneOffset.UTC);
+        if (startDate.isAfter(endDate)) {
+            return;
+        }
+
+        final NavigableMap<LocalDate, BigDecimal> providerRates = fetchRateRange(
+            from,
+            to,
+            startDate.minusDays(7),
+            endDate
+        );
+        if (providerRates.isEmpty()) {
+            cacheFallbackRange(from, to, startDate, endDate);
+            return;
+        }
+
+        boolean usedFallback = false;
+        final BigDecimal fallback = getFallbackRate(from, to);
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            final Map.Entry<LocalDate, BigDecimal> floor = providerRates.floorEntry(date);
+            if (floor != null) {
+                cacheProviderRate(cacheKey(from, to, date), floor.getValue(), date);
+            } else {
+                rateCache.put(cacheKey(from, to, date), CachedRate.fallback(fallback));
+                usedFallback = true;
+            }
+        }
+        if (usedFallback) {
+            LOG.warn("Using short-lived fallback FX rates before the first provider quote for {} to {} from {}.",
+                from, to, startDate);
+        }
     }
 
     private BigDecimal getFallbackRate(CurrencyCode from, CurrencyCode to) {
@@ -178,8 +232,11 @@ public class CurrencyConversionService {
     }
 
     private BigDecimal fetchRate(CurrencyCode from, CurrencyCode to, Instant timestamp) {
-        LocalDate date = LocalDate.ofInstant(timestamp, ZoneOffset.UTC);
-        String uri = "https://api.frankfurter.app/" + date + "?from=" + encode(from.name()) + "&to=" + encode(to.name());
+        final LocalDate date = LocalDate.ofInstant(timestamp, ZoneOffset.UTC);
+        String uri = FRANKFURTER_V2_RATES_URL + "?from=" + date.minusDays(7)
+            + "&to=" + date
+            + "&base=" + encode(from.name())
+            + "&quotes=" + encode(to.name());
         HttpRequest request = HttpRequest.newBuilder(URI.create(uri))
             .timeout(Duration.ofSeconds(4))
             .GET()
@@ -192,12 +249,11 @@ public class CurrencyConversionService {
             }
 
             JsonNode root = OBJECT_MAPPER.readTree(response.body());
-            JsonNode rates = root.path("rates");
-            if (!rates.has(to.name())) {
+            if (!root.isArray() || root.isEmpty()) {
                 return null;
             }
 
-            BigDecimal value = rates.path(to.name()).decimalValue();
+            BigDecimal value = root.get(root.size() - 1).path("rate").decimalValue();
             if (value.signum() <= 0) {
                 return null;
             }
@@ -210,7 +266,90 @@ public class CurrencyConversionService {
         }
     }
 
+    private NavigableMap<LocalDate, BigDecimal> fetchRateRange(
+        CurrencyCode from,
+        CurrencyCode to,
+        LocalDate startDate,
+        LocalDate endDate
+    ) {
+        final String uri = FRANKFURTER_V2_RATES_URL
+            + "?from=" + startDate
+            + "&to=" + endDate
+            + "&base=" + encode(from.name())
+            + "&quotes=" + encode(to.name());
+        final HttpRequest request = HttpRequest.newBuilder(URI.create(uri))
+            .timeout(Duration.ofSeconds(12))
+            .GET()
+            .build();
+
+        final NavigableMap<LocalDate, BigDecimal> rates = new TreeMap<>();
+        try {
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() > 299) {
+                return rates;
+            }
+
+            final JsonNode root = OBJECT_MAPPER.readTree(response.body());
+            if (!root.isArray()) {
+                return rates;
+            }
+            for (JsonNode item : root) {
+                if (!to.name().equalsIgnoreCase(item.path("quote").asText())) {
+                    continue;
+                }
+                final BigDecimal rate = item.path("rate").decimalValue();
+                if (rate.signum() > 0) {
+                    rates.put(LocalDate.parse(item.path("date").asText()), rate);
+                }
+            }
+        } catch (IOException | RuntimeException ex) {
+            LOG.warn("Unable to prefetch FX rates for {} to {} from {} through {}.", from, to, startDate, endDate, ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+        return rates;
+    }
+
+    private void cacheFallbackRange(CurrencyCode from, CurrencyCode to, LocalDate startDate, LocalDate endDate) {
+        final BigDecimal fallback = getFallbackRate(from, to);
+        LOG.warn("Using short-lived fallback FX range for {} to {} from {} through {}.", from, to, startDate, endDate);
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            rateCache.put(cacheKey(from, to, date), CachedRate.fallback(fallback));
+        }
+    }
+
+    private void cacheProviderRate(String cacheKey, BigDecimal rate, LocalDate date) {
+        final boolean currentDate = date.equals(LocalDate.now(ZoneOffset.UTC));
+        rateCache.put(cacheKey, CachedRate.provider(rate, currentDate ? CURRENT_RATE_TTL_MS : Long.MAX_VALUE));
+    }
+
+    private String cacheKey(CurrencyCode from, CurrencyCode to, LocalDate date) {
+        return from.name() + "_" + to.name() + "_" + date;
+    }
+
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private static final class CachedRate {
+        private final BigDecimal rate;
+        private final long expiresAtMs;
+
+        private CachedRate(BigDecimal rate, long expiresAtMs) {
+            this.rate = rate;
+            this.expiresAtMs = expiresAtMs;
+        }
+
+        private static CachedRate provider(BigDecimal rate, long ttlMs) {
+            return new CachedRate(rate, ttlMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + ttlMs);
+        }
+
+        private static CachedRate fallback(BigDecimal rate) {
+            return new CachedRate(rate, System.currentTimeMillis() + FALLBACK_RATE_TTL_MS);
+        }
+
+        private boolean isFresh() {
+            return expiresAtMs == Long.MAX_VALUE || System.currentTimeMillis() < expiresAtMs;
+        }
     }
 }

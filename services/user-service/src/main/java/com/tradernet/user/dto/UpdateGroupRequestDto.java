@@ -1,5 +1,8 @@
 package com.tradernet.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Set;
 
 /**
@@ -7,8 +10,11 @@ import java.util.Set;
  */
 public class UpdateGroupRequestDto {
 
-    private Set<String> usernames;
-    private Set<String> roleNames;
+    @NotNull(message = "usernames is required")
+    private Set<@NotBlank(message = "Username is required") String> usernames;
+
+    @NotNull(message = "roleNames is required")
+    private Set<@NotBlank(message = "Role name is required") String> roleNames;
 
     public Set<String> getUsernames() {
         return usernames;

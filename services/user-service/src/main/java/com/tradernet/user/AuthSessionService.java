@@ -1,12 +1,13 @@
 package com.tradernet.user;
 
+import com.tradernet.jpa.dao.AuthSessionDao;
+import com.tradernet.jpa.dao.PasswordResetSessionDao;
 import com.tradernet.jpa.entities.AuthSessionEntity;
 import com.tradernet.jpa.entities.PasswordResetSessionEntity;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
+import jakarta.ejb.Schedule;
 import jakarta.ejb.Stateless;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,8 +31,11 @@ public class AuthSessionService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @PersistenceContext(unitName = "tradernet")
-    private EntityManager entityManager;
+    @EJB
+    private AuthSessionDao authSessionDao;
+
+    @EJB
+    private PasswordResetSessionDao passwordResetSessionDao;
 
     @EJB
     private UserService userService;
@@ -42,17 +46,18 @@ public class AuthSessionService {
         session.setTokenHash(hashToken(token));
         session.setUserId(authUser.getId());
         session.setExpiresAt(Instant.now().plus(SESSION_DURATION));
-        entityManager.persist(session);
+        authSessionDao.save(session);
         return token;
     }
 
     public String createPasswordResetSession(String username) {
+        passwordResetSessionDao.deleteByUsername(username);
         final String resetToken = newToken();
         final PasswordResetSessionEntity resetSession = new PasswordResetSessionEntity();
         resetSession.setTokenHash(hashToken(resetToken));
         resetSession.setUsername(username);
         resetSession.setExpiresAt(Instant.now().plus(PASSWORD_RESET_DURATION));
-        entityManager.persist(resetSession);
+        passwordResetSessionDao.save(resetSession);
         return resetToken;
     }
 
@@ -61,20 +66,23 @@ public class AuthSessionService {
             return Optional.empty();
         }
 
-        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, hashToken(sessionId));
-        if (session == null) {
+        final String tokenHash = hashToken(sessionId);
+        final Optional<AuthSessionEntity> persistedSession = authSessionDao.findByTokenHash(tokenHash);
+        if (persistedSession.isEmpty()) {
             return Optional.empty();
         }
+        final AuthSessionEntity session = persistedSession.get();
 
         if (isExpired(session.getExpiresAt())) {
-            entityManager.remove(session);
+            authSessionDao.deleteByTokenHash(tokenHash);
             return Optional.empty();
         }
 
         Optional<AuthUserDto> authUser = userService.findByIdWithRoles(session.getUserId())
+            .filter(userService::isSessionEligible)
             .map(UserDtoMapper::toAuthUser);
         if (authUser.isEmpty()) {
-            entityManager.remove(session);
+            authSessionDao.deleteByTokenHash(tokenHash);
         }
         return authUser;
     }
@@ -87,38 +95,51 @@ public class AuthSessionService {
         if (sessionId == null || sessionId.isBlank()) {
             return;
         }
-        final AuthSessionEntity session = entityManager.find(AuthSessionEntity.class, hashToken(sessionId));
-        if (session != null) {
-            entityManager.remove(session);
-        }
+        authSessionDao.deleteByTokenHash(hashToken(sessionId));
     }
 
-    public boolean isValidPasswordResetSession(String resetToken, String username) {
-        if (resetToken == null || resetToken.isBlank()) {
+    public boolean consumePasswordResetSession(String resetToken, String username) {
+        if (resetToken == null || resetToken.isBlank() || username == null || username.isBlank()) {
             return false;
         }
 
-        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, hashToken(resetToken));
-        if (resetSession == null) {
+        final String tokenHash = hashToken(resetToken);
+        final Optional<PasswordResetSessionEntity> persistedSession =
+            passwordResetSessionDao.findByTokenHashForUpdate(tokenHash);
+        if (persistedSession.isEmpty()) {
             return false;
         }
+        final PasswordResetSessionEntity resetSession = persistedSession.get();
 
         if (isExpired(resetSession.getExpiresAt())) {
-            entityManager.remove(resetSession);
+            passwordResetSessionDao.deleteByTokenHash(tokenHash);
             return false;
         }
 
-        return resetSession.getUsername() != null && resetSession.getUsername().equalsIgnoreCase(username);
+        if (resetSession.getUsername() == null || !resetSession.getUsername().equalsIgnoreCase(username)) {
+            return false;
+        }
+
+        passwordResetSessionDao.deleteByTokenHash(tokenHash);
+        return true;
+    }
+
+    public void removeSessionsForUser(long userId) {
+        authSessionDao.deleteByUserId(userId);
+    }
+
+    @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)
+    public void removeExpiredSessions() {
+        final Instant now = Instant.now();
+        authSessionDao.deleteExpired(now);
+        passwordResetSessionDao.deleteExpired(now);
     }
 
     public void removePasswordResetSession(String resetToken) {
         if (resetToken == null || resetToken.isBlank()) {
             return;
         }
-        final PasswordResetSessionEntity resetSession = entityManager.find(PasswordResetSessionEntity.class, hashToken(resetToken));
-        if (resetSession != null) {
-            entityManager.remove(resetSession);
-        }
+        passwordResetSessionDao.deleteByTokenHash(hashToken(resetToken));
     }
 
     private String newToken() {

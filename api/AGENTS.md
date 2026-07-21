@@ -16,4 +16,7 @@
 - For protected endpoints, preserve `tradernet_session` cookie behavior unless explicitly changing auth.
 - Store only hashes of session/reset bearer tokens server-side. Cookies should remain HttpOnly, SameSite-aware, and Secure for HTTPS/proxy deployments while preserving explicit local HTTP development configuration.
 - Shape HTTP failures with `ApiErrorDto`, `ApiErrors`, or registered JAX-RS `ExceptionMapper` implementations. Do not return plain string error bodies or empty 4xx responses.
+- Apply Jakarta Bean Validation to request bodies and centralize its 400 response in an `ExceptionMapper`. Keep manual validation only for rules that require authenticated identity, service state, or cross-field domain decisions.
+- Websocket event callbacks may filter and enqueue only. Use a bounded, registered per-session delivery queue for conversion, serialization, and sends; never recreate a queue after endpoint cleanup because a late publisher callback arrived.
+- Keep response contracts canonical and semantic. Do not expose duplicate identifier aliases or backend-formatted display strings.
 - When adding or changing endpoints, update `docs/application-guide.md` and any smoke-check examples if the contract changes.

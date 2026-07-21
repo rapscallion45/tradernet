@@ -1,18 +1,14 @@
 package com.tradernet.api.resources;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.MarketAiService;
-import com.tradernet.marketai.MarketDataViewService;
-import com.tradernet.marketai.MarketSymbolNormalizer;
-import com.tradernet.marketai.model.AiSignal;
-import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.user.AuthSessionService;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.HandshakeRequest;
@@ -20,7 +16,6 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,11 +25,12 @@ import java.util.Map;
 @ServerEndpoint(value = "/ws/market", configurator = MarketStreamEndpoint.AuthenticatedConfigurator.class)
 public class MarketStreamEndpoint {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String SESSION_ID_PROPERTY = "tradernet.sessionId";
 
     private AutoCloseable barSubscription;
     private AutoCloseable signalSubscription;
+    private MarketStreamDeliveryService deliveryService;
+    private Session session;
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig config) {
@@ -46,55 +42,47 @@ public class MarketStreamEndpoint {
         }
 
         final MarketAiService service = CDI.current().select(MarketAiService.class).get();
-        final MarketDataViewService marketDataViewService = CDI.current().select(MarketDataViewService.class).get();
+        deliveryService = CDI.current().select(MarketStreamDeliveryService.class).get();
+        this.session = session;
+        deliveryService.register(session);
         final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", List.of("USD")).stream().findFirst().orElse("USD");
         final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(requestedSymbol);
         service.ensureLiveSymbol(normalizedSymbol);
         barSubscription = service.subscribeBars(bar -> {
             if (matchesSymbol(bar.getSymbol(), normalizedSymbol)) {
-                send(session, "bar", marketDataViewService.convertBar(bar, requestedCurrency));
+                deliveryService.enqueueBar(session, bar, requestedCurrency);
             }
         });
         signalSubscription = service.subscribeSignals(signal -> {
             if (matchesSymbol(signal.getSymbol(), normalizedSymbol)) {
-                send(session, "signal", signal);
+                deliveryService.enqueueSignal(session, signal);
             }
         });
     }
 
     @OnClose
     public void onClose() {
-        closeQuietly(barSubscription);
-        closeQuietly(signalSubscription);
+        cleanup();
     }
 
-    private void send(Session session, String type, Object payload) {
-        final String message = toJson(type, payload);
-        if (message == null) {
-            return;
-        }
-
-        synchronized (session) {
-            if (session.isOpen()) {
-                session.getAsyncRemote().sendText(message);
-            }
-        }
-    }
-
-    private String toJson(String type, Object payload) {
-        final Map<String, Object> envelope = new HashMap<>();
-        envelope.put("type", type);
-        envelope.put("payload", payload);
-        try {
-            return OBJECT_MAPPER.writeValueAsString(envelope);
-        } catch (JsonProcessingException ex) {
-            return null;
-        }
+    @OnError
+    public void onError(Throwable error) {
+        cleanup();
     }
 
     private boolean matchesSymbol(String actualSymbol, String expectedSymbol) {
-        return actualSymbol == null || MarketSymbolNormalizer.normalizeSymbol(actualSymbol).equals(expectedSymbol);
+        return actualSymbol != null && MarketSymbolNormalizer.normalizeSymbol(actualSymbol).equals(expectedSymbol);
+    }
+
+    private void cleanup() {
+        closeQuietly(barSubscription);
+        closeQuietly(signalSubscription);
+        barSubscription = null;
+        signalSubscription = null;
+        if (deliveryService != null) {
+            deliveryService.unregister(session);
+        }
     }
 
     private void closeQuietly(AutoCloseable closeable) {

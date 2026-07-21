@@ -82,21 +82,44 @@ public class MarketContextUpdateRequest {
             || sentimentZScore != null;
     }
 
-    public MarketContextSnapshot toSnapshot(MarketContextSnapshot current) {
-        final MarketContextSnapshot base = current == null ? MarketContextSnapshot.neutral() : current;
-        return new MarketContextSnapshot(
-            valueOrCurrent(etfFlowZScore, base.getEtfFlowZScore()),
-            valueOrCurrent(exchangeOutflowZScore, base.getExchangeOutflowZScore()),
-            valueOrCurrent(fundingRateZScore, base.getFundingRateZScore()),
-            valueOrCurrent(openInterestChangeZScore, base.getOpenInterestChangeZScore()),
-            valueOrCurrent(mvrvZScore, base.getMvrvZScore()),
-            valueOrCurrent(liquidityGrowthZScore, base.getLiquidityGrowthZScore()),
-            valueOrCurrent(sentimentZScore, base.getSentimentZScore()),
-            true
-        );
+    public boolean hasOnlyFiniteValues() {
+        return isFinite(etfFlowZScore)
+            && isFinite(exchangeOutflowZScore)
+            && isFinite(fundingRateZScore)
+            && isFinite(openInterestChangeZScore)
+            && isFinite(mvrvZScore)
+            && isFinite(liquidityGrowthZScore)
+            && isFinite(sentimentZScore);
     }
 
-    private double valueOrCurrent(Double updateValue, double currentValue) {
-        return updateValue == null ? currentValue : updateValue;
+    public MarketContextSnapshot toSnapshot(MarketContextSnapshot current) {
+        final MarketContextSnapshot next = current == null ? MarketContextSnapshot.neutral() : current.copy();
+        if (etfFlowZScore != null) {
+            next.setEtfFlowZScore(etfFlowZScore);
+        }
+        if (exchangeOutflowZScore != null) {
+            next.setExchangeOutflowZScore(exchangeOutflowZScore);
+        }
+        if (fundingRateZScore != null) {
+            next.setFundingRateZScore(fundingRateZScore);
+        }
+        if (openInterestChangeZScore != null) {
+            next.setOpenInterestChangeZScore(openInterestChangeZScore);
+        }
+        if (mvrvZScore != null) {
+            next.setMvrvZScore(mvrvZScore);
+        }
+        if (liquidityGrowthZScore != null) {
+            next.setLiquidityGrowthZScore(liquidityGrowthZScore);
+        }
+        if (sentimentZScore != null) {
+            next.setSentimentZScore(sentimentZScore);
+        }
+        next.setAvailable(true);
+        return next;
+    }
+
+    private boolean isFinite(Double value) {
+        return value == null || Double.isFinite(value);
     }
 }

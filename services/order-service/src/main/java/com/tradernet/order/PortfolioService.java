@@ -4,7 +4,7 @@ import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.currencyconversion.CurrencyConversionService;
 import com.tradernet.jpa.entities.OrderEntity;
 import com.tradernet.marketai.MarketAiService;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.order.dto.PortfolioAssetDto;
 import com.tradernet.order.dto.PortfolioHistoryEventDto;
@@ -59,6 +59,7 @@ public class PortfolioService {
 
         final List<OrderEntity> orders = orderService.getOrdersByUserId(userId);
         final List<PositionEvent> positionEvents = buildPositionEvents(orders, now);
+        prefetchConversionRates(positionEvents, displayCurrency, now);
 
         final PortfolioSummaryDto summary = buildPortfolioSummary(positionEvents, displayCurrency, now);
         summary.setHistory(buildHistoryFromEvents(positionEvents, displayCurrency, now));
@@ -179,6 +180,27 @@ public class PortfolioService {
         }
 
         return history;
+    }
+
+    private void prefetchConversionRates(List<PositionEvent> positionEvents, CurrencyCode displayCurrency, Instant now) {
+        if (positionEvents.isEmpty()) {
+            return;
+        }
+
+        final Instant earliest = positionEvents.get(0).timestamp;
+        final Instant boundedStart = earliest.isBefore(now.minus(MAX_PORTFOLIO_HISTORY_DAYS - 1L, ChronoUnit.DAYS))
+            ? now.minus(MAX_PORTFOLIO_HISTORY_DAYS - 1L, ChronoUnit.DAYS)
+            : earliest;
+        positionEvents.stream()
+            .map(event -> currencyConversionService.resolveQuoteCurrency(event.symbol))
+            .distinct()
+            .filter(sourceCurrency -> sourceCurrency != displayCurrency)
+            .forEach(sourceCurrency -> currencyConversionService.prefetchRates(
+                sourceCurrency,
+                displayCurrency,
+                boundedStart,
+                now
+            ));
     }
 
     private double calculateAccountValue(

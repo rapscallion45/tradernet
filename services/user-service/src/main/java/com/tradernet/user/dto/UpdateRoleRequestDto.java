@@ -1,5 +1,8 @@
 package com.tradernet.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Set;
 
 /**
@@ -7,7 +10,8 @@ import java.util.Set;
  */
 public class UpdateRoleRequestDto {
 
-    private Set<String> resourceNames;
+    @NotNull(message = "resourceNames is required")
+    private Set<@NotBlank(message = "Resource name is required") String> resourceNames;
 
     public Set<String> getResourceNames() {
         return resourceNames;

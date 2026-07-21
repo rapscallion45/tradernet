@@ -1,5 +1,6 @@
 package com.tradernet.marketai;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.model.ChartInterval;

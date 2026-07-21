@@ -25,9 +25,8 @@
 
         <dependency>
             <groupId>com.tradernet</groupId>
-            <artifactId>market-ai-service</artifactId>
+            <artifactId>domain-model</artifactId>
             <version>${project.version}</version>
-            <type>ejb</type>
         </dependency>
 
         <dependency>

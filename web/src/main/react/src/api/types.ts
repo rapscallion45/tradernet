@@ -255,7 +255,6 @@ export type OrderData = {
 
 export type OrderSummary = {
   id: number
-  orderId: number
   userId: number
   symbol: string
   side: OrderSide

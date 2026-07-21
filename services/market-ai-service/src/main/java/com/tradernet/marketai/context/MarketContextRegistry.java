@@ -1,6 +1,6 @@
 package com.tradernet.marketai.context;
 
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 

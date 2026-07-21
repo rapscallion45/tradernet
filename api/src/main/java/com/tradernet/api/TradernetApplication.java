@@ -4,6 +4,9 @@ import com.tradernet.api.resources.AuthResource;
 import com.tradernet.api.resources.AuthenticationFilter;
 import com.tradernet.api.resources.GroupResource;
 import com.tradernet.api.resources.HealthResource;
+import com.tradernet.api.resources.ConstraintViolationExceptionMapper;
+import com.tradernet.api.resources.InvalidAccessControlAssignmentExceptionMapper;
+import com.tradernet.api.resources.InvalidMarketContextExceptionMapper;
 import com.tradernet.api.resources.MarketResource;
 import com.tradernet.api.resources.NotAuthenticatedExceptionMapper;
 import com.tradernet.api.resources.OrderResource;
@@ -28,8 +31,11 @@ public class TradernetApplication extends Application {
         return Set.of(
             AuthResource.class,
             AuthenticationFilter.class,
+            ConstraintViolationExceptionMapper.class,
             GroupResource.class,
             HealthResource.class,
+            InvalidAccessControlAssignmentExceptionMapper.class,
+            InvalidMarketContextExceptionMapper.class,
             MarketResource.class,
             NotAuthenticatedExceptionMapper.class,
             OrderResource.class,

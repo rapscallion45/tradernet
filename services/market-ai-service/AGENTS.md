@@ -14,10 +14,15 @@
 ## Conventions
 - Keep service-level collaborators EJB-managed; keep per-symbol runtime objects such as aggregators, feature engines, signal engines, trade-stream clients, and order-book clients as plain Java objects unless the container needs to own their lifecycle directly.
 - Keep slow IO outside singleton write locks and request/websocket hot paths. Use managed async EJB methods and cached snapshots for Binance websocket startup, order-book resync, forecast bull-score refreshes, and closed-bar persistence.
+- Persist closed bars through `MarketBarStorageService -> MarketBarDao`; SQL and datasource access belong to the DAO implementation in `data-model`, never in this service module.
+- Route trade-stream reconnects and order-book gap resync through intercepted asynchronous EJB methods. A plain Java websocket callback must only update local state and request managed recovery; it must not fetch a REST snapshot itself.
 - Isolate in-process market event subscribers. One failing bar/signal listener must not break publishing to other listeners or interrupt ingestion callbacks.
+- Keep API websocket subscribers lightweight: filter and enqueue only. Currency conversion, serialization, and client sends belong behind bounded per-session delivery queues outside the ingestion callback.
 - Java `HttpClient` websocket text callbacks may deliver one JSON message across multiple `onText` fragments. Accumulate text until `last == true` before parsing market stream payloads.
 - Keep `HOLD` and frontend `No signal` semantics distinct: backend `HOLD` is an emitted `AiSignal`; frontend `No signal` means no signal payload was received yet.
+- Preserve explicit availability flags for every market-context input. Zero is a valid neutral z-score and must remain distinguishable from missing provider data across copies and partial updates.
 - Keep market scoring, forecast blending, normalization, and display-ready derived market metrics in this backend module; the frontend should consume these values rather than reimplementing formulas.
+- Use `domain-model` for canonical market-symbol normalization shared with API, order, and trade modules.
 - Forecasting should degrade gracefully when Python or Ollama is unavailable.
 - Avoid adding hard dependencies on heavy ML runtimes inside Java; plug those into the Python forecasting adapter instead.
 - When changing scoring thresholds or signal semantics, update `docs/market-signal-accuracy.md`.

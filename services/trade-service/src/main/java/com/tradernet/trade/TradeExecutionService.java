@@ -2,7 +2,7 @@ package com.tradernet.trade;
 
 import com.tradernet.jpa.dao.TradeDao;
 import com.tradernet.jpa.entities.TradeEntity;
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.trade.dto.TradeResponseDto;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;

@@ -154,16 +154,7 @@ public class MarketContextDataIngestionClient {
         if (source == null) {
             return MarketContextSnapshot.neutral();
         }
-        return new MarketContextSnapshot(
-                source.getEtfFlowZScore(),
-                source.getExchangeOutflowZScore(),
-                source.getFundingRateZScore(),
-                source.getOpenInterestChangeZScore(),
-                source.getMvrvZScore(),
-                source.getLiquidityGrowthZScore(),
-                source.getSentimentZScore(),
-                source.isAvailable()
-        );
+        return source.copy();
     }
 
     private void addDouble(List<Double> values, String value) {

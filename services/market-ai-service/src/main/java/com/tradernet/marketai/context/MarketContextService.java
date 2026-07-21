@@ -1,6 +1,6 @@
 package com.tradernet.marketai.context;
 
-import com.tradernet.marketai.MarketSymbolNormalizer;
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import jakarta.ejb.ConcurrencyManagement;
@@ -74,10 +74,13 @@ public class MarketContextService {
 
     public void update(String symbol, MarketContextUpdateRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("market context update request is required");
+            throw new InvalidMarketContextException("market context update request is required");
         }
         if (!request.hasAnyUpdate()) {
-            throw new IllegalArgumentException("at least one market context input is required");
+            throw new InvalidMarketContextException("at least one market context input is required");
+        }
+        if (!request.hasOnlyFiniteValues()) {
+            throw new InvalidMarketContextException("market context inputs must be finite numbers");
         }
 
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);

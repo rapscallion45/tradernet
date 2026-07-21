@@ -1,5 +1,6 @@
 package com.tradernet.marketai;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.context.MarketContextService;
 import com.tradernet.marketai.forecast.ForecastingClient;
 import com.tradernet.marketai.model.MarketContextSnapshot;

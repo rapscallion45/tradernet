@@ -14,13 +14,19 @@ Business logic is split into focused modules under `services/`.
 
 Service and DAO collaborators are container-managed Jakarta EJBs. Use `@Stateless` for business operations, persistence helpers, and external gateway/client calls that should not hold request-specific state. Use `@Singleton` only when a service intentionally owns application-wide shared state, cache, registry, lifecycle, or subscriptions; declare locking or bean-managed concurrency explicitly for those singletons. API resources inject EJB services with `@EJB`; DAO access should stay behind service-layer EJBs.
 
+Durable Java paths follow `REST resource -> service EJB -> DAO EJB -> database`. Only DAO implementations in `data-model` may use `EntityManager`, JPQL, SQL, `DataSource`, or JDBC. Pure calculations, caches, and external-provider gateways do not require artificial DAOs. Shared persistence-neutral concepts such as canonical market symbols live in `domain-model`, avoiding dependencies on unrelated service modules.
+
 Keep persistence-oriented services and DAOs transactional. Mark HTTP clients, in-memory caches, event publishers, websocket lifecycle helpers, and other non-database collaborators with `@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)` so external IO and cache reads do not run inside unnecessary container transactions.
 
 Keep DTOs, JPA entities, value objects, pure scoring/domain helpers, and per-symbol runtime objects as plain Java classes unless the application server needs to manage lifecycle, transactions, injection, or concurrency for them.
 
 ## Market AI service
 
-`MarketAiService` is the public EJB facade used by API resources and websocket endpoints. It coordinates live-symbol lifecycle, chart/signal queries, forecasting, and subscriptions while delegating exchange IO, market context hydration, order-book maintenance, in-memory history, event publishing, and bar persistence to injected collaborator beans. Live trade-stream and order-book startup work is requested through asynchronous EJB methods so API/websocket open paths can return cached or initializing state without blocking on external exchange connections. `MarketDataViewService` composes market data with currency conversion for display-ready bars and order-book snapshots so API resources do not perform business calculations.
+`MarketAiService` is the public EJB facade used by API resources and websocket endpoints. It coordinates live-symbol lifecycle, chart/signal queries, forecasting, and subscriptions while delegating exchange IO, market context hydration, order-book maintenance, in-memory history, event publishing, and bar persistence to injected collaborator beans. `MarketBarStorageService` maps closed bars and delegates durable writes to `MarketBarDao` in `data-model`. Live trade-stream startup/reconnect and order-book startup/gap resync work is requested through asynchronous EJB methods so Java websocket callbacks and API open paths do not block on external exchange connections. `MarketDataViewService` composes market data with currency conversion for display-ready bars and order-book snapshots so API resources do not perform business calculations.
+
+`CurrencyConversionService` prefetches historical provider rates as date ranges before portfolio history is calculated. Provider-backed historical rates can remain cached, while static fallback rates have a short TTL so a temporary provider outage cannot make fallback data authoritative for the lifetime of the JVM.
+
+`user-service` revalidates account state whenever a persisted auth session is resolved. Login failure counters are persisted and bounded, successful authentication/password reset clears them, password reset tokens are consumed under a database lock, and scheduled cleanup removes expired session/reset rows.
 
 `market-ai-service` is structured into subpackages:
 

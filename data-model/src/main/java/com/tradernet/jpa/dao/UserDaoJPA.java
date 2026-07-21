@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -18,8 +19,12 @@ public class UserDaoJPA implements UserDao {
     private EntityManager entityManager;
 
     @Override
-    public void save(UserEntity user) {
-        entityManager.merge(user);
+    public UserEntity save(UserEntity user) {
+        if (user.getPk() == 0L) {
+            entityManager.persist(user);
+            return user;
+        }
+        return entityManager.merge(user);
     }
 
     @Override
@@ -36,7 +41,56 @@ public class UserDaoJPA implements UserDao {
     @Override
     public Optional<UserEntity> findByUsername(String username) {
         return entityManager.createNamedQuery("GetUserByUsername", UserEntity.class)
-            .setParameter("username", username.toLowerCase())
+            .setParameter("username", username.toLowerCase(Locale.ROOT))
+            .getResultStream()
+            .findFirst();
+    }
+
+    @Override
+    public List<UserEntity> findAllWithRoles() {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u "
+                    + "left join fetch u.roles "
+                    + "left join fetch u.groups "
+                    + "left join fetch u.groups.roles "
+                    + "left join fetch u.groups.parents "
+                    + "left join fetch u.groups.parents.roles "
+                    + "order by u.username",
+                UserEntity.class
+            )
+            .getResultList();
+    }
+
+    @Override
+    public Optional<UserEntity> findByIdWithRoles(long id) {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u "
+                    + "left join fetch u.roles "
+                    + "left join fetch u.groups "
+                    + "left join fetch u.groups.roles "
+                    + "left join fetch u.groups.parents "
+                    + "left join fetch u.groups.parents.roles "
+                    + "where u.id = :id",
+                UserEntity.class
+            )
+            .setParameter("id", id)
+            .getResultStream()
+            .findFirst();
+    }
+
+    @Override
+    public Optional<UserEntity> findByUsernameWithRoles(String username) {
+        return entityManager.createQuery(
+                "select distinct u from UserEntity u "
+                    + "left join fetch u.roles "
+                    + "left join fetch u.groups "
+                    + "left join fetch u.groups.roles "
+                    + "left join fetch u.groups.parents "
+                    + "left join fetch u.groups.parents.roles "
+                    + "where lower(u.username) = :username",
+                UserEntity.class
+            )
+            .setParameter("username", username.toLowerCase(Locale.ROOT))
             .getResultStream()
             .findFirst();
     }
