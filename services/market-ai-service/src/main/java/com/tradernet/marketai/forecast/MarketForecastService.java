@@ -2,7 +2,7 @@ package com.tradernet.marketai.forecast;
 
 import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.MarketAiConfiguration;
-import com.tradernet.marketai.context.MarketContextService;
+import com.tradernet.marketai.context.MarketContextOperations;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import jakarta.annotation.Resource;
 import jakarta.ejb.Asynchronous;
@@ -26,12 +26,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class MarketForecastService {
+public class MarketForecastService implements MarketForecastProvider, MarketForecastRefreshService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MarketForecastService.class);
 
     @EJB
-    private MarketContextService marketContexts;
+    private MarketContextOperations marketContexts;
 
     @EJB
     private ForecastingClient forecastingClient;
@@ -48,6 +48,7 @@ public class MarketForecastService {
     private final Map<String, CachedForecast> forecastsByKey = new ConcurrentHashMap<>();
     private final Set<String> refreshesInFlight = ConcurrentHashMap.newKeySet();
 
+    @Override
     public MarketForecast getForecast(String symbol, int horizonDays) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         final int boundedHorizon = Math.max(1, Math.min(horizonDays, 365));
@@ -63,6 +64,7 @@ public class MarketForecastService {
             : cached.forecast.copy();
     }
 
+    @Override
     public Double getCachedBullScoreOrRequestRefresh(String symbol, int horizonDays, long ttlMs) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
         final int boundedHorizon = Math.max(1, Math.min(horizonDays, 365));
@@ -75,6 +77,7 @@ public class MarketForecastService {
     }
 
     @Asynchronous
+    @Override
     public void refreshForecast(String normalizedSymbol, int horizonDays) {
         final String cacheKey = cacheKey(normalizedSymbol, horizonDays);
         try {
@@ -95,7 +98,7 @@ public class MarketForecastService {
         }
 
         try {
-            sessionContext.getBusinessObject(MarketForecastService.class)
+            sessionContext.getBusinessObject(MarketForecastRefreshService.class)
                 .refreshForecast(normalizedSymbol, horizonDays);
         } catch (RuntimeException ex) {
             refreshesInFlight.remove(cacheKey);

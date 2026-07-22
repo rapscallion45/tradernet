@@ -85,7 +85,7 @@ class AuthSessionServiceTest {
             authSessions,
             resetSessions,
             new ExistingUserDao(authUser.getId()),
-            new EligibleUserService(authUser),
+            new EligibleCredentialService(authUser),
             configuration,
             new SilentAuditService(),
             new SecureRandom(),
@@ -189,10 +189,10 @@ class AuthSessionServiceTest {
         }
     }
 
-    private static final class EligibleUserService extends UserService {
+    private static final class EligibleCredentialService extends CredentialService {
         private final AuthUserDto user;
 
-        private EligibleUserService(AuthUserDto user) {
+        private EligibleCredentialService(AuthUserDto user) {
             this.user = user;
         }
 

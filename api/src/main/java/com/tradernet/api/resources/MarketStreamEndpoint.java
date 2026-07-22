@@ -1,11 +1,16 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.marketai.MarketAiService;
+import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.api.ApiConfiguration;
-import com.tradernet.user.AuthSessionService;
-import com.tradernet.user.AuthenticationAuditService;
-import com.tradernet.user.AuthorizationService;
+import com.tradernet.marketai.LiveMarketEventListener;
+import com.tradernet.marketai.MarketDataCapacityException;
+import com.tradernet.marketai.LiveMarketSubscriptionService;
+import com.tradernet.marketai.model.AiSignal;
+import com.tradernet.marketai.model.MarketBar;
+import com.tradernet.user.AuthSessionOperations;
+import com.tradernet.user.AuthenticationAudit;
+import com.tradernet.user.AuthorizationOperations;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.websocket.CloseReason;
@@ -36,10 +41,10 @@ public class MarketStreamEndpoint {
     private static final String REQUEST_URI_PROPERTY = "tradernet.websocket.requestUri";
     private static final String REQUEST_HOST_PROPERTY = "tradernet.websocket.requestHost";
 
-    private AutoCloseable barSubscription;
-    private AutoCloseable signalSubscription;
     private MarketStreamDeliveryService deliveryService;
     private MarketWebSocketSessionRegistry sessionRegistry;
+    private LiveMarketSubscriptionService liveMarketSubscriptionService;
+    private String subscriptionId;
     private Session session;
 
     @OnOpen
@@ -55,7 +60,7 @@ public class MarketStreamEndpoint {
             return;
         }
 
-        final AuthSessionService authSessionService = CDI.current().select(AuthSessionService.class).get();
+        final AuthSessionOperations authSessionService = CDI.current().select(AuthSessionOperations.class).get();
         final Optional<AuthUserDto> authUser = authSessionService.getSessionUser(sessionId);
         if (authUser.isEmpty()) {
             auditService().record("websocket", "rejected", null, null, "not_authenticated");
@@ -63,7 +68,7 @@ public class MarketStreamEndpoint {
             return;
         }
 
-        final AuthorizationService authorizationService = CDI.current().select(AuthorizationService.class).get();
+        final AuthorizationOperations authorizationService = CDI.current().select(AuthorizationOperations.class).get();
         final Set<String> requiredRoles = authorizationService.getRequiredRoles("GET", "market");
         if (requiredRoles.isEmpty() || !authorizationService.hasAnyRole(authUser.get(), requiredRoles)) {
             auditService().record(
@@ -77,26 +82,42 @@ public class MarketStreamEndpoint {
             return;
         }
 
-        final MarketAiService service = CDI.current().select(MarketAiService.class).get();
-        deliveryService = CDI.current().select(MarketStreamDeliveryService.class).get();
-        sessionRegistry = CDI.current().select(MarketWebSocketSessionRegistry.class).get();
-        this.session = session;
-        sessionRegistry.register(session, sessionId, authUser.get());
-        deliveryService.register(session);
         final String requestedCurrency = session.getRequestParameterMap().getOrDefault("currency", List.of("USD")).stream().findFirst().orElse("USD");
         final String requestedSymbol = session.getRequestParameterMap().getOrDefault("symbol", List.of("BTCUSDT")).stream().findFirst().orElse("BTCUSDT");
+        if (!requestedCurrency.matches(CurrencyCode.VALIDATION_PATTERN)
+            || !requestedSymbol.matches(MarketSymbolNormalizer.VALIDATION_PATTERN)) {
+            closePolicyViolation(session, "Invalid market subscription");
+            return;
+        }
+
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(requestedSymbol);
-        service.ensureLiveSymbol(normalizedSymbol);
-        barSubscription = service.subscribeBars(bar -> {
-            if (matchesSymbol(bar.getSymbol(), normalizedSymbol)) {
-                deliveryService.enqueueBar(session, bar, requestedCurrency);
-            }
-        });
-        signalSubscription = service.subscribeSignals(signal -> {
-            if (matchesSymbol(signal.getSymbol(), normalizedSymbol)) {
-                deliveryService.enqueueSignal(session, signal);
-            }
-        });
+        try {
+            deliveryService = CDI.current().select(MarketStreamDeliveryService.class).get();
+            sessionRegistry = CDI.current().select(MarketWebSocketSessionRegistry.class).get();
+            liveMarketSubscriptionService = CDI.current().select(LiveMarketSubscriptionService.class).get();
+            this.session = session;
+            sessionRegistry.register(session, sessionId, authUser.get());
+            deliveryService.register(session);
+            subscriptionId = liveMarketSubscriptionService.subscribe(normalizedSymbol, new LiveMarketEventListener() {
+                @Override
+                public void onBar(MarketBar bar) {
+                    deliveryService.enqueueBar(session, bar, requestedCurrency);
+                }
+
+                @Override
+                public void onSignal(AiSignal signal) {
+                    deliveryService.enqueueSignal(session, signal);
+                }
+            });
+        } catch (MarketDataCapacityException ex) {
+            auditService().record("websocket", "rejected", authUser.get().getUsername(), null, "live_market_capacity");
+            cleanup();
+            closeTemporarilyUnavailable(session, "Live market capacity exhausted");
+        } catch (RuntimeException ex) {
+            auditService().record("websocket", "rejected", authUser.get().getUsername(), null, "live_market_unavailable");
+            cleanup();
+            closeTemporarilyUnavailable(session, "Live market unavailable");
+        }
     }
 
     @OnClose
@@ -109,15 +130,16 @@ public class MarketStreamEndpoint {
         cleanup();
     }
 
-    private boolean matchesSymbol(String actualSymbol, String expectedSymbol) {
-        return actualSymbol != null && MarketSymbolNormalizer.normalizeSymbol(actualSymbol).equals(expectedSymbol);
-    }
-
     private void cleanup() {
-        closeQuietly(barSubscription);
-        closeQuietly(signalSubscription);
-        barSubscription = null;
-        signalSubscription = null;
+        if (liveMarketSubscriptionService != null && subscriptionId != null) {
+            final String closingSubscriptionId = subscriptionId;
+            subscriptionId = null;
+            try {
+                liveMarketSubscriptionService.unsubscribe(closingSubscriptionId);
+            } catch (RuntimeException ignored) {
+                // Continue transport cleanup even if the market module is shutting down.
+            }
+        }
         if (deliveryService != null) {
             deliveryService.unregister(session);
         }
@@ -126,31 +148,25 @@ public class MarketStreamEndpoint {
         }
     }
 
-    private void closeQuietly(AutoCloseable closeable) {
-        if (closeable == null) {
-            return;
-        }
-        try {
-            closeable.close();
-        } catch (Exception ignored) {
-            // no-op
-        }
-    }
-
     private void closeUnauthenticated(Session session) {
         closePolicyViolation(session, "Not authenticated");
     }
 
-    private AuthenticationAuditService auditService() {
-        return CDI.current().select(AuthenticationAuditService.class).get();
+    private AuthenticationAudit auditService() {
+        return CDI.current().select(AuthenticationAudit.class).get();
     }
 
     private void closePolicyViolation(Session session, String reason) {
+        close(session, CloseReason.CloseCodes.VIOLATED_POLICY, reason);
+    }
+
+    private void closeTemporarilyUnavailable(Session session, String reason) {
+        close(session, CloseReason.CloseCodes.TRY_AGAIN_LATER, reason);
+    }
+
+    private void close(Session session, CloseReason.CloseCode closeCode, String reason) {
         try {
-            session.close(new CloseReason(
-                CloseReason.CloseCodes.VIOLATED_POLICY,
-                reason
-            ));
+            session.close(new CloseReason(closeCode, reason));
         } catch (IOException ignored) {
             // The handshake already failed from the client's perspective.
         }

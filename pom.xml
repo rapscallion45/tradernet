@@ -24,6 +24,7 @@
         <module>domain-model</module>
         <module>data-model</module>
         <module>services/order-service</module>
+        <module>services/portfolio-service</module>
         <module>services/trade-service</module>
         <module>services/user-service</module>
         <module>services/market-ai-service</module>
@@ -47,6 +48,8 @@
         <maven.ejb.plugin.version>3.2.1</maven.ejb.plugin.version>
         <maven.test.plugins.version>3.1.2</maven.test.plugins.version>
         <junit.version>5.10.2</junit.version>
+        <archunit.version>1.2.1</archunit.version>
+        <jackson.version>2.15.2</jackson.version>
         <resteasy.version>6.2.2.Final</resteasy.version>
         <spring.framework.version>5.3.39</spring.framework.version>
         <wildfly.maven.plugin.version>4.2.0.Final</wildfly.maven.plugin.version>
@@ -105,7 +108,13 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.15.2</version>
+                <version>${jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
 
             <dependency>
@@ -132,6 +141,12 @@
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit</artifactId>
+                <version>${archunit.version}</version>
             </dependency>
 
             <dependency>

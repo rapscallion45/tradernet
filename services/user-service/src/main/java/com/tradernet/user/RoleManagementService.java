@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * Owns security role resource-assignment workflows.
  */
 @Stateless
-public class RoleManagementService {
+public class RoleManagementService implements RoleManagementOperations {
 
     @EJB
     private RoleDao roleDao;
@@ -30,7 +30,7 @@ public class RoleManagementService {
     private AccessControlAssignmentService assignmentService;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     public RoleManagementService() {
     }
@@ -39,7 +39,7 @@ public class RoleManagementService {
         RoleDao roleDao,
         ResourceDao resourceDao,
         AccessControlAssignmentService assignmentService,
-        AuthenticationAuditService auditService
+        AuthenticationAudit auditService
     ) {
         this.roleDao = roleDao;
         this.resourceDao = resourceDao;

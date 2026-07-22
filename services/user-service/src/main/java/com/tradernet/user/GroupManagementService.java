@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * Owns group membership and group-role update workflows.
  */
 @Stateless
-public class GroupManagementService {
+public class GroupManagementService implements GroupManagementOperations {
 
     @EJB
     private GroupDao groupDao;
@@ -26,7 +26,7 @@ public class GroupManagementService {
     private AccessControlAssignmentService assignmentService;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     public GroupManagementService() {
     }
@@ -34,7 +34,7 @@ public class GroupManagementService {
     GroupManagementService(
         GroupDao groupDao,
         AccessControlAssignmentService assignmentService,
-        AuthenticationAuditService auditService
+        AuthenticationAudit auditService
     ) {
         this.groupDao = groupDao;
         this.assignmentService = assignmentService;

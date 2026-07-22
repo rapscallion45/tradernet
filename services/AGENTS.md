@@ -4,14 +4,16 @@
 `services/` contains business logic modules. API resources should delegate here rather than implementing domain behavior directly.
 
 ## Module map
-- `order-service`: order lifecycle, order DTO mapping, portfolio valuation, and order history support.
-- `trade-service`: trade execution domain logic.
-- `user-service`: users, bootstrap data, security-related user state.
+- `order-service`: order lifecycle, order DTO mapping, and persistence-neutral portfolio projections.
+- `portfolio-service`: user-scoped position replay, current valuation, portfolio history, and portfolio DTOs.
+- `trade-service`: trade command handling and user-scoped trade queries.
+- `user-service`: user profiles, credentials/sessions, policy persistence/evaluation, and identity bootstrap data.
 - `currency-conversion-service`: currency conversion, quote-currency resolution, and exchange-rate lookup. Do not couple this module to market model classes.
 - `market-ai-service`: market bars, display-currency market data views, signal scoring, forecasting integration, order-book depth, and market context.
 
 ## Conventions
 - Keep service APIs stable for `api/` callers.
+- Expose focused `@Local` contracts for API and cross-module consumers. Keep concrete bean classes and entity-bearing methods internal to the owning module, do not use service `@LocalBean` views, and avoid catch-all facade services.
 - Prefer container-managed EJBs for service and DAO collaborators. Use `@Stateless` for operation-oriented services and `@Singleton` only for application-wide shared state, cache, registry, lifecycle, or subscriptions.
 - Keep all JPA, JPQL, SQL, `EntityManager`, `DataSource`, and JDBC access inside DAO implementations in `data-model`. Service EJBs own policy and orchestration and inject DAO interfaces; they must not double as repositories.
 - Keep persistence-oriented services/DAOs transactional; mark HTTP clients, caches, event publishers, websocket lifecycle helpers, and other non-database collaborators as non-transactional.
@@ -25,10 +27,11 @@
 - Keep one reset row per user. Use `user -> reset row` as the lock order for both issuance and consumption, and consume the token in the same transaction as password validation/update so policy failures roll back consumption.
 - Emit sanitized authentication outcomes through the dedicated security-audit collaborator. Never log passwords, raw session/reset tokens, or password hashes.
 - Pass the authenticated actor into group/role mutation services. Enforce privilege ceilings in the service transaction, serialize policy writes with a database lock, and audit the actor and outcome; API path authorization alone is not sufficient for security administration.
-- Seed built-in role/resource, group/role, and bootstrap-user/group relationships only when their owning object is first created. Runtime authorization changes must survive restart. Reject persisted known development credentials when insecure bootstrap mode is disabled.
+- Let the API module register its route policy catalog through the user-service policy registration contract. Seed built-in role/resource, group/role, and bootstrap-user/group relationships only when their owning object is first created. Runtime authorization changes must survive restart. Reject persisted known development credentials when insecure bootstrap mode is disabled.
 - Resolve authorization from current committed database policy with a targeted DAO query over only the request path and its parent prefixes. Choose the longest matching normalized path and prefer an exact HTTP method over a wildcard; broader parent resources must not weaken a specific route.
-- Fetch historical FX data in provider-supported date ranges and warm the conversion cache before portfolio history loops. Cache provider failures/static fallbacks briefly so they cannot become process-lifetime financial data.
+- Fetch historical FX data in provider-supported date ranges and warm the conversion cache before collection mapping. Cache only provider-sourced rates and raise a typed availability failure when no authoritative rate exists; never substitute static exchange-rate tables.
 - Keep non-critical enrichment out of the write path for user commands. For example, persist order placement/fill state first, then populate advisory forecast fields asynchronously.
+- Do not perform provider IO once per item while mapping a collection. Resolve distinct symbols in one pass from cached snapshots or a batch gateway; an explicit execution command may request one current quote when its business semantics require it.
 - Keep DTOs, JPA entities, value objects, pure helpers, and per-symbol runtime objects as plain Java classes unless container lifecycle, injection, transactions, or concurrency are needed.
 - Keep JPA entities confined to persistence workflows inside their owning service module. EJB contracts consumed by API code or another service module must use service-owned DTOs, results, commands, and enums; authentication/session collaborators must exchange `AuthUserDto`-style contracts rather than `UserEntity`.
 - Separate write DTOs from read DTOs when response models include derived fields; do not add no-op setters just to make read models deserialize as requests.
@@ -37,6 +40,9 @@
 - Put multi-step workflows such as portfolio construction, valuation, history generation, and response DTO assembly behind service-layer EJBs; keep API resources as thin delegators.
 - Split portfolio orchestration, signed position replay, current valuation, and history generation into focused collaborators so one accounting rule cannot drift between summary and history paths.
 - Portfolio services must preserve signed position semantics: long holdings are positive quantities, short/open SELL positions are negative quantities, and valuation/history should include both unless short selling is explicitly disabled.
+- Keep dynamically created exchange client pools explicitly bounded. Trade-stream subscriptions must release reference counts on disconnect; request-driven order-book clients must expire after bounded idle time.
+- Expose live trade streams through a symbol-scoped subscription contract. The market module owns pipeline acquisition/release and publisher registration atomically; transport modules receive one subscription id and must not access publisher or pipeline implementation classes.
+- Treat `api/src/test/java/com/tradernet/api/ArchitectureBoundaryTest.java` as a required build guard when adding modules or contracts.
 - Reuse persistence-neutral shared values and normalization from `domain-model` for concepts used by multiple services. Do not depend on an unrelated service module only to reuse a helper.
 - Keep canonical validation patterns next to their owning shared domain value and reuse them in request DTOs and API parameters so service entry points agree on accepted input.
 - Avoid coupling unrelated service modules directly unless there is an explicit orchestration reason.

@@ -1,10 +1,14 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.currencyconversion.CurrencyConversionService;
+import com.tradernet.currencyconversion.CurrencyConversionProvider;
 import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.domain.market.MarketSymbolNormalizer;
-import com.tradernet.marketai.MarketAiService;
-import com.tradernet.marketai.MarketDataViewService;
+import com.tradernet.marketai.MarketBarProvider;
+import com.tradernet.marketai.MarketDataViewProvider;
+import com.tradernet.marketai.MarketSignalProvider;
+import com.tradernet.marketai.MarketSymbolProvider;
+import com.tradernet.marketai.context.MarketContextOperations;
+import com.tradernet.marketai.forecast.MarketForecastProvider;
 import com.tradernet.marketai.forecast.MarketForecast;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.ChartInterval;
@@ -40,13 +44,22 @@ import java.util.List;
 public class MarketResource {
 
     @EJB
-    private MarketAiService marketAiService;
+    private MarketSymbolProvider marketSymbolProvider;
 
     @EJB
-    private CurrencyConversionService currencyConversionService;
+    private MarketSignalProvider marketSignalProvider;
 
     @EJB
-    private MarketDataViewService marketDataViewService;
+    private MarketContextOperations marketContextService;
+
+    @EJB
+    private MarketForecastProvider marketForecastProvider;
+
+    @EJB
+    private CurrencyConversionProvider currencyConversionService;
+
+    @EJB
+    private MarketDataViewProvider marketDataViewService;
 
     @GET
     @Path("/bars")
@@ -56,7 +69,7 @@ public class MarketResource {
             @NotBlank @Size(max = 8) @Pattern(regexp = ChartInterval.VALIDATION_PATTERN, message = "interval is invalid")
             @DefaultValue("1S") @QueryParam("interval") String interval,
             @Min(value = 1, message = "limit must be at least 1")
-            @Max(value = 1_000, message = "limit must not exceed 1000")
+            @Max(value = MarketBarProvider.MAX_BARS, message = "limit must not exceed 2000")
             @DefaultValue("500") @QueryParam("limit") int limit,
             @Pattern(regexp = CurrencyCode.VALIDATION_PATTERN, message = "currency is invalid")
             @DefaultValue("USD") @QueryParam("currency") String currency) {
@@ -66,7 +79,7 @@ public class MarketResource {
     @GET
     @Path("/symbols")
     public List<String> getSymbols() {
-        return marketAiService.getSupportedSymbols("USD");
+        return marketSymbolProvider.getSupportedSymbols("USD");
     }
 
     @GET
@@ -83,7 +96,7 @@ public class MarketResource {
             @Min(value = 1, message = "limit must be at least 1")
             @Max(value = 1_000, message = "limit must not exceed 1000")
             @DefaultValue("200") @QueryParam("limit") int limit) {
-        return marketAiService.getSignals(symbol, limit);
+        return marketSignalProvider.getSignals(symbol, limit);
     }
 
     @GET
@@ -92,7 +105,7 @@ public class MarketResource {
         @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
         @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol
     ) {
-        return marketAiService.getMarketContext(symbol);
+        return marketContextService.get(symbol);
     }
 
     @GET
@@ -103,7 +116,7 @@ public class MarketResource {
             @Min(value = 1, message = "horizonDays must be at least 1")
             @Max(value = 365, message = "horizonDays must not exceed 365")
             @DefaultValue("1") @QueryParam("horizonDays") int horizonDays) {
-        return marketAiService.getForecast(symbol, horizonDays);
+        return marketForecastProvider.getForecast(symbol, horizonDays);
     }
 
     @GET
@@ -125,7 +138,7 @@ public class MarketResource {
             @NotBlank @Pattern(regexp = MarketSymbolNormalizer.VALIDATION_PATTERN, message = "symbol is invalid")
             @DefaultValue("BTCUSDT") @QueryParam("symbol") String symbol,
             @NotNull(message = "market context payload is required") @Valid MarketContextUpdateRequest request) {
-        marketAiService.updateMarketContext(symbol, request);
-        return marketAiService.getMarketContext(symbol);
+        marketContextService.update(symbol, request);
+        return marketContextService.get(symbol);
     }
 }

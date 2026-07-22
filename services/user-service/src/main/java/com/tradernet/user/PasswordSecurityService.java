@@ -39,7 +39,7 @@ public class PasswordSecurityService {
     private static final int ARGON2_HASH_LENGTH = 32;
 
     @EJB
-    private UserSecurityConfiguration configuration;
+    private UserSecurityPolicy configuration;
 
     private Argon2PasswordEncoder passwordEncoder;
     private Set<String> blockedPasswords;
@@ -48,7 +48,7 @@ public class PasswordSecurityService {
     public PasswordSecurityService() {
     }
 
-    PasswordSecurityService(UserSecurityConfiguration configuration) {
+    PasswordSecurityService(UserSecurityPolicy configuration) {
         this.configuration = configuration;
         initialize();
     }

@@ -18,13 +18,13 @@ class UserServiceAccountPolicyTest {
     private static final String ARGON2_ITERATIONS_PROPERTY = "tradernet.auth.password.argon2.iterations";
 
     private final UserSecurityConfiguration configuration = new UserSecurityConfiguration();
-    private final UserService userService;
+    private final CredentialService credentialService;
 
     UserServiceAccountPolicyTest() {
         System.setProperty(ARGON2_MEMORY_PROPERTY, "12288");
         System.setProperty(ARGON2_ITERATIONS_PROPERTY, "1");
         configuration.load();
-        userService = new UserService(configuration);
+        credentialService = new CredentialService(configuration);
     }
 
     @AfterEach
@@ -40,23 +40,23 @@ class UserServiceAccountPolicyTest {
         UserEntity user = activeUser();
         user.setIncorrectLoginAttempts(4);
 
-        assertTrue(userService.isAccountAccessible(user));
-        assertTrue(userService.isSessionEligible(user));
+        assertTrue(credentialService.isAccountAccessible(user));
+        assertTrue(credentialService.isSessionEligible(user));
     }
 
     @Test
     void rejectsPersistedAccountBlocks() {
         UserEntity disabled = activeUser();
         disabled.setStatus(UserStatus.DISABLED);
-        assertFalse(userService.isAccountAccessible(disabled));
+        assertFalse(credentialService.isAccountAccessible(disabled));
 
         UserEntity expired = activeUser();
         expired.setAccountExpiry(new Date(System.currentTimeMillis() - 1_000L));
-        assertFalse(userService.isAccountAccessible(expired));
+        assertFalse(credentialService.isAccountAccessible(expired));
 
         UserEntity locked = activeUser();
         locked.setLockoutUntil(Instant.now().plusSeconds(60));
-        assertFalse(userService.isAccountAccessible(locked));
+        assertFalse(credentialService.isAccountAccessible(locked));
     }
 
     @Test
@@ -64,10 +64,10 @@ class UserServiceAccountPolicyTest {
         UserEntity user = activeUser();
         user.setLockoutUntil(Instant.now().plusSeconds(60));
 
-        assertFalse(userService.isAccountAccessible(user));
+        assertFalse(credentialService.isAccountAccessible(user));
 
         user.setBypassLockout(true);
-        assertTrue(userService.isAccountAccessible(user));
+        assertTrue(credentialService.isAccountAccessible(user));
     }
 
     @Test
@@ -76,7 +76,7 @@ class UserServiceAccountPolicyTest {
         user.setIncorrectLoginAttempts(5);
         user.setLockoutUntil(Instant.now().minusSeconds(1));
 
-        assertTrue(userService.isAccountAccessible(user));
+        assertTrue(credentialService.isAccountAccessible(user));
     }
 
     @Test
@@ -84,8 +84,8 @@ class UserServiceAccountPolicyTest {
         UserEntity user = activeUser();
         user.setChangePasswordNextLogin(true);
 
-        assertTrue(userService.isAccountAccessible(user));
-        assertFalse(userService.isSessionEligible(user));
+        assertTrue(credentialService.isAccountAccessible(user));
+        assertFalse(credentialService.isSessionEligible(user));
     }
 
     private UserEntity activeUser() {

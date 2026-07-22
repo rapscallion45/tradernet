@@ -30,7 +30,7 @@ public class AuthenticationRateLimitService {
     private AuthenticationRateLimitDao rateLimitDao;
 
     @EJB
-    private UserSecurityConfiguration configuration;
+    private UserSecurityPolicy configuration;
 
     public RateLimitDecision checkLogin(String sourceAddress) {
         return consume(

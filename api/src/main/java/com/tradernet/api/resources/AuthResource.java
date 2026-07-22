@@ -2,10 +2,10 @@ package com.tradernet.api.resources;
 
 import com.tradernet.api.ApiConfiguration;
 import com.tradernet.user.AuthenticationResult;
-import com.tradernet.user.AuthenticationService;
-import com.tradernet.user.AuthSessionService;
+import com.tradernet.user.AuthenticationOperations;
+import com.tradernet.user.AuthSessionOperations;
 import com.tradernet.user.PasswordResetResult;
-import com.tradernet.user.UserSecurityConfiguration;
+import com.tradernet.user.UserSecurityPolicy;
 import com.tradernet.user.dto.AuthUserDto;
 import com.tradernet.user.dto.ForgotPasswordRequestDto;
 import com.tradernet.user.dto.LoginRequestDto;
@@ -40,16 +40,16 @@ public class AuthResource {
     public static final String PASSWORD_RESET_COOKIE_NAME = "tradernet_password_reset";
 
     @EJB
-    private AuthSessionService authSessionService;
+    private AuthSessionOperations authSessionService;
 
     @EJB
-    private AuthenticationService authenticationService;
+    private AuthenticationOperations authenticationService;
 
     @EJB
     private ApiConfiguration configuration;
 
     @EJB
-    private UserSecurityConfiguration userSecurityConfiguration;
+    private UserSecurityPolicy userSecurityConfiguration;
 
     @EJB
     private MarketWebSocketSessionRegistry marketWebSocketSessionRegistry;

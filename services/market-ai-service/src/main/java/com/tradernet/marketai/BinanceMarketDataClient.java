@@ -29,6 +29,8 @@ import java.util.List;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class BinanceMarketDataClient {
 
+    private static final int MAX_KLINES_PER_REQUEST = 1_000;
+
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,11 +79,50 @@ public class BinanceMarketDataClient {
 
     public List<MarketBar> fetchKlines(String symbol, ChartInterval interval, int limit) {
         final String normalizedSymbol = MarketSymbolNormalizer.normalizeSymbol(symbol);
-        final int boundedLimit = Math.max(1, Math.min(limit, 1_000));
+        final int boundedLimit = Math.max(1, Math.min(limit, MarketBarProvider.MAX_BARS));
+        final List<MarketBar> result = new ArrayList<>(boundedLimit);
+        Long endTime = null;
+
+        while (result.size() < boundedLimit) {
+            final int pageLimit = Math.min(MAX_KLINES_PER_REQUEST, boundedLimit - result.size());
+            final List<MarketBar> page = fetchKlinePage(normalizedSymbol, interval, pageLimit, endTime);
+            if (page.isEmpty()) {
+                break;
+            }
+            if (endTime != null && page.get(page.size() - 1).getBucketStart() > endTime) {
+                break;
+            }
+
+            result.addAll(0, page);
+            if (page.size() < pageLimit) {
+                break;
+            }
+
+            final long earliestBucketStart = page.get(0).getBucketStart();
+            if (earliestBucketStart <= 0L) {
+                break;
+            }
+            final long nextEndTime = earliestBucketStart - 1L;
+            if (endTime != null && nextEndTime >= endTime) {
+                break;
+            }
+            endTime = nextEndTime;
+        }
+
+        return result;
+    }
+
+    protected List<MarketBar> fetchKlinePage(
+        String normalizedSymbol,
+        ChartInterval interval,
+        int limit,
+        Long endTime
+    ) {
         final String endpoint = getBinanceRestBaseUrl() + "/api/v3/klines?symbol="
                 + URLEncoder.encode(normalizedSymbol, StandardCharsets.UTF_8)
                 + "&interval=" + URLEncoder.encode(interval.getBinanceInterval(), StandardCharsets.UTF_8)
-                + "&limit=" + boundedLimit;
+                + "&limit=" + limit
+                + (endTime == null ? "" : "&endTime=" + endTime);
 
         final HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
                 .timeout(Duration.ofSeconds(8))
@@ -123,7 +164,7 @@ public class BinanceMarketDataClient {
         }
     }
 
-    private String getBinanceRestBaseUrl() {
+    protected String getBinanceRestBaseUrl() {
         return configuration.getBinanceRestBaseUrl();
     }
 }

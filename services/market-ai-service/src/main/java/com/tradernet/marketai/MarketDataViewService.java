@@ -1,7 +1,7 @@
 package com.tradernet.marketai;
 
 import com.tradernet.currencyconversion.CurrencyCode;
-import com.tradernet.currencyconversion.CurrencyConversionService;
+import com.tradernet.currencyconversion.CurrencyConversionProvider;
 import com.tradernet.marketai.model.MarketBar;
 import com.tradernet.marketai.orderbook.OrderBookLevel;
 import com.tradernet.marketai.orderbook.OrderBookSnapshot;
@@ -22,30 +22,38 @@ import java.util.stream.Collectors;
  */
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class MarketDataViewService {
+public class MarketDataViewService implements MarketDataViewProvider {
 
     private static final MathContext MC = MathContext.DECIMAL64;
 
     @EJB
-    private MarketAiService marketAiService;
+    private MarketBarProvider marketBarProvider;
 
     @EJB
-    private CurrencyConversionService currencyConversionService;
+    private com.tradernet.marketai.orderbook.MarketOrderBookService marketOrderBookService;
 
+    @EJB
+    private CurrencyConversionProvider currencyConversionService;
+
+    @Override
     public List<MarketBar> getBars(String symbol, String interval, int limit, String currency) {
         final CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
-        return marketAiService.getBars(symbol, interval, limit).stream()
+        final List<MarketBar> bars = marketBarProvider.getBars(symbol, interval, limit);
+        prefetchBarRates(bars, targetCurrency);
+        return bars.stream()
             .map(bar -> convertBar(bar, targetCurrency))
             .collect(Collectors.toList());
     }
 
+    @Override
     public MarketBar convertBar(MarketBar bar, String currency) {
         return convertBar(bar, CurrencyCode.parseOrDefault(currency, CurrencyCode.USD));
     }
 
+    @Override
     public OrderBookSnapshot getOrderBook(String symbol, int levels, String currency) {
         final CurrencyCode targetCurrency = CurrencyCode.parseOrDefault(currency, CurrencyCode.USD);
-        return convertOrderBook(marketAiService.getOrderBook(symbol, levels), targetCurrency);
+        return convertOrderBook(marketOrderBookService.getOrderBook(symbol, levels), targetCurrency);
     }
 
     private MarketBar convertBar(MarketBar bar, CurrencyCode targetCurrency) {
@@ -69,6 +77,38 @@ public class MarketDataViewService {
             currencyConversionService.convertAmount(bar.getClose(), sourceCurrency, targetCurrency, timestamp),
             bar.getVolume(),
             bar.isClosed()
+        );
+    }
+
+    private void prefetchBarRates(List<MarketBar> bars, CurrencyCode targetCurrency) {
+        if (bars == null || bars.isEmpty()) {
+            return;
+        }
+
+        final MarketBar firstBar = bars.stream().filter(java.util.Objects::nonNull).findFirst().orElse(null);
+        if (firstBar == null) {
+            return;
+        }
+        final CurrencyCode sourceCurrency = currencyConversionService.resolveQuoteCurrency(firstBar.getSymbol());
+        if (sourceCurrency == targetCurrency) {
+            return;
+        }
+
+        final long firstTimestamp = bars.stream()
+            .filter(java.util.Objects::nonNull)
+            .mapToLong(MarketBar::getBucketStart)
+            .min()
+            .orElse(firstBar.getBucketStart());
+        final long lastTimestamp = bars.stream()
+            .filter(java.util.Objects::nonNull)
+            .mapToLong(MarketBar::getBucketStart)
+            .max()
+            .orElse(firstBar.getBucketStart());
+        currencyConversionService.prefetchRates(
+            sourceCurrency,
+            targetCurrency,
+            Instant.ofEpochMilli(firstTimestamp),
+            Instant.ofEpochMilli(lastTimestamp)
         );
     }
 

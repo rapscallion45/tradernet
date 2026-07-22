@@ -1,9 +1,9 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.user.dto.AuthUserDto;
-import com.tradernet.user.AuthSessionService;
-import com.tradernet.user.AuthenticationAuditService;
-import com.tradernet.user.AuthorizationService;
+import com.tradernet.user.AuthSessionOperations;
+import com.tradernet.user.AuthenticationAudit;
+import com.tradernet.user.AuthorizationOperations;
 import com.tradernet.user.ResourcePathNormalizer;
 import jakarta.annotation.Priority;
 import jakarta.ejb.EJB;
@@ -27,13 +27,13 @@ import java.util.Set;
 public class AuthenticationFilter implements ContainerRequestFilter {
 
     @EJB
-    private AuthSessionService authSessionService;
+    private AuthSessionOperations authSessionService;
 
     @EJB
-    private AuthorizationService authorizationService;
+    private AuthorizationOperations authorizationService;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     @Context
     private HttpServletRequest servletRequest;

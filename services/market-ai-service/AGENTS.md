@@ -13,10 +13,12 @@
 
 ## Conventions
 - Keep service-level collaborators EJB-managed; keep per-symbol runtime objects such as aggregators, feature engines, signal engines, trade-stream clients, and order-book clients as plain Java objects unless the container needs to own their lifecycle directly.
+- Publish focused bar, signal, symbol, forecast, context, order-book, and live-pipeline services. Do not recreate a single market facade that forwards all operations.
 - Keep slow IO outside singleton write locks and request/websocket hot paths. Use managed async EJB methods and cached snapshots for Binance websocket startup, order-book resync, forecast bull-score refreshes, and closed-bar persistence.
 - Market context and forecast reads must return cached snapshots immediately and single-flight asynchronous refreshes. Do not wait for context providers, Python forecasting, and Ollama sequentially on a REST request.
 - Persist closed bars through `MarketBarStorageService -> MarketBarDao`; SQL and datasource access belong to the DAO implementation in `data-model`, never in this service module.
 - Route trade-stream reconnects and order-book gap resync through intercepted asynchronous EJB methods. A plain Java websocket callback must only update local state and request managed recovery; it must not fetch a REST snapshot itself.
+- Bound live trade-stream runtimes by configured symbol capacity and release non-default streams when their last subscriber disconnects. Bound order-book clients separately and evict them after configured idle time.
 - Isolate in-process market event subscribers. One failing bar/signal listener must not break publishing to other listeners or interrupt ingestion callbacks.
 - Keep API websocket subscribers lightweight: filter and enqueue only. Currency conversion, serialization, and client sends belong behind bounded per-session delivery queues outside the ingestion callback.
 - Java `HttpClient` websocket text callbacks may deliver one JSON message across multiple `onText` fragments. Accumulate text until `last == true` before parsing market stream payloads.

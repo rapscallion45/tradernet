@@ -25,7 +25,7 @@ import java.util.OptionalLong;
  * Owns authenticated web sessions and short-lived password reset sessions.
  */
 @Stateless
-public class AuthSessionService {
+public class AuthSessionService implements AuthSessionOperations {
 
     private static final int TOKEN_BYTES = 32;
     private static final Duration SESSION_TOUCH_INTERVAL = Duration.ofMinutes(1);
@@ -44,13 +44,13 @@ public class AuthSessionService {
     private UserDao userDao;
 
     @EJB
-    private UserService userService;
+    private CredentialService credentialService;
 
     @EJB
-    private UserSecurityConfiguration configuration;
+    private UserSecurityPolicy configuration;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     public AuthSessionService() {
         this(new SecureRandom(), Clock.systemUTC());
@@ -65,9 +65,9 @@ public class AuthSessionService {
         AuthSessionDao authSessionDao,
         PasswordResetSessionDao passwordResetSessionDao,
         UserDao userDao,
-        UserService userService,
-        UserSecurityConfiguration configuration,
-        AuthenticationAuditService auditService,
+        CredentialService credentialService,
+        UserSecurityPolicy configuration,
+        AuthenticationAudit auditService,
         SecureRandom secureRandom,
         Clock clock
     ) {
@@ -75,7 +75,7 @@ public class AuthSessionService {
         this.authSessionDao = authSessionDao;
         this.passwordResetSessionDao = passwordResetSessionDao;
         this.userDao = userDao;
-        this.userService = userService;
+        this.credentialService = credentialService;
         this.configuration = configuration;
         this.auditService = auditService;
     }
@@ -139,7 +139,7 @@ public class AuthSessionService {
             return Optional.empty();
         }
 
-        final Optional<AuthUserDto> authUser = userService.getSessionEligibleUser(session.getUserId());
+        final Optional<AuthUserDto> authUser = credentialService.getSessionEligibleUser(session.getUserId());
         if (authUser.isEmpty()) {
             authSessionDao.deleteByTokenHash(tokenHash);
             auditService.record(

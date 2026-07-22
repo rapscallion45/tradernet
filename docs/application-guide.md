@@ -11,7 +11,7 @@ Tradernet is a Maven multi-module trading desk application with a Jakarta EE/Wil
 | Frontend | `web/` | React/Vite UI, chart panels, session-aware screens, static build assets. |
 | Shared domain | `domain-model/` | Persistence-neutral shared values and canonical market-symbol normalization. |
 | API boundary | `api/` | JAX-RS REST resources, websocket endpoint, auth filter, JSON request/response contracts. |
-| Domain services | `services/*` | Business logic for users, orders, trades, currency conversion, and market AI. |
+| Domain services | `services/*` | Business logic for users, orders, portfolios, trades, currency conversion, and market AI. |
 | Persistence | `data-model/` | JPA entities, DAO interfaces/implementations, persistence unit, schema and seed SQL. |
 | Deployment | `deployment/*` | EAR assembly, WildFly modules, Docker image, Docker Compose stack, entry script. |
 | Forecasting runtime | `python-services/forecasting` | FastAPI service for TimesFM/Chronos adapter-shaped forecasts with a statistical fallback. |
@@ -72,11 +72,15 @@ Unexpected exceptions return the same shape with status `500`, a generic client-
 | `/api/market/order-book` | `MarketResource` | Backend-maintained Binance aggregated L2 order book with spread, depth, and synchronization status. |
 | `/api/ws/market` | `MarketStreamEndpoint` | Authenticated websocket stream of market bars and signals. |
 
+`/api/market/bars` accepts up to 2,000 bars. The market gateway pages requests larger than Binance's 1,000-kline request limit and returns the combined result in chronological order.
+
+The web WAR forwards extensionless browser routes such as `/charts`, `/portfolio`, and `/admin/users` to the React entry point. Direct links and browser refreshes therefore retain their client-side route, while missing static assets and `/api` requests keep their normal server status codes.
+
 ### Portfolio history contract
 
 `GET /api/portfolio` returns the current summary plus a daily `history` series. Each history point contains the account value for that day in the selected display currency and an `events` array for order activity on that day. The portfolio page uses those backend-calculated values directly for the chart hover tooltip and BUY/SELL markers.
 
-For non-USD display currencies, the backend prefetches the required historical FX date range before calculating the daily series. Provider-backed quotes fill weekends from the most recent prior quote; static fallback rates are cached briefly and retried after provider recovery rather than becoming process-lifetime historical data.
+For non-USD display currencies, the backend prefetches the required historical FX date range before calculating the daily series. Provider-backed quotes fill weekends from the most recent prior quote. If no authoritative provider rate is available, the API returns a retryable HTTP 503 response rather than substituting a static exchange rate.
 
 Open BUY/long positions are represented as positive quantities. Open SELL/short positions are represented as negative quantities and are included in holdings, totals, profit/loss, and historical account valuation.
 
@@ -179,8 +183,8 @@ Response fields include:
 | Users, roles, groups, resources | JPA tables in `data-model` schema | Identity data is seeded by `SystemBootstrapService` through DAOs. User IDs are database-generated, canonical usernames are uniquely indexed, and password hashes are stored on `tblUsers.password_hash`. |
 | Authentication state | `tblAuthSessions`, `tblPasswordResetSessions`, `tblAuthenticationRateLimits` | Dedicated DAOs store only token/source hashes. Reset state is limited to one row per user. |
 | Orders | `tblOrders` | Used for order lifecycle and investment/performance history. |
-| Trades | `tblTrades` | User-scoped fills created by `TradeExecutionService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
-| Market bars | `market_bars` | Closed bars flow through `MarketAiService -> MarketBarStorageService -> MarketBarDao`; the Python forecasting repository reads them. |
+| Trades | `tblTrades` | User-scoped fills created by `TradeService` when orders are placed or closed, with `orderId`, `side`, and `executionType` metadata. SELL executions are stored as negative quantities. |
+| Market bars | `market_bars` | Closed bars flow through `LiveMarketPipelineService -> MarketBarStorageService -> MarketBarDao`; the Python forecasting repository reads them. |
 
 Docker Compose uses TimescaleDB/Postgres for durable local development. The named Docker volume `timescaledb_data` is mounted at `/var/lib/postgresql/data`, so orders, trades, users, market bars, and forecast history inputs survive normal container recreation. Do not run `docker compose down -v` unless deleting the database is intentional.
 
@@ -344,11 +348,14 @@ curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"usernam
 | Property | Default | Description |
 | --- | --- | --- |
 | `market.ai.symbol` | `btcusdt` | Default Binance stream symbol started at application boot. Additional chart symbols become live dynamically when a user opens a chart websocket for that symbol. |
+| `market.ai.live.maxSymbols` | `32` | Maximum simultaneous trade-stream symbol runtimes. Non-default runtimes are reference-counted and released after the last chart websocket disconnects. |
 | `market.ai.binance.restBaseUrl` | `https://api.binance.com` | Binance REST base URL used for symbols, klines, and order book snapshots. Use `https://api.binance.us` for Binance.US deployments. |
 | `market.ai.binance.wsBaseUrl` | `wss://stream.binance.com:9443/ws` | Binance websocket base URL used for trade and order book streams. Use `wss://stream.binance.us:9443/ws` for Binance.US deployments. |
 | `market.ai.websocket.maxPendingEvents` | `128` | Maximum queued bar/signal events per API websocket session. Slow clients drop the oldest pending event so they cannot block market ingestion. |
 | `market.ai.orderBook.snapshotLimit` | `5000` | Binance REST order book snapshot depth used before applying websocket deltas. Normalized to Binance-supported limits up to 5000. |
 | `market.ai.orderBook.staleAfterMs` | `30000` | Age after which a synchronized order book is marked `STALE` if no update has been applied. |
+| `market.ai.orderBook.maxSymbols` | `32` | Maximum simultaneous per-symbol order-book clients. Requests receive HTTP 503 while all capacity is occupied. |
+| `market.ai.orderBook.idleTimeoutMs` | `300000` | Idle duration after which an order-book client is stopped and evicted. |
 | `market.ai.context.symbols` | active symbol | Comma-separated symbols for scheduled context hydration. |
 | `market.ai.context.ingestion.enabled` | `true` | Enables/disables scheduled no-key market context ingestion. |
 | `market.ai.scorer` | `context` | Selects `context`, `linear`, or `rules` signal scorer. |
@@ -420,7 +427,7 @@ The chart signal badges intentionally distinguish a real backend `HOLD` from the
 - The chart legend appends the latest signal model version and up to five prioritized structured signal notes next to the stream status/error text, so messages such as `no market data for 20 seconds` still show the most recent model/driver context when available. Forecast/context note keys such as `forecast_bull_score`, `effective_context_score`, and `context_filter` are shown before lower-level technical notes such as EMA delta and RSI.
 - The chart interval selector stores the user's last selected interval in browser local storage and falls back to `1S` when no saved or valid interval exists.
 - Opening a chart websocket dynamically starts a dedicated Binance trade stream for the selected symbol, so the user-selected symbol becomes live without a redeploy or static configuration change. Closed/error streams are detected by a managed scheduler and requested for reconnection.
-- Market publisher callbacks only enqueue websocket work. Currency conversion and JSON serialization use bounded per-session queues on a managed asynchronous EJB boundary; send-completion callbacks advance the queue without blocking an EJB worker. Slow queues discard their oldest event and maintain a drop count.
+- `LiveMarketSubscriptionService` owns symbol capacity, publisher registration, routing, and pipeline release behind one subscription id per websocket. Market callbacks only enqueue websocket work. Currency conversion and JSON serialization use bounded per-session queues on a managed asynchronous EJB boundary; send-completion callbacks advance the queue without blocking an EJB worker. Slow queues discard their oldest event and maintain a drop count.
 - Multiple selected symbols can be live at the same time in one backend process; each symbol has its own bar aggregator, feature engine, and signal engine so rolling indicators and cooldowns do not bleed across symbols.
 - Closed live bars are published to chart subscribers immediately and persisted asynchronously for downstream forecasting history.
 - Until the first live signal arrives for a newly selected symbol, the initial chart signal can still be generated on demand from recent Binance klines via `GET /api/market/signals`.

@@ -1,6 +1,6 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.order.OrderPresentationService;
+import com.tradernet.order.OrderApplicationService;
 import com.tradernet.currencyconversion.CurrencyCode;
 import com.tradernet.order.dto.OrderRequestDto;
 import com.tradernet.order.dto.OrderResponseDto;
@@ -35,7 +35,7 @@ import java.util.List;
 public class OrderResource {
 
     @EJB
-    private OrderPresentationService orderPresentationService;
+    private OrderApplicationService orderPresentationService;
 
     @GET
     public Response getOrders(

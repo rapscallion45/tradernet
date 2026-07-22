@@ -1,6 +1,6 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.UserService;
+import com.tradernet.user.UserProfileQueryService;
 import com.tradernet.user.dto.UserProfileDto;
 import jakarta.ejb.EJB;
 import jakarta.validation.constraints.NotBlank;
@@ -23,17 +23,17 @@ import java.util.List;
 public class UserResource {
 
     @EJB
-    private UserService userService;
+    private UserProfileQueryService userProfileService;
 
     @GET
     public List<UserProfileDto> getUsers() {
-        return userService.getUserProfiles();
+        return userProfileService.getUserProfiles();
     }
 
     @GET
     @Path("/{id}")
     public Response getUser(@Positive(message = "id must be greater than 0") @PathParam("id") long id) {
-        return userService.getUserProfile(id)
+        return userProfileService.getUserProfile(id)
             .map(user -> Response.ok(user).build())
             .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "User not found"));
     }
@@ -43,7 +43,7 @@ public class UserResource {
     public Response getUserByUsername(
         @NotBlank(message = "username is required") @Size(max = 100) @PathParam("username") String username
     ) {
-        return userService.getUserProfileByUsername(username)
+        return userProfileService.getUserProfileByUsername(username)
             .map(user -> Response.ok(user).build())
             .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "User not found"));
     }

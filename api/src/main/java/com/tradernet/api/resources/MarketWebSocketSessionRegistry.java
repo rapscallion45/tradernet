@@ -1,8 +1,8 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.AuthSessionService;
-import com.tradernet.user.AuthenticationAuditService;
-import com.tradernet.user.AuthorizationService;
+import com.tradernet.user.AuthSessionOperations;
+import com.tradernet.user.AuthenticationAudit;
+import com.tradernet.user.AuthorizationOperations;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Lock;
@@ -31,13 +31,13 @@ public class MarketWebSocketSessionRegistry {
     private static final String MARKET_METHOD = "GET";
 
     @EJB
-    private AuthSessionService authSessionService;
+    private AuthSessionOperations authSessionService;
 
     @EJB
-    private AuthorizationService authorizationService;
+    private AuthorizationOperations authorizationService;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     private final Map<String, Connection> connections = new ConcurrentHashMap<>();
 
@@ -45,9 +45,9 @@ public class MarketWebSocketSessionRegistry {
     }
 
     MarketWebSocketSessionRegistry(
-        AuthSessionService authSessionService,
-        AuthorizationService authorizationService,
-        AuthenticationAuditService auditService
+        AuthSessionOperations authSessionService,
+        AuthorizationOperations authorizationService,
+        AuthenticationAudit auditService
     ) {
         this.authSessionService = authSessionService;
         this.authorizationService = authorizationService;

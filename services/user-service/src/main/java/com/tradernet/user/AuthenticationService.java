@@ -11,13 +11,13 @@ import java.util.OptionalLong;
  * Owns login, password-reset, throttling, audit, and session workflow decisions.
  */
 @Stateless
-public class AuthenticationService {
+public class AuthenticationService implements AuthenticationOperations {
 
     @EJB
-    private UserService userService;
+    private CredentialService credentialService;
 
     @EJB
-    private AuthSessionService authSessionService;
+    private AuthSessionOperations authSessionService;
 
     @EJB
     private PasswordSecurityService passwordSecurityService;
@@ -26,7 +26,7 @@ public class AuthenticationService {
     private AuthenticationRateLimitService rateLimitService;
 
     @EJB
-    private AuthenticationAuditService auditService;
+    private AuthenticationAudit auditService;
 
     public AuthenticationResult login(String username, String password, String sourceAddress) {
         final RateLimitDecision rateLimit = rateLimitService.checkLogin(sourceAddress);
@@ -47,7 +47,7 @@ public class AuthenticationService {
             return AuthenticationResult.status(LoginStatus.INCORRECT_CREDENTIALS);
         }
 
-        final Optional<AuthenticatedUser> authenticatedUser = userService.authenticateUser(username, password, sourceAddress);
+        final Optional<AuthenticatedUser> authenticatedUser = credentialService.authenticateUser(username, password, sourceAddress);
         if (authenticatedUser.isEmpty()) {
             auditService.record("login", "rejected", username, sourceAddress, "incorrect_credentials");
             return AuthenticationResult.status(LoginStatus.INCORRECT_CREDENTIALS);
@@ -85,7 +85,7 @@ public class AuthenticationService {
         }
 
         final long userId = resetUserId.getAsLong();
-        final OptionalLong updatedUserId = userService.resetPassword(userId, newPassword);
+        final OptionalLong updatedUserId = credentialService.resetPassword(userId, newPassword);
         if (updatedUserId.isEmpty()) {
             auditService.record("password_reset", "rejected", Long.toString(userId), sourceAddress, "account_ineligible");
             return PasswordResetResult.invalidSession();

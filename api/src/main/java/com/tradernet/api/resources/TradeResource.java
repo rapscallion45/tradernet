@@ -1,7 +1,7 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.domain.market.MarketSymbolNormalizer;
-import com.tradernet.trade.TradeExecutionService;
+import com.tradernet.trade.TradeQueryService;
 import com.tradernet.trade.dto.TradeResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
@@ -25,7 +25,7 @@ import java.util.List;
 public class TradeResource {
 
     @EJB
-    private TradeExecutionService tradeExecutionService;
+    private TradeQueryService tradeService;
 
     @GET
     public Response getTrades(
@@ -34,7 +34,7 @@ public class TradeResource {
         @QueryParam("symbol") String symbol
     ) {
         AuthUserDto authUser = AuthenticatedRequest.requireAuthenticatedUser(securityContext);
-        List<TradeResponseDto> response = tradeExecutionService.getTradesForUser(authUser.getId(), symbol);
+        List<TradeResponseDto> response = tradeService.getTradesForUser(authUser.getId(), symbol);
         return Response.ok(response).build();
     }
 }

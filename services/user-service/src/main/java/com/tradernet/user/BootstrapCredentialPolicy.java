@@ -13,8 +13,10 @@ import jakarta.ejb.TransactionAttributeType;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class BootstrapCredentialPolicy {
 
+    private static final String INSECURE_BOOTSTRAP_PASSWORD = "changeme";
+
     @EJB
-    private UserSecurityConfiguration configuration;
+    private UserSecurityPolicy configuration;
 
     @EJB
     private PasswordSecurityService passwordSecurityService;
@@ -23,7 +25,7 @@ public class BootstrapCredentialPolicy {
     }
 
     BootstrapCredentialPolicy(
-        UserSecurityConfiguration configuration,
+        UserSecurityPolicy configuration,
         PasswordSecurityService passwordSecurityService
     ) {
         this.configuration = configuration;
@@ -35,7 +37,7 @@ public class BootstrapCredentialPolicy {
             return;
         }
         if (passwordSecurityService.matches(
-            configuration.getInsecureBootstrapPassword(),
+            INSECURE_BOOTSTRAP_PASSWORD,
             user.getPasswordHash()
         )) {
             throw new IllegalStateException(

@@ -17,7 +17,7 @@ import java.time.Duration;
 @Startup
 @Lock(LockType.READ)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class UserSecurityConfiguration {
+public class UserSecurityConfiguration implements UserSecurityPolicy {
 
     private static final int DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 5;
     private static final int DEFAULT_LOCKOUT_DURATION_SECONDS = 900;

@@ -28,7 +28,7 @@ class UserServiceAuthenticationTest {
         final UserEntity user = user("alice", "secret");
         user.setIncorrectLoginAttempts(2);
         final StubUserDao userDao = new StubUserDao(user);
-        final UserService service = new UserService(userDao, configuration());
+        final CredentialService service = new CredentialService(userDao, configuration());
 
         final Optional<AuthenticatedUser> result = service.authenticateUser("alice", "secret");
 
@@ -43,7 +43,7 @@ class UserServiceAuthenticationTest {
     void persistsFailedAttemptAgainstLockedUser() {
         final UserEntity user = user("alice", "secret");
         final StubUserDao userDao = new StubUserDao(user);
-        final UserService service = new UserService(userDao, configuration());
+        final CredentialService service = new CredentialService(userDao, configuration());
 
         final Optional<AuthenticatedUser> result = service.authenticateUser("alice", "wrong");
 
@@ -58,7 +58,7 @@ class UserServiceAuthenticationTest {
         final UserEntity user = user("alice", "secret");
         user.setIncorrectLoginAttempts(2);
         final StubUserDao userDao = new StubUserDao(user);
-        final UserService service = new UserService(userDao, configuration());
+        final CredentialService service = new CredentialService(userDao, configuration());
 
         assertTrue(service.authenticateUser("alice", "wrong").isEmpty());
         assertTrue(user.getLockoutUntil().isAfter(Instant.now()));

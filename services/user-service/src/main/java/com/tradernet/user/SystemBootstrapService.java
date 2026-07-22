@@ -1,21 +1,15 @@
 package com.tradernet.user;
 
 import com.tradernet.jpa.dao.GroupDao;
-import com.tradernet.jpa.dao.ResourceDao;
 import com.tradernet.jpa.dao.RoleDao;
 import com.tradernet.jpa.dao.UserDao;
 import com.tradernet.jpa.entities.GroupEntity;
-import com.tradernet.jpa.entities.ResourceEntity;
 import com.tradernet.jpa.entities.RoleEntity;
 import com.tradernet.jpa.entities.UserEntity;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 @Startup
-public class SystemBootstrapService {
+public class SystemBootstrapService implements IdentityBootstrapReadiness {
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemBootstrapService.class);
 
@@ -45,13 +39,10 @@ public class SystemBootstrapService {
     private GroupDao groupDao;
 
     @EJB
-    private ResourceDao resourceDao;
-
-    @EJB
     private UserDao userDao;
 
     @EJB
-    private UserSecurityConfiguration configuration;
+    private UserSecurityPolicy configuration;
 
     @EJB
     private PasswordSecurityService passwordSecurityService;
@@ -65,15 +56,13 @@ public class SystemBootstrapService {
     SystemBootstrapService(
         RoleDao roleDao,
         GroupDao groupDao,
-        ResourceDao resourceDao,
         UserDao userDao,
-        UserSecurityConfiguration configuration,
+        UserSecurityPolicy configuration,
         PasswordSecurityService passwordSecurityService,
         BootstrapCredentialPolicy bootstrapCredentialPolicy
     ) {
         this.roleDao = roleDao;
         this.groupDao = groupDao;
-        this.resourceDao = resourceDao;
         this.userDao = userDao;
         this.configuration = configuration;
         this.passwordSecurityService = passwordSecurityService;
@@ -85,18 +74,6 @@ public class SystemBootstrapService {
         BootstrapResult<RoleEntity> allRightsRole = ensureRole(SecurityRoleNames.ALL_RIGHTS);
         BootstrapResult<RoleEntity> adminRightsRole = ensureRole(SecurityRoleNames.ADMIN_RIGHTS);
         BootstrapResult<RoleEntity> standardRightsRole = ensureRole(SecurityRoleNames.STANDARD_RIGHTS);
-
-        List<ResourceEntity> resources = ensureProtectedResources();
-        seedRoleResources(allRightsRole, resources);
-        seedRoleResources(adminRightsRole, resources.stream()
-            .filter(resource -> isStandardResource(resource)
-                || "users".equals(resource.getPathPrefix())
-                || "groups".equals(resource.getPathPrefix())
-                || "Market Context Administration".equals(resource.getName()))
-            .collect(Collectors.toList()));
-        seedRoleResources(standardRightsRole, resources.stream()
-            .filter(this::isStandardResource)
-            .collect(Collectors.toList()));
 
         BootstrapResult<GroupEntity> superUsersGroup = ensureGroup(SUPER_USERS_GROUP);
         BootstrapResult<GroupEntity> administratorsGroup = ensureGroup(ADMINISTRATORS_GROUP);
@@ -140,6 +117,11 @@ public class SystemBootstrapService {
             ensureUserInGroup(standardUser.entity, standardUsersGroup.entity, STANDARD_USERS_GROUP);
         }
 
+    }
+
+    @Override
+    public void ensureInitialized() {
+        // Calling the startup singleton through this view is the initialization barrier.
     }
 
     private BootstrapResult<RoleEntity> ensureRole(String roleName) {
@@ -226,79 +208,6 @@ public class SystemBootstrapService {
         GroupEntity group = new GroupEntity();
         group.setName(groupName);
         return BootstrapResult.created(groupDao.save(group));
-    }
-
-    private List<ResourceEntity> ensureProtectedResources() {
-        ensureResource("Users", "users", "*");
-        ensureResource("Groups", "groups", "*");
-        ensureResource("Security Roles", "roles", "*");
-        ensureResource("Orders", "orders", "*");
-        ensureResource("Portfolio", "portfolio", "*");
-        ensureResource("Trades", "trades", "*");
-        ensureResource("Market", "market", "GET");
-        ensureResource("Market Context Administration", "market/context", "POST");
-        return resourceDao.findAll();
-    }
-
-    private ResourceEntity ensureResource(String name, String pathPrefix, String httpMethod) {
-        return resourceDao.findByName(name)
-            .map(resource -> {
-                if (!Objects.equals(resource.getPathPrefix(), pathPrefix)
-                    || !Objects.equals(resource.getHttpMethod(), httpMethod)) {
-                    resource.setPathPrefix(pathPrefix);
-                    resource.setHttpMethod(httpMethod);
-                    resourceDao.save(resource);
-                }
-                return resource;
-            })
-            .orElseGet(() -> {
-                ResourceEntity resource = new ResourceEntity();
-                resource.setName(name);
-                resource.setPathPrefix(pathPrefix);
-                resource.setHttpMethod(httpMethod);
-                return resourceDao.save(resource);
-            });
-    }
-
-    private void seedRoleResources(BootstrapResult<RoleEntity> role, List<ResourceEntity> resources) {
-        if (role.created) {
-            ensureRoleIncludesResources(role.entity, resources);
-        }
-    }
-
-    private void ensureRoleIncludesResources(RoleEntity role, List<ResourceEntity> resources) {
-        boolean changed = false;
-        for (ResourceEntity resource : resources) {
-            if (!hasResource(role, resource)) {
-                role.addResource(resource);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            roleDao.save(role);
-        }
-    }
-
-    private boolean hasResource(RoleEntity role, ResourceEntity resource) {
-        return role.getResources().stream()
-            .anyMatch(existing -> sameResource(existing, resource));
-    }
-
-    private boolean sameResource(ResourceEntity existing, ResourceEntity requested) {
-        if (existing.getId() != null && requested.getId() != null) {
-            return existing.getId().equals(requested.getId());
-        }
-        return Objects.equals(existing.getPathPrefix(), requested.getPathPrefix())
-            && Objects.equals(existing.getName(), requested.getName());
-    }
-
-    private boolean isStandardResource(ResourceEntity resource) {
-        final String pathPrefix = resource.getPathPrefix();
-        return "orders".equals(pathPrefix)
-            || "portfolio".equals(pathPrefix)
-            || "trades".equals(pathPrefix)
-            || "market".equals(pathPrefix);
     }
 
     private void assignRoleToGroup(GroupEntity group, RoleEntity role) {

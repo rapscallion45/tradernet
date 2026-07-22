@@ -2,6 +2,7 @@ package com.tradernet.marketai.context;
 
 import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.MarketAiConfiguration;
+import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 import com.tradernet.marketai.model.MarketContextUpdateRequest;
 import jakarta.annotation.Resource;
@@ -9,6 +10,7 @@ import jakarta.ejb.Asynchronous;
 import jakarta.ejb.ConcurrencyManagement;
 import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.EJB;
+import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.SessionContext;
 import jakarta.ejb.TransactionAttribute;
@@ -23,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-public class MarketContextService {
+public class MarketContextService implements MarketContextOperations, MarketContextRefreshService {
 
     private final MarketContextRegistry marketContextRegistry = new MarketContextRegistry();
     private final Set<String> contextRefreshSymbols = ConcurrentHashMap.newKeySet();
@@ -38,8 +40,8 @@ public class MarketContextService {
     @Resource
     private SessionContext sessionContext;
 
-    public MarketContextRegistry registry() {
-        return marketContextRegistry;
+    public FeatureSnapshot enrich(FeatureSnapshot features) {
+        return marketContextRegistry.enrich(features);
     }
 
     public void registerSymbol(String symbol) {
@@ -78,6 +80,11 @@ public class MarketContextService {
         contextRefreshSymbols.forEach(this::requestHydration);
     }
 
+    @Schedule(hour = "*", minute = "*/15", second = "0", persistent = false)
+    public void refreshScheduled() {
+        refresh();
+    }
+
     public void update(String symbol, MarketContextUpdateRequest request) {
         if (request == null) {
             throw new InvalidMarketContextException("market context update request is required");
@@ -96,6 +103,7 @@ public class MarketContextService {
     }
 
     @Asynchronous
+    @Override
     public void hydrateAsync(String symbol) {
         try {
             hydrate(symbol);
@@ -111,7 +119,7 @@ public class MarketContextService {
         }
 
         try {
-            sessionContext.getBusinessObject(MarketContextService.class).hydrateAsync(symbol);
+            sessionContext.getBusinessObject(MarketContextRefreshService.class).hydrateAsync(symbol);
         } catch (RuntimeException ex) {
             refreshesInFlight.remove(symbol);
         }

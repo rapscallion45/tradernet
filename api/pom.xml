@@ -32,6 +32,13 @@
 
         <dependency>
             <groupId>com.tradernet</groupId>
+            <artifactId>portfolio-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tradernet</groupId>
             <artifactId>trade-service</artifactId>
             <version>${project.version}</version>
             <type>ejb</type>
@@ -67,6 +74,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -77,6 +91,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit</artifactId>
             <scope>test</scope>
         </dependency>
 

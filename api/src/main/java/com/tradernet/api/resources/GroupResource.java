@@ -1,6 +1,6 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.GroupManagementService;
+import com.tradernet.user.GroupManagementOperations;
 import com.tradernet.user.dto.GroupDto;
 import com.tradernet.user.dto.UpdateGroupRequestDto;
 import jakarta.ejb.EJB;
@@ -29,7 +29,7 @@ import java.util.List;
 public class GroupResource {
 
     @EJB
-    private GroupManagementService groupManagementService;
+    private GroupManagementOperations groupManagementService;
 
     @GET
     public List<GroupDto> getGroups() {

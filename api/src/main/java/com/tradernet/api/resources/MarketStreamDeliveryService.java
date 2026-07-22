@@ -3,7 +3,8 @@ package com.tradernet.api.resources;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.api.ApiConfiguration;
-import com.tradernet.marketai.MarketDataViewService;
+import com.tradernet.api.ApiObjectMapperProvider;
+import com.tradernet.marketai.MarketDataViewProvider;
 import com.tradernet.marketai.model.AiSignal;
 import com.tradernet.marketai.model.MarketBar;
 import jakarta.annotation.Resource;
@@ -35,11 +36,11 @@ import java.util.concurrent.atomic.LongAdder;
 public class MarketStreamDeliveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MarketStreamDeliveryService.class);
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = ApiObjectMapperProvider.createObjectMapper();
     private static final long SEND_TIMEOUT_MS = 5_000L;
 
     @EJB
-    private MarketDataViewService marketDataViewService;
+    private MarketDataViewProvider marketDataViewService;
 
     @EJB
     private ApiConfiguration configuration;

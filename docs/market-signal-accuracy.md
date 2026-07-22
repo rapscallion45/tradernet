@@ -17,7 +17,7 @@ Tradernet's market AI service now supports a context-aware signal path that can 
 
 ## Built-in Java ingestion
 
-`MarketAiService` now schedules in-app market context refreshes every 15 minutes. The scheduler hydrates symbols listed in `market.ai.context.symbols`, the boot-time default `market.ai.symbol`, any symbol requested through `GET /market/context`, and any symbol made live by opening its chart websocket.
+`MarketContextService` schedules in-app market context refreshes every 15 minutes. It hydrates symbols listed in `market.ai.context.symbols`, the boot-time default `market.ai.symbol`, any symbol requested through `GET /market/context`, and any symbol acquired by `LiveMarketPipelineService` for a chart websocket.
 
 The no-key default ingestion currently fetches:
 

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  */
 @Stateless
 @TransactionAttribute(TransactionAttributeType.SUPPORTS)
-public class AuthenticationAuditService {
+public class AuthenticationAuditService implements AuthenticationAudit {
 
     private static final Logger AUDIT = LoggerFactory.getLogger("com.tradernet.security.audit");
 

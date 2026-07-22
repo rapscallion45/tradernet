@@ -41,6 +41,9 @@ public class MarketAiConfiguration {
     private boolean ollamaEnabled;
     private int orderBookSnapshotLimit;
     private long orderBookStaleAfterMs;
+    private int maxOrderBookSymbols;
+    private long orderBookIdleTimeoutMs;
+    private int maxLiveSymbols;
     private SignalScoringSettings scoringSettings;
 
     @PostConstruct
@@ -78,6 +81,14 @@ public class MarketAiConfiguration {
             1_000L,
             Duration.ofMinutes(10).toMillis()
         );
+        maxOrderBookSymbols = intValue("market.ai.orderBook.maxSymbols", 32, 1, 500);
+        orderBookIdleTimeoutMs = longValue(
+            "market.ai.orderBook.idleTimeoutMs",
+            Duration.ofMinutes(5).toMillis(),
+            Duration.ofMinutes(1).toMillis(),
+            Duration.ofHours(1).toMillis()
+        );
+        maxLiveSymbols = intValue("market.ai.live.maxSymbols", 32, 1, 500);
         scoringSettings = new SignalScoringSettings(
             stringValue("market.ai.scorer", "context").toLowerCase(Locale.ROOT),
             doubleValue("market.ai.model.buyThreshold", 0.56, 0.5, 1.0),
@@ -149,6 +160,18 @@ public class MarketAiConfiguration {
 
     public long getOrderBookStaleAfterMs() {
         return orderBookStaleAfterMs;
+    }
+
+    public int getMaxOrderBookSymbols() {
+        return maxOrderBookSymbols;
+    }
+
+    public long getOrderBookIdleTimeoutMs() {
+        return orderBookIdleTimeoutMs;
+    }
+
+    public int getMaxLiveSymbols() {
+        return maxLiveSymbols;
     }
 
     public SignalScoringSettings getScoringSettings() {

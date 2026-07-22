@@ -1,7 +1,8 @@
 package com.tradernet.order;
 
-import com.tradernet.marketai.MarketAiService;
 import com.tradernet.domain.market.MarketSymbolNormalizer;
+import com.tradernet.marketai.MarketSignalProvider;
+import com.tradernet.marketai.forecast.MarketForecastProvider;
 import com.tradernet.marketai.model.AiSignal;
 import jakarta.ejb.Asynchronous;
 import jakarta.ejb.EJB;
@@ -25,10 +26,13 @@ public class OrderInsightEnrichmentService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderInsightEnrichmentService.class);
     @EJB
-    private MarketAiService marketAiService;
+    private MarketSignalProvider marketSignalProvider;
 
     @EJB
-    private OrderService orderService;
+    private MarketForecastProvider marketForecastProvider;
+
+    @EJB
+    private OrderCommandService orderService;
 
     @EJB
     private OrderConfiguration configuration;
@@ -47,11 +51,11 @@ public class OrderInsightEnrichmentService {
         }
 
         try {
-            orderService.updateMarketInsights(orderId, aiPrediction, bullScore)
-                .ifPresentOrElse(
-                    ignored -> LOG.debug("Updated market insights for order {}.", orderId),
-                    () -> LOG.debug("Skipped market insight update because order {} no longer exists.", orderId)
-                );
+            if (orderService.updateMarketInsights(orderId, aiPrediction, bullScore)) {
+                LOG.debug("Updated market insights for order {}.", orderId);
+            } else {
+                LOG.debug("Skipped market insight update because order {} no longer exists.", orderId);
+            }
         } catch (RuntimeException ex) {
             LOG.warn("Unable to persist market insights for order {}.", orderId, ex);
         }
@@ -59,7 +63,7 @@ public class OrderInsightEnrichmentService {
 
     private Double resolveBullScore(String symbol) {
         try {
-            return roundCurrency(marketAiService.getBullScore(symbol, configuration.getBullScoreHorizonDays()));
+            return roundCurrency(marketForecastProvider.getForecast(symbol, configuration.getBullScoreHorizonDays()).getBullScore());
         } catch (RuntimeException ex) {
             LOG.warn("Unable to enrich order with bull score for symbol {}.", symbol, ex);
             return null;
@@ -68,7 +72,7 @@ public class OrderInsightEnrichmentService {
 
     private String resolveAiPrediction(String symbol) {
         try {
-            final List<AiSignal> signals = marketAiService.getSignals(symbol, 200);
+            final List<AiSignal> signals = marketSignalProvider.getSignals(symbol, 200);
             if (signals == null || signals.isEmpty()) {
                 return "HOLD";
             }

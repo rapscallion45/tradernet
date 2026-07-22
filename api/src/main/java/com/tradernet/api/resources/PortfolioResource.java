@@ -1,7 +1,7 @@
 package com.tradernet.api.resources;
 
 import com.tradernet.currencyconversion.CurrencyCode;
-import com.tradernet.order.PortfolioService;
+import com.tradernet.portfolio.PortfolioQueryService;
 import com.tradernet.user.dto.AuthUserDto;
 import jakarta.ejb.EJB;
 import jakarta.validation.constraints.Pattern;
@@ -23,7 +23,7 @@ import jakarta.ws.rs.core.SecurityContext;
 public class PortfolioResource {
 
     @EJB
-    private PortfolioService portfolioService;
+    private PortfolioQueryService portfolioService;
 
     @GET
     public Response getPortfolio(

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * Resolves protected API resources to their allowed roles.
  */
 @Stateless
-public class AuthorizationService {
+public class AuthorizationService implements AuthorizationOperations {
 
     @EJB
     private ResourceDao resourceDao;

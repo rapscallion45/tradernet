@@ -4,15 +4,16 @@ Business logic is split into focused modules under `services/`.
 
 ## Core service modules
 
-- `order-service`: order creation, lifecycle operations, asynchronous order market-insight enrichment, market-price resolution, order response enrichment, and portfolio orchestration over separate position, valuation, and history collaborators.
-- `trade-service`: trade execution and user-visible persisted fill history for order placement/closure.
-- `user-service`: user profile workflows, persisted auth/session state, authorization policy lookup, admin group/role workflows, and bootstrap routines.
+- `order-service`: order creation, lifecycle operations, asynchronous market-insight enrichment, order response enrichment, and persistence-neutral portfolio projections.
+- `portfolio-service`: user-scoped position replay, current valuation, portfolio history, and portfolio response contracts.
+- `trade-service`: focused trade command and user-scoped query contracts implemented by `TradeService`.
+- `user-service`: separate profile and credential/session workflows, authorization policy persistence/evaluation, admin group/role workflows, and identity bootstrap routines.
 - `currency-conversion-service`: currency conversion support, code abstractions, quote-currency resolution, and exchange-rate lookup.
 - `market-ai-service`: market bars, signal scoring, forecasting integration, order-book depth, market context, and display-currency market-data views.
 
 ## Service bean conventions
 
-Service and DAO collaborators are container-managed Jakarta EJBs. Use `@Stateless` for business operations, persistence helpers, and external gateway/client calls that should not hold request-specific state. Use `@Singleton` only when a service intentionally owns application-wide shared state, cache, registry, lifecycle, or subscriptions; declare locking or bean-managed concurrency explicitly for those singletons. API resources inject EJB services with `@EJB`; DAO access should stay behind service-layer EJBs.
+Service and DAO collaborators are container-managed Jakarta EJBs. Use `@Stateless` for business operations, persistence helpers, and external gateway/client calls that should not hold request-specific state. Use `@Singleton` only when a service intentionally owns application-wide shared state, cache, registry, lifecycle, or subscriptions; declare locking or bean-managed concurrency explicitly for those singletons. API resources and cross-module collaborators inject focused `@Local` interfaces rather than concrete bean classes. Service beans do not expose `@LocalBean` views; DAO access stays behind service-layer EJBs.
 
 Each module reads runtime properties through one typed configuration singleton. Configuration values are parsed, bounded, and defaulted at startup; business methods consume typed getters and plain per-symbol engines receive immutable settings.
 
@@ -24,13 +25,15 @@ Keep DTOs, JPA entities, value objects, pure scoring/domain helpers, and per-sym
 
 ## Market AI service
 
-`MarketAiService` is the public EJB facade used by API resources and websocket endpoints. It coordinates live-symbol lifecycle, chart/signal queries, forecasting, and subscriptions while delegating exchange IO, market context hydration, order-book maintenance, in-memory history, event publishing, and bar persistence to injected collaborator beans. `MarketForecastService` provides stale-while-revalidate forecast snapshots and performs Python/Ollama work asynchronously. `MarketBarStorageService` maps closed bars and delegates durable writes to `MarketBarDao` in `data-model`. Live trade-stream startup/reconnect and order-book startup/gap resync work is requested through asynchronous EJB methods so Java websocket callbacks and API open paths do not block on external exchange connections. `MarketDataViewService` composes market data with currency conversion for display-ready bars and order-book snapshots so API resources do not perform business calculations.
+The API consumes focused market EJB contracts instead of a catch-all facade: `MarketBarProvider`, `MarketSignalProvider`, `MarketSymbolProvider`, `MarketForecastProvider`, `MarketContextOperations`, `MarketDataViewProvider`, and `LiveMarketSubscriptionService`. `MarketForecastService` provides stale-while-revalidate forecast snapshots and performs Python/Ollama work asynchronously. `MarketBarStorageService` maps closed bars and delegates durable writes to `MarketBarDao` in `data-model`. Live trade-stream startup/reconnect and order-book startup/gap resync work is requested through asynchronous EJB methods so Java websocket callbacks and API open paths do not block on external exchange connections. Trade-stream runtimes are bounded and reference-counted behind the subscription manager; order-book runtimes have a separate capacity limit and idle eviction. `MarketDataViewService` composes market data with currency conversion for bars and order-book snapshots.
 
-`CurrencyConversionService` prefetches historical provider rates as date ranges before portfolio history is calculated. Provider-backed historical rates can remain cached, while static fallback rates have a short TTL so a temporary provider outage cannot make fallback data authoritative for the lifetime of the JVM.
+`CurrencyConversionService` applies conversion policy over `FxRateGateway` and `FxRateCache`. Historical rates are prefetched as provider-supported date ranges before bars, orders, or portfolio history are mapped. The cache stores only provider-sourced values; absent authoritative data raises `CurrencyConversionUnavailableException`, which the API maps to HTTP 503.
 
 `user-service` revalidates account state whenever a persisted auth session is resolved. Failed logins are serialized with a user-row lock and create a persisted, automatically expiring `lockoutUntil` deadline at the configured threshold. Cluster-wide source throttles use short-lived database buckets. Password policy, Unicode normalization, Argon2id hashing, BCrypt migration, blocklist checks, and uniform unknown-user work are centralized in `PasswordSecurityService`. Sessions have absolute and idle expiry. One reset row per user is issued and consumed with consistent lock ordering, and token consumption is atomic with the password update. Security outcomes are emitted through `AuthenticationAuditService`; see [authentication security](authentication-security.md).
 
 Authorization rules are read from committed database state with a targeted query over only the request path and its parent prefixes. They are resolved by specificity: longest normalized path first, then exact HTTP method before the canonical `*` wildcard method. This prevents parent-resource roles from weakening a more-specific route, avoids loading the complete policy graph for every request, and avoids stale node-local permission caches after role changes.
+
+The API owns its route policy catalog and registers definitions through `AuthorizationPolicyRegistrationService`. `SystemBootstrapService` owns only identity primitives such as built-in roles, groups, and optional bootstrap accounts, so the user module does not hardcode REST endpoint paths.
 
 `market-ai-service` is structured into subpackages:
 
@@ -43,6 +46,8 @@ Authorization rules are read from committed database state with a targeted query
 - `model`: bars, trades, features, intervals, signal side, and signal payloads.
 
 This separation keeps exchange ingestion, market context, order-book handling, forecasting, feature engineering, and scoring loosely coupled.
+
+The API test suite includes `ArchitectureBoundaryTest`, which scans compiled modules with ArchUnit. New cross-module dependencies must preserve explicit local contracts and the established API/service/DAO boundaries.
 
 ## Why this split helps
 

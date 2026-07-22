@@ -1,6 +1,6 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.RoleManagementService;
+import com.tradernet.user.RoleManagementOperations;
 import com.tradernet.user.dto.RoleDto;
 import com.tradernet.user.dto.UpdateRoleRequestDto;
 import jakarta.ejb.EJB;
@@ -29,7 +29,7 @@ import java.util.List;
 public class RoleResource {
 
     @EJB
-    private RoleManagementService roleManagementService;
+    private RoleManagementOperations roleManagementService;
 
     @GET
     public List<RoleDto> getRoles() {
