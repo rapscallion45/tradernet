@@ -1,51 +1,26 @@
 package com.tradernet.user;
 
 import com.tradernet.jpa.dao.GroupDao;
-import com.tradernet.jpa.dao.ResourceDao;
 import com.tradernet.jpa.dao.RoleDao;
 import com.tradernet.jpa.dao.UserDao;
 import com.tradernet.jpa.entities.GroupEntity;
-import com.tradernet.jpa.entities.ResourceEntity;
 import com.tradernet.jpa.entities.RoleEntity;
 import com.tradernet.jpa.entities.UserEntity;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import javax.sql.DataSource;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 /**
  * Bootstraps required identity data for every environment.
  */
 @Singleton
 @Startup
-public class SystemBootstrapService {
+public class SystemBootstrapService implements IdentityBootstrapReadiness {
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemBootstrapService.class);
-
-    private static final String ALL_RIGHTS_ROLE = "ALL Rights";
-    private static final String ADMIN_RIGHTS_ROLE = "Admin Rights";
-    private static final String STANDARD_RIGHTS_ROLE = "Standard Rights";
 
     private static final String SUPER_USERS_GROUP = "Super Users";
     private static final String ADMINISTRATORS_GROUP = "Administrators";
@@ -54,7 +29,8 @@ public class SystemBootstrapService {
     private static final String DEFAULT_SUPER_USER_USERNAME = "superuser";
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     private static final String DEFAULT_STANDARD_USERNAME = "standard";
-    private static final String DEFAULT_PASSWORD = "changeme";
+    private static final String BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY = "tradernet.bootstrap.allowDefaultPassword";
+    private static final String BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_ENV = "TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD";
 
     @EJB
     private RoleDao roleDao;
@@ -63,139 +39,187 @@ public class SystemBootstrapService {
     private GroupDao groupDao;
 
     @EJB
-    private ResourceDao resourceDao;
-
-    @EJB
     private UserDao userDao;
 
-    @PersistenceContext(unitName = "tradernet")
-    private EntityManager entityManager;
+    @EJB
+    private UserSecurityPolicy configuration;
 
-    @Resource(lookup = "java:/jdbc/TradernetDS")
-    private DataSource dataSource;
+    @EJB
+    private PasswordSecurityService passwordSecurityService;
+
+    @EJB
+    private BootstrapCredentialPolicy bootstrapCredentialPolicy;
+
+    public SystemBootstrapService() {
+    }
+
+    SystemBootstrapService(
+        RoleDao roleDao,
+        GroupDao groupDao,
+        UserDao userDao,
+        UserSecurityPolicy configuration,
+        PasswordSecurityService passwordSecurityService,
+        BootstrapCredentialPolicy bootstrapCredentialPolicy
+    ) {
+        this.roleDao = roleDao;
+        this.groupDao = groupDao;
+        this.userDao = userDao;
+        this.configuration = configuration;
+        this.passwordSecurityService = passwordSecurityService;
+        this.bootstrapCredentialPolicy = bootstrapCredentialPolicy;
+    }
 
     @PostConstruct
     void bootstrap() {
-        initializeSchemaForH2();
+        BootstrapResult<RoleEntity> allRightsRole = ensureRole(SecurityRoleNames.ALL_RIGHTS);
+        BootstrapResult<RoleEntity> adminRightsRole = ensureRole(SecurityRoleNames.ADMIN_RIGHTS);
+        BootstrapResult<RoleEntity> standardRightsRole = ensureRole(SecurityRoleNames.STANDARD_RIGHTS);
 
-        RoleEntity allRightsRole = ensureRole(ALL_RIGHTS_ROLE);
-        RoleEntity adminRightsRole = ensureRole(ADMIN_RIGHTS_ROLE);
-        RoleEntity standardRightsRole = ensureRole(STANDARD_RIGHTS_ROLE);
+        BootstrapResult<GroupEntity> superUsersGroup = ensureGroup(SUPER_USERS_GROUP);
+        BootstrapResult<GroupEntity> administratorsGroup = ensureGroup(ADMINISTRATORS_GROUP);
+        BootstrapResult<GroupEntity> standardUsersGroup = ensureGroup(STANDARD_USERS_GROUP);
 
-        List<ResourceEntity> resources = ensureProtectedResources();
-        ensureRoleHasResources(allRightsRole, resources);
-        ensureRoleHasResources(adminRightsRole, resources.stream().filter(resource ->
-            "users".equals(resource.getPathPrefix()) || "groups".equals(resource.getPathPrefix())
-        ).collect(Collectors.toList()));
+        seedGroupRole(superUsersGroup, allRightsRole.entity);
+        seedGroupRole(administratorsGroup, adminRightsRole.entity);
+        seedGroupRole(standardUsersGroup, standardRightsRole.entity);
 
-        GroupEntity superUsersGroup = ensureGroup(SUPER_USERS_GROUP);
-        GroupEntity administratorsGroup = ensureGroup(ADMINISTRATORS_GROUP);
-        GroupEntity standardUsersGroup = ensureGroup(STANDARD_USERS_GROUP);
-
-        assignRoleToGroup(superUsersGroup, allRightsRole);
-        assignRoleToGroup(administratorsGroup, adminRightsRole);
-        assignRoleToGroup(standardUsersGroup, standardRightsRole);
-
-        UserEntity superUser = userDao.findByUsername(DEFAULT_SUPER_USER_USERNAME)
-            .orElseGet(() -> createSuperUser(DEFAULT_SUPER_USER_USERNAME, DEFAULT_PASSWORD));
-
-        ensureBootstrapCredentials(superUser, DEFAULT_PASSWORD);
-
-        if (!superUser.getGroups().stream().anyMatch(group -> SUPER_USERS_GROUP.equals(group.getName()))) {
-            superUser.addGroup(superUsersGroup);
-            userDao.save(superUser);
-            LOG.info("Ensured '{}' group membership for bootstrap user '{}'.", SUPER_USERS_GROUP, DEFAULT_SUPER_USER_USERNAME);
+        if (configuration.isInsecureBootstrapPasswordEnabled()) {
+            LOG.warn("The insecure local bootstrap password fallback is enabled by {} or {}. "
+                    + "Never enable it outside local development.",
+                BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_PROPERTY,
+                BOOTSTRAP_ALLOW_DEFAULT_PASSWORD_ENV);
         }
 
-        UserEntity adminUser = userDao.findByUsername(DEFAULT_ADMIN_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_ADMIN_USERNAME, "Admin", DEFAULT_PASSWORD));
-        ensureUserInGroup(adminUser, administratorsGroup, ADMINISTRATORS_GROUP);
+        BootstrapResult<UserEntity> superUser = ensureBootstrapUser(
+            DEFAULT_SUPER_USER_USERNAME,
+            "Super User",
+            configuration.getBootstrapPassword(DEFAULT_SUPER_USER_USERNAME)
+        );
+        if (superUser.created) {
+            ensureUserInGroup(superUser.entity, superUsersGroup.entity, SUPER_USERS_GROUP);
+        }
 
-        UserEntity standardUser = userDao.findByUsername(DEFAULT_STANDARD_USERNAME)
-            .orElseGet(() -> createUser(DEFAULT_STANDARD_USERNAME, "Standard User", DEFAULT_PASSWORD));
-        ensureUserInGroup(standardUser, standardUsersGroup, STANDARD_USERS_GROUP);
+        BootstrapResult<UserEntity> adminUser = ensureBootstrapUser(
+            DEFAULT_ADMIN_USERNAME,
+            "Admin",
+            configuration.getBootstrapPassword(DEFAULT_ADMIN_USERNAME)
+        );
+        if (adminUser.created) {
+            ensureUserInGroup(adminUser.entity, administratorsGroup.entity, ADMINISTRATORS_GROUP);
+        }
+
+        BootstrapResult<UserEntity> standardUser = ensureBootstrapUser(
+            DEFAULT_STANDARD_USERNAME,
+            "Standard User",
+            configuration.getBootstrapPassword(DEFAULT_STANDARD_USERNAME)
+        );
+        if (standardUser.created) {
+            ensureUserInGroup(standardUser.entity, standardUsersGroup.entity, STANDARD_USERS_GROUP);
+        }
 
     }
 
-    private RoleEntity ensureRole(String roleName) {
-        return roleDao.findByName(roleName)
-            .orElseGet(() -> {
-                RoleEntity role = new RoleEntity();
-                role.setName(roleName);
-                roleDao.save(role);
-                LOG.info("Created required role '{}'.", roleName);
-                return role;
-            });
+    @Override
+    public void ensureInitialized() {
+        // Calling the startup singleton through this view is the initialization barrier.
     }
 
-    private UserEntity createSuperUser(String username, String password) {
-        return createUser(username, "Super User", password);
+    private BootstrapResult<RoleEntity> ensureRole(String roleName) {
+        final RoleEntity existing = roleDao.findByName(roleName).orElse(null);
+        if (existing != null) {
+            return BootstrapResult.existing(existing);
+        }
+        RoleEntity role = new RoleEntity();
+        role.setName(roleName);
+        role = roleDao.save(role);
+        LOG.info("Created required role '{}'.", roleName);
+        return BootstrapResult.created(role);
     }
 
     private UserEntity createUser(String username, String fullName, String password) {
+        validateConfiguredBootstrapPassword(username, password);
         UserEntity user = new UserEntity(username);
-        user.setPk(nextUserId());
         user.setFullName(fullName);
-        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        user.setPasswordHash(passwordSecurityService.hashPassword(password));
         user.setChangePasswordNextLogin(true);
-        userDao.save(user);
+        user = userDao.save(user);
         LOG.info("Created bootstrap user '{}' ({})", username, fullName);
         return user;
     }
 
-    private void ensureBootstrapCredentials(UserEntity user, String password) {
-        user.setFullName("Super User");
-        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+    private BootstrapResult<UserEntity> ensureBootstrapUser(String username, String fullName, String password) {
+        final UserEntity existing = userDao.findByUsername(username).orElse(null);
+        if (existing != null) {
+            bootstrapCredentialPolicy.verifyPersistedCredential(existing);
+            if (password == null) {
+                warnIfBootstrapCredentialsCannotBeInitialized(existing);
+            } else {
+                ensureBootstrapCredentialsWhenMissing(existing, fullName, password);
+            }
+            return BootstrapResult.existing(existing);
+        }
+        if (password == null) {
+            LOG.info("Skipped creating optional bootstrap user '{}' because no account-specific password is configured.",
+                username);
+            return BootstrapResult.absent();
+        }
+        return BootstrapResult.created(createUser(username, fullName, password));
+    }
+
+    private void warnIfBootstrapCredentialsCannotBeInitialized(UserEntity user) {
+        if (!hasUsablePasswordHash(user.getPasswordHash())) {
+            LOG.warn("Bootstrap user '{}' has no usable password hash, but no bootstrap password is configured. "
+                    + "Credentials were not initialized.",
+                user.getUsername());
+        }
+    }
+
+    private void ensureBootstrapCredentialsWhenMissing(UserEntity user, String fullName, String password) {
+        if (hasUsablePasswordHash(user.getPasswordHash())) {
+            return;
+        }
+
+        validateConfiguredBootstrapPassword(user.getUsername(), password);
+        if (user.getFullName() == null || user.getFullName().isBlank()) {
+            user.setFullName(fullName);
+        }
+        user.setPasswordHash(passwordSecurityService.hashPassword(password));
         user.setChangePasswordNextLogin(true);
         userDao.save(user);
-        LOG.info("Reset bootstrap credentials for user '{}'.", user.getUsername());
+        LOG.info("Initialized bootstrap credentials for user '{}' because the stored password hash was missing or invalid.",
+            user.getUsername());
     }
 
-    private GroupEntity ensureGroup(String groupName) {
-        return groupDao.findByName(groupName)
-            .orElseGet(() -> {
-                GroupEntity group = new GroupEntity();
-                group.setName(groupName);
-                groupDao.save(group);
-                return groupDao.findByName(groupName).orElse(group);
-            });
+    private boolean hasUsablePasswordHash(String passwordHash) {
+        return passwordSecurityService.isUsableHash(passwordHash);
     }
 
-    private List<ResourceEntity> ensureProtectedResources() {
-        ensureResource("Users", "users");
-        ensureResource("Groups", "groups");
-        ensureResource("Security Roles", "roles");
-        ensureResource("Orders", "orders");
-        ensureResource("Portfolio", "portfolio");
-        ensureResource("Trades", "trades");
-        ensureResource("Signals", "signals");
-        ensureResource("Market", "market");
-        ensureResource("User Properties", "user-properties");
-        ensureResource("Passwords", "passwords");
-        ensureResource("Health", "health");
-        return resourceDao.findAll();
+    private void validateConfiguredBootstrapPassword(String username, String password) {
+        if (!configuration.isUsingInsecureBootstrapPassword(username)) {
+            passwordSecurityService.validateNewPassword(username, password);
+        }
     }
 
-    private ResourceEntity ensureResource(String name, String pathPrefix) {
-        return resourceDao.findByName(name)
-            .orElseGet(() -> {
-                ResourceEntity resource = new ResourceEntity();
-                resource.setName(name);
-                resource.setPathPrefix(pathPrefix);
-                resourceDao.save(resource);
-                return resourceDao.findByName(name).orElse(resource);
-            });
-    }
-
-    private void ensureRoleHasResources(RoleEntity role, List<ResourceEntity> resources) {
-        role.setResources(new java.util.HashSet<>(resources));
-        roleDao.save(role);
+    private BootstrapResult<GroupEntity> ensureGroup(String groupName) {
+        final GroupEntity existing = groupDao.findByName(groupName).orElse(null);
+        if (existing != null) {
+            return BootstrapResult.existing(existing);
+        }
+        GroupEntity group = new GroupEntity();
+        group.setName(groupName);
+        return BootstrapResult.created(groupDao.save(group));
     }
 
     private void assignRoleToGroup(GroupEntity group, RoleEntity role) {
         if (group.getRoles().stream().noneMatch(existing -> role.getName().equals(existing.getName()))) {
             group.addRole(role);
             groupDao.save(group);
+        }
+    }
+
+    private void seedGroupRole(BootstrapResult<GroupEntity> group, RoleEntity role) {
+        if (group.created) {
+            assignRoleToGroup(group.entity, role);
         }
     }
 
@@ -207,69 +231,26 @@ public class SystemBootstrapService {
         }
     }
 
-    private long nextUserId() {
-        Long currentMax = entityManager.createQuery("SELECT COALESCE(MAX(u.id), 0) FROM UserEntity u", Long.class)
-            .getSingleResult();
-        return currentMax + 1;
-    }
+    private static final class BootstrapResult<T> {
+        private final T entity;
+        private final boolean created;
 
-    private void initializeSchemaForH2() {
-        try (Connection connection = dataSource.getConnection()) {
-            DatabaseMetaData metaData = connection.getMetaData();
-            if (!"H2".equalsIgnoreCase(metaData.getDatabaseProductName())) {
-                return;
-            }
+        private BootstrapResult(T entity, boolean created) {
+            this.entity = entity;
+            this.created = created;
+        }
 
-            runSqlScript(connection, "/META-INF/db/schema.sql");
-            runSqlScript(connection, "/META-INF/db/dev-seed.sql");
-            LOG.info("Initialized schema and seed data for H2 datasource.");
-        } catch (SQLException | IOException e) {
-            throw new IllegalStateException("Failed to initialize H2 schema.", e);
+        private static <T> BootstrapResult<T> created(T entity) {
+            return new BootstrapResult<>(entity, true);
+        }
+
+        private static <T> BootstrapResult<T> existing(T entity) {
+            return new BootstrapResult<>(entity, false);
+        }
+
+        private static <T> BootstrapResult<T> absent() {
+            return new BootstrapResult<>(null, false);
         }
     }
 
-    private void runSqlScript(Connection connection, String scriptPath) throws IOException, SQLException {
-        try (InputStream stream = getClass().getResourceAsStream(scriptPath)) {
-            if (stream == null) {
-                throw new IllegalStateException("Missing SQL script on classpath: " + scriptPath);
-            }
-
-            String script;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                script = reader.lines().collect(Collectors.joining("\n"));
-            }
-
-            for (String statementSql : splitStatements(script)) {
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute(statementSql);
-                }
-            }
-        }
-    }
-
-    private List<String> splitStatements(String script) {
-        List<String> statements = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-
-        for (String line : script.split("\\R")) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("--")) {
-                continue;
-            }
-
-            current.append(line).append('\n');
-            if (trimmed.endsWith(";")) {
-                String sql = current.toString().trim();
-                statements.add(sql.substring(0, sql.length() - 1));
-                current.setLength(0);
-            }
-        }
-
-        String trailing = current.toString().trim();
-        if (!trailing.isEmpty()) {
-            statements.add(trailing);
-        }
-
-        return statements;
-    }
 }

@@ -1,9 +1,9 @@
 package com.tradernet.marketai.context;
 
+import com.tradernet.domain.market.MarketSymbolNormalizer;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketContextSnapshot;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +48,6 @@ public class MarketContextRegistry {
     }
 
     private String normalize(String symbol) {
-        return symbol == null ? "" : symbol.trim().toUpperCase(Locale.ROOT);
+        return symbol == null || symbol.isBlank() ? "" : MarketSymbolNormalizer.normalizeSymbol(symbol);
     }
 }

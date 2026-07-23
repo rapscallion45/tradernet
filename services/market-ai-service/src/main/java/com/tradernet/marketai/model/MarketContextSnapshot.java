@@ -17,6 +17,13 @@ public class MarketContextSnapshot {
     private double liquidityGrowthZScore;
     private double sentimentZScore;
     private boolean available;
+    private boolean etfFlowAvailable;
+    private boolean exchangeOutflowAvailable;
+    private boolean fundingRateAvailable;
+    private boolean openInterestChangeAvailable;
+    private boolean mvrvAvailable;
+    private boolean liquidityGrowthAvailable;
+    private boolean sentimentAvailable;
 
     public MarketContextSnapshot() {
         this(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
@@ -48,6 +55,13 @@ public class MarketContextSnapshot {
         this.liquidityGrowthZScore = liquidityGrowthZScore;
         this.sentimentZScore = sentimentZScore;
         this.available = available;
+        this.etfFlowAvailable = available;
+        this.exchangeOutflowAvailable = available;
+        this.fundingRateAvailable = available;
+        this.openInterestChangeAvailable = available;
+        this.mvrvAvailable = available;
+        this.liquidityGrowthAvailable = available;
+        this.sentimentAvailable = available;
     }
 
     public static MarketContextSnapshot neutral() {
@@ -97,31 +111,31 @@ public class MarketContextSnapshot {
     }
 
     public boolean isEtfFlowAvailable() {
-        return hasInput(etfFlowZScore);
+        return etfFlowAvailable;
     }
 
     public boolean isExchangeOutflowAvailable() {
-        return hasInput(exchangeOutflowZScore);
+        return exchangeOutflowAvailable;
     }
 
     public boolean isFundingRateAvailable() {
-        return hasInput(fundingRateZScore);
+        return fundingRateAvailable;
     }
 
     public boolean isOpenInterestChangeAvailable() {
-        return hasInput(openInterestChangeZScore);
+        return openInterestChangeAvailable;
     }
 
     public boolean isMvrvAvailable() {
-        return hasInput(mvrvZScore);
+        return mvrvAvailable;
     }
 
     public boolean isLiquidityGrowthAvailable() {
-        return hasInput(liquidityGrowthZScore);
+        return liquidityGrowthAvailable;
     }
 
     public boolean isSentimentAvailable() {
-        return hasInput(sentimentZScore);
+        return sentimentAvailable;
     }
 
     public int getEtfFlowBullishPercent() {
@@ -154,98 +168,61 @@ public class MarketContextSnapshot {
 
     public void setEtfFlowZScore(double etfFlowZScore) {
         this.etfFlowZScore = etfFlowZScore;
+        this.etfFlowAvailable = true;
     }
 
     public void setExchangeOutflowZScore(double exchangeOutflowZScore) {
         this.exchangeOutflowZScore = exchangeOutflowZScore;
+        this.exchangeOutflowAvailable = true;
     }
 
     public void setFundingRateZScore(double fundingRateZScore) {
         this.fundingRateZScore = fundingRateZScore;
+        this.fundingRateAvailable = true;
     }
 
     public void setOpenInterestChangeZScore(double openInterestChangeZScore) {
         this.openInterestChangeZScore = openInterestChangeZScore;
+        this.openInterestChangeAvailable = true;
     }
 
     public void setMvrvZScore(double mvrvZScore) {
         this.mvrvZScore = mvrvZScore;
+        this.mvrvAvailable = true;
     }
 
     public void setLiquidityGrowthZScore(double liquidityGrowthZScore) {
         this.liquidityGrowthZScore = liquidityGrowthZScore;
+        this.liquidityGrowthAvailable = true;
     }
 
     public void setSentimentZScore(double sentimentZScore) {
         this.sentimentZScore = sentimentZScore;
+        this.sentimentAvailable = true;
     }
 
     public void setAvailable(boolean available) {
         this.available = available;
     }
 
-    public void setEtfFlowBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setExchangeOutflowBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setFundingRateBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setOpenInterestChangeBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setMvrvBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setLiquidityGrowthBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setSentimentBullishPercent(int ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setAnyMarketScoreInputAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setEtfFlowAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setExchangeOutflowAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setFundingRateAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setOpenInterestChangeAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setMvrvAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setLiquidityGrowthAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    public void setSentimentAvailable(boolean ignored) {
-        // Derived read-only API field.
-    }
-
-    private boolean hasInput(double value) {
-        return Math.abs(value) > 0.001;
+    public MarketContextSnapshot copy() {
+        final MarketContextSnapshot copy = new MarketContextSnapshot();
+        copy.etfFlowZScore = etfFlowZScore;
+        copy.exchangeOutflowZScore = exchangeOutflowZScore;
+        copy.fundingRateZScore = fundingRateZScore;
+        copy.openInterestChangeZScore = openInterestChangeZScore;
+        copy.mvrvZScore = mvrvZScore;
+        copy.liquidityGrowthZScore = liquidityGrowthZScore;
+        copy.sentimentZScore = sentimentZScore;
+        copy.available = available;
+        copy.etfFlowAvailable = etfFlowAvailable;
+        copy.exchangeOutflowAvailable = exchangeOutflowAvailable;
+        copy.fundingRateAvailable = fundingRateAvailable;
+        copy.openInterestChangeAvailable = openInterestChangeAvailable;
+        copy.mvrvAvailable = mvrvAvailable;
+        copy.liquidityGrowthAvailable = liquidityGrowthAvailable;
+        copy.sentimentAvailable = sentimentAvailable;
+        return copy;
     }
 
     private int bullishPercent(double signalScore) {

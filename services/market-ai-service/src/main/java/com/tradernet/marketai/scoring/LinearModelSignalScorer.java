@@ -1,5 +1,6 @@
 package com.tradernet.marketai.scoring;
 
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.SignalSide;
 
@@ -13,15 +14,16 @@ import java.util.List;
  */
 public class LinearModelSignalScorer implements SignalScorer {
 
-    private static final double DEFAULT_BUY_THRESHOLD = 0.56;
-    private static final double DEFAULT_SELL_THRESHOLD = 0.44;
-
     private final double buyThreshold;
     private final double sellThreshold;
 
     public LinearModelSignalScorer() {
-        this.buyThreshold = Double.parseDouble(System.getProperty("market.ai.model.buyThreshold", String.valueOf(DEFAULT_BUY_THRESHOLD)));
-        this.sellThreshold = Double.parseDouble(System.getProperty("market.ai.model.sellThreshold", String.valueOf(DEFAULT_SELL_THRESHOLD)));
+        this(SignalScoringSettings.defaults());
+    }
+
+    public LinearModelSignalScorer(SignalScoringSettings settings) {
+        this.buyThreshold = settings.getModelBuyThreshold();
+        this.sellThreshold = settings.getModelSellThreshold();
     }
 
     @Override
@@ -33,10 +35,10 @@ public class LinearModelSignalScorer implements SignalScorer {
         final double linear = (emaDeltaPct * 120.0) + (rsiCentered * 0.9);
         final double probabilityBuy = 1.0 / (1.0 + Math.exp(-linear));
 
-        final List<String> notes = new ArrayList<>();
-        notes.add("model=linear-logit");
-        notes.add("ema_delta_pct=" + String.format("%.6f", emaDeltaPct));
-        notes.add("rsi=" + String.format("%.2f", features.getRsi()));
+        final List<ExplanationItem> notes = new ArrayList<>();
+        notes.add(ExplanationItem.value("model", "model", "linear-logit"));
+        notes.add(ExplanationItem.numeric("ema_delta_pct", "ema_delta_pct", emaDeltaPct));
+        notes.add(ExplanationItem.numeric("rsi", "rsi", features.getRsi()));
 
         if (probabilityBuy >= buyThreshold) {
             return new ScoreResult(SignalSide.BUY, directionalConfidence(probabilityBuy, buyThreshold, 1.0), "linear-v1", notes);

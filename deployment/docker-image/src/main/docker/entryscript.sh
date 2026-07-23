@@ -8,22 +8,28 @@ DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-tradernet}"
 DB_USER="${DB_USER:-sa}"
 DB_PASSWORD="${DB_PASSWORD:-}"
-ADMIN_USERNAME="${ADMIN_USERNAME:-superuser}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-changeme}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 SCHEMA_AUTO_CREATE_DEV="${SCHEMA_AUTO_CREATE_DEV:-true}"
 
 log() {
   printf '[entryscript] %s\n' "$*" >&2
 }
 
-set -x
 trap 'log "Exiting with status $?."' EXIT
 trap 'log "Error on line ${LINENO}."' ERR
 
 log "Starting Tradernet entry script."
 
-if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
-  echo "Warning: unable to create admin user '${ADMIN_USERNAME}'." >&2
+if [[ -n "${ADMIN_USERNAME}" || -n "${ADMIN_PASSWORD}" ]]; then
+  if [[ -z "${ADMIN_USERNAME}" || -z "${ADMIN_PASSWORD}" ]]; then
+    log "ADMIN_USERNAME and ADMIN_PASSWORD must either both be set or both be omitted."
+    exit 1
+  fi
+  if ! "$JBOSS_HOME/bin/add-user.sh" --silent -e -u "${ADMIN_USERNAME}" -p "${ADMIN_PASSWORD}" >/dev/null 2>&1; then
+    log "Unable to create the configured WildFly management user."
+    exit 1
+  fi
 fi
 
 wait_for_db() {
@@ -57,12 +63,16 @@ wait_for_db() {
 
 configure_runtime_properties() {
   local schema_action="none"
+  local bootstrap_default_password_opt_in=""
 
   if [[ "${DB_TYPE}" == "H2" && "${SCHEMA_AUTO_CREATE_DEV}" == "true" ]]; then
     schema_action="drop-and-create"
+    if [[ -z "${TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD:-}" ]]; then
+      bootstrap_default_password_opt_in=" -Dtradernet.bootstrap.allowDefaultPassword=true"
+    fi
   fi
 
-  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action}"
+  export JAVA_OPTS="${JAVA_OPTS:-} -Dtradernet.datasource.jndi=java:/jdbc/TradernetDS -Dtradernet.schema-generation.database.action=${schema_action}${bootstrap_default_password_opt_in}"
   log "Configured runtime properties: schema-generation=${schema_action}, datasource=java:/jdbc/TradernetDS"
 }
 

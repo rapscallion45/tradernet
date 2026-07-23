@@ -1,0 +1,2 @@
+ALTER TABLE tblResources
+    ADD COLUMN IF NOT EXISTS httpMethod VARCHAR(16);

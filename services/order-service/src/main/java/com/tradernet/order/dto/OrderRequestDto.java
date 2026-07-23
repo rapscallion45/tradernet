@@ -1,9 +1,9 @@
 package com.tradernet.order.dto;
 
-import com.tradernet.jpa.entities.OrderEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -13,22 +13,26 @@ import java.util.Objects;
  */
 public class OrderRequestDto implements Serializable {
 
-    @NotBlank
+    @NotBlank(message = "symbol is required")
+    @Pattern(regexp = com.tradernet.domain.market.MarketSymbolNormalizer.VALIDATION_PATTERN,
+        message = "symbol is invalid")
     private String symbol;
 
-    @NotNull
-    private OrderEntity.Side side;
+    @NotNull(message = "side is required")
+    private OrderSide side;
 
-    @Positive
+    @NotNull(message = "quantity must be greater than 0")
+    @Positive(message = "quantity must be greater than 0")
     private Double quantity;
 
-    @Positive
+    @NotNull(message = "price must be greater than 0")
+    @Positive(message = "price must be greater than 0")
     private Double price;
 
     public OrderRequestDto() {
     }
 
-    public OrderRequestDto(String symbol, OrderEntity.Side side, Double quantity, Double price) {
+    public OrderRequestDto(String symbol, OrderSide side, Double quantity, Double price) {
         this.symbol = symbol;
         this.side = side;
         this.quantity = quantity;
@@ -43,11 +47,11 @@ public class OrderRequestDto implements Serializable {
         this.symbol = symbol;
     }
 
-    public OrderEntity.Side getSide() {
+    public OrderSide getSide() {
         return side;
     }
 
-    public void setSide(OrderEntity.Side side) {
+    public void setSide(OrderSide side) {
         this.side = side;
     }
 

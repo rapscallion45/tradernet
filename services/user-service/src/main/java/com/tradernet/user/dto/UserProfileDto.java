@@ -1,10 +1,7 @@
 package com.tradernet.user.dto;
 
-import com.tradernet.jpa.entities.UserEntity;
-
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Lightweight user payload for API responses.
@@ -24,23 +21,6 @@ public class UserProfileDto {
         this.username = username;
         this.fullName = fullName;
         this.roleNames = roleNames;
-    }
-
-    public static UserProfileDto fromUser(UserEntity user) {
-        Set<String> groupRoleNames = user.getGroupsIncParents().stream()
-            .flatMap(group -> group.getRoles().stream())
-            .map(role -> role.getName())
-            .collect(Collectors.toSet());
-
-        Set<String> effectiveRoleNames = new HashSet<>(user.getRoleNames());
-        effectiveRoleNames.addAll(groupRoleNames);
-
-        return new UserProfileDto(
-            user.getPk(),
-            user.getUsername(),
-            user.getFullName(),
-            effectiveRoleNames
-        );
     }
 
     public long getId() {

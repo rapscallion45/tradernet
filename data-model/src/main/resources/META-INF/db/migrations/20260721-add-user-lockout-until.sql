@@ -1,0 +1,2 @@
+ALTER TABLE tblUsers
+    ADD COLUMN IF NOT EXISTS lockoutUntil TIMESTAMP;

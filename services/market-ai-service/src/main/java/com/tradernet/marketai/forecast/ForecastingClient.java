@@ -2,7 +2,13 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.MarketAiConfiguration;
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,24 +26,22 @@ import java.util.List;
 /**
  * HTTP bridge to the Python TimesFM/Chronos forecasting service.
  */
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class ForecastingClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(ForecastingClient.class);
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-    private final URI baseUri;
-
-    public ForecastingClient(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
-        this.baseUri = URI.create(System.getProperty("market.ai.forecasting.url", "http://forecasting-service:8000"));
-    }
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    @EJB
+    private MarketAiConfiguration configuration;
 
     public MarketForecast forecast(String symbol, int horizonDays, MarketContextSnapshot context) {
         final String normalizedSymbol = symbol == null || symbol.isBlank() ? "BTCUSDT" : symbol.trim().toUpperCase();
         final int boundedHorizonDays = Math.max(1, Math.min(horizonDays, 365));
-        final URI uri = baseUri.resolve("/forecast?symbol=" + encode(normalizedSymbol) + "&horizon_days=" + boundedHorizonDays);
+        final URI uri = configuration.getForecastingBaseUri()
+            .resolve("/forecast?symbol=" + encode(normalizedSymbol) + "&horizon_days=" + boundedHorizonDays);
         final HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(20))
                 .header("Accept", "application/json")
@@ -70,11 +74,13 @@ public class ForecastingClient {
         final double expectedReturn = root.path("expected_return").asDouble(0.0);
         final double bullScore = clamp(root.path("bull_score").asDouble(scoreFromProbability(probability)), 0.0, 100.0);
         final String model = root.path("model").asText("forecasting-service");
-        final List<String> drivers = new ArrayList<>();
+        final List<ExplanationItem> drivers = new ArrayList<>();
         final JsonNode driverNode = root.path("drivers");
         if (driverNode.isArray()) {
             for (JsonNode node : driverNode) {
-                drivers.add(node.asText());
+                if (node.isTextual() && !node.asText().isBlank()) {
+                    drivers.add(ExplanationItem.text("forecast_driver", node.asText()));
+                }
             }
         }
         addContextDrivers(drivers, context);
@@ -82,30 +88,30 @@ public class ForecastingClient {
     }
 
     private MarketForecast fallback(String symbol, int horizonDays, MarketContextSnapshot context, String reason) {
-        final List<String> drivers = new ArrayList<>();
-        drivers.add(reason);
+        final List<ExplanationItem> drivers = new ArrayList<>();
+        drivers.add(ExplanationItem.text("forecast_fallback", reason));
         addContextDrivers(drivers, context);
         final double bullScore = clamp(50.0 + contextScore(context) * 10.0, 0.0, 100.0);
         final double probability = clamp(0.5 + (bullScore - 50.0) / 100.0, 0.05, 0.95);
         return new MarketForecast(symbol, horizonDays, probability, 0.0, bullScore, "context-fallback", drivers, null);
     }
 
-    private void addContextDrivers(List<String> drivers, MarketContextSnapshot context) {
+    private void addContextDrivers(List<ExplanationItem> drivers, MarketContextSnapshot context) {
         if (context == null) {
             return;
         }
         if (context.getEtfFlowZScore() > 0.25) {
-            drivers.add("ETF inflows positive");
+            drivers.add(ExplanationItem.text("etf_flows", "ETF inflows positive"));
         } else if (context.getEtfFlowZScore() < -0.25) {
-            drivers.add("ETF flows negative");
+            drivers.add(ExplanationItem.text("etf_flows", "ETF flows negative"));
         }
         if (context.getExchangeOutflowZScore() > 0.25) {
-            drivers.add("exchange balances declining");
+            drivers.add(ExplanationItem.text("exchange_outflows", "exchange balances declining"));
         }
         if (Math.abs(context.getFundingRateZScore()) <= 0.5) {
-            drivers.add("funding rates neutral");
+            drivers.add(ExplanationItem.text("funding_rates", "funding rates neutral"));
         } else if (context.getFundingRateZScore() > 1.0) {
-            drivers.add("funding rates elevated");
+            drivers.add(ExplanationItem.text("funding_rates", "funding rates elevated"));
         }
     }
 

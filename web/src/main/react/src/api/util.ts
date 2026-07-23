@@ -3,7 +3,10 @@ import { ApiErrorBody } from "api/types"
 
 export const getErrorMessage = (err: unknown) => {
   const ax = err as AxiosError<ApiErrorBody>
-  return ax?.response?.data?.error?.errorMessage ?? ax?.message ?? "An unexpected error occurred."
+  const apiError = err as ApiErrorBody
+  const wrappedApiError = err as { error?: ApiErrorBody["error"] | string; message?: string }
+  const wrappedErrorMessage = typeof wrappedApiError?.error === "string" ? wrappedApiError.error : wrappedApiError?.error?.errorMessage
+  return ax?.response?.data?.error?.errorMessage ?? apiError?.error?.errorMessage ?? wrappedErrorMessage ?? wrappedApiError?.message ?? ax?.message ?? "An unexpected error occurred."
 }
 
 export function stripStartAndEndSlash(str: string): string {

@@ -6,7 +6,7 @@ This folder documents how the major parts of Tradernet fit together.
 
 - [Architecture overview](./architecture-overview.md) — high-level request/data flow and module map.
 - [Backend services](./backend-services.md) — domain services and business logic modules.
-- [API layer](./api-layer.md) — REST resources, auth filter, and facade orchestration.
+- [API layer](./api-layer.md) — REST resources, auth filter, and websocket boundary.
 - [Frontend web app](./frontend-web.md) — React app structure and runtime flow.
 - [Data + deployment](./data-and-deployment.md) — persistence model, packaging, and runtime infrastructure.
 - [Application guide](./application-guide.md) — full-stack operator/developer handbook covering APIs, persistence, deployment, forecasting, configuration, and safeguards.

@@ -1,13 +1,9 @@
 package com.tradernet.jpa.entities;
 
-import com.tradernet.jpa.common.SystemProperties;
 import com.tradernet.jpa.common.exception.ObjectNotFoundException;
-import com.tradernet.jpa.databaseservice.passwords.PBKDF2PasswordHash;
-import com.tradernet.jpa.databaseservice.passwords.PasswordHash;
-import com.tradernet.jpa.databaseservice.passwords.PlainTextCredentials;
-import com.tradernet.jpa.dao.interceptors.PasswordMetadataInterceptor;
 import com.tradernet.jpa.entities.generic.IdentifiedEntity;
 import com.tradernet.jpa.enums.UserStatus;
+import com.tradernet.jpa.identity.UsernameNormalizer;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +13,8 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -24,7 +22,8 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.QueryHint;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
@@ -36,6 +35,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.time.Instant;
 import java.util.stream.Collectors;
 
 import static com.tradernet.jpa.entities.util.RelationshipUpdateUtil.updateRelationship;
@@ -47,8 +47,8 @@ import static com.tradernet.jpa.entities.util.RelationshipUpdateUtil.updateRelat
 @Cacheable
 @Table(name = "tblUsers")
 @NamedQueries({
-    @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE LOWER(u.username) = :username", hints = {
-        @QueryHint(name = "org.hibernate.cacheable", value = "true")}), // LOWER is used in conjunction with toLowerCase() on input parameter - we don't want to compare in a case-sensitive manner
+    @NamedQuery(name = "GetUserByUsername", query = "SELECT u FROM UserEntity u WHERE u.normalizedUsername = :username", hints = {
+        @QueryHint(name = "org.hibernate.cacheable", value = "true")}),
     @NamedQuery(name = "GetUsersInType", query = "SELECT u FROM UserEntity u WHERE u.type = :userstatus"),
     @NamedQuery(name = "GetUsersNotInTypes", query = "SELECT u FROM UserEntity u WHERE u.type not in (:userstatuses) ORDER BY u.username")
 })
@@ -56,14 +56,6 @@ public class UserEntity implements IdentifiedEntity {
 
     private static final Logger log = LoggerFactory.getLogger(UserEntity.class);
 
-    private static final boolean IsExternalIdentityManagementEnabled = SystemProperties.getBooleanFlag(SystemProperties.EfsExternalIdentityManagement());
-    // The user password is accessed frequently and rarely modified
-    // See caching strategy in architecture.md in src/docs for implementation detail
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final Set<PasswordEntity> passwords = new HashSet<>();
-    // The user password is accessed frequently and rarely modified
-    // See caching strategy in architecture.md in src/docs for implementation detail
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
     @OneToMany(mappedBy = "id.user", fetch = FetchType.EAGER, cascade = {CascadeType.ALL}, orphanRemoval = true)
     private final Set<UserPropertyEntity> userProperties = new HashSet<>();
@@ -79,10 +71,15 @@ public class UserEntity implements IdentifiedEntity {
     @ManyToMany(mappedBy = "users")
     private final Set<GroupEntity> groups = new HashSet<>();
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     @NotNull
     @Size(max = 50)
     private String username;
+    @NotNull
+    @Size(max = 100)
+    @Column(name = "username_normalized", nullable = false, unique = true, length = 100)
+    private String normalizedUsername;
     @Size(max = 255)
     @Column(name = "password_hash")
     private String passwordHash;
@@ -95,6 +92,7 @@ public class UserEntity implements IdentifiedEntity {
     private Date lastLogin;
     @NotNull
     private int incorrectLoginAttempts;
+    private Instant lockoutUntil;
     @NotNull
     private boolean bypassLockout;
     @NotNull
@@ -113,13 +111,6 @@ public class UserEntity implements IdentifiedEntity {
     @Transient
     private Integer passwordExpiresInDays;
 
-    //todo - find out how to map a parameter to an sql query so jpa can do this for us!
-    @Transient
-    private PasswordEntity latestPassword;
-
-    @Transient
-    private boolean isLockedOut; //todo refactor this variable into a new enum which represents state of password - normal/inWarningPeriod/expired etc
-
     @Transient
     private boolean bypassServerLockout;
 
@@ -130,41 +121,14 @@ public class UserEntity implements IdentifiedEntity {
      * Initialises the object with the given username, and {@link com.tradernet.jpa.enums.UserStatus#STANDARD}
      */
     public UserEntity(String username) {
-        this.username = username;
+        setUsername(username);
         this.setStatus(UserStatus.STANDARD);
     }
 
-    @PostLoad
-    private void performPasswordProcessing() {
-        PasswordMetadataInterceptor.populatePasswordMetadata(this);
-    }
-
-    /**
-     * @return The password entity of the users' current password
-     */
-    public PasswordEntity getLatestPassword() {
-        if (latestPassword == null)
-            setupLatestPassword();
-        return latestPassword;
-    }
-
-    /**
-     * Lazily find the latest password for this user. Ideally this could be replaced by some sort of hibernate formula
-     */
-    private void setupLatestPassword() {
-
-        if (IsExternalIdentityManagementEnabled)
-            return; // don't do all this expensive work as we don't need the output
-
-        PasswordEntity latestPassword = null;
-
-        for (PasswordEntity password : getPasswords()) {
-            if (latestPassword == null || password.getLastChanged().after(latestPassword.getLastChanged()))
-                latestPassword = password;
-        }
-
-        log.debug("User[{}] Latest password: {}", getUsername(), latestPassword);
-        this.latestPassword = latestPassword;
+    @PrePersist
+    @PreUpdate
+    void normalizeUsername() {
+        normalizedUsername = UsernameNormalizer.normalize(username);
     }
 
     /**
@@ -177,82 +141,6 @@ public class UserEntity implements IdentifiedEntity {
             return false;
 
         return new Date().after(expiryDate);
-    }
-
-    /**
-     * Checks to see if the provided password is in the list of current and historic passwords for this user
-     */
-    public boolean hasPassword(PlainTextCredentials password) {
-        return getPasswords().stream()
-            .map(PasswordEntity::getPassword)
-            .anyMatch(passwordHash -> passwordHash.matches(password));
-    }
-
-    public void applyPasswordRetention(int maxHistory) {
-        while (getPasswords().size() > maxHistory) {
-            log.debug("Password history size is configured to [{}]. Removing oldest password", maxHistory);
-            removeOldestPassword();
-        }
-    }
-
-    /**
-     * Removes the oldest password from this users list of passwords. If the user only has one (ie current) password, it will be removed.
-     */
-    public void removeOldestPassword() {
-
-        PasswordEntity oldestPassword = null;
-
-        for (PasswordEntity password : getPasswords()) {
-            if (oldestPassword == null || password.getLastChanged().before(oldestPassword.getLastChanged()))
-                oldestPassword = password;
-        }
-
-        log.debug("Removing oldest password from user[{}]: {}", getUsername(), oldestPassword);
-
-        if (oldestPassword != null)
-            removePassword(oldestPassword);
-    }
-
-    public void removePassword(PasswordEntity password) {
-        removePasswordReference(password);
-        password.setUser(null);
-    }
-
-    /**
-     * Updates the current password with a new password hash (ie if the algorithm is strengthened)
-     */
-    public void updatePasswordHash(PBKDF2PasswordHash passwordHash) {
-        log.debug("Updating password hash for user [{}]", username);
-        var currentPassword = getLatestPassword();
-        var updatedPassword = new PasswordEntity(currentPassword, passwordHash);
-        addPasswordReference(updatedPassword);
-        removePassword(currentPassword);
-    }
-
-    /**
-     * Adds a new password to this user, and sets up the bi-directional relationship.
-     */
-    public void setNewPassword(PBKDF2PasswordHash password) {
-        log.debug("Setting new password for user#{}: {}", getPk(), password);
-        addPasswordReference(new PasswordEntity(this, password));
-    }
-
-    /**
-     * Adds a new password to this user, and sets up the bi-directional relationship.
-     * <br/>
-     * <strong>WARNING:</strong> This method allows old hash algorithms to be used - use #setNewPassword where possible
-     */
-    public void setPreHashedPassword(PasswordHash password) {
-        log.debug("Setting pre-hashed password for user#{}: {}", getPk(), password);
-        addPasswordReference(new PasswordEntity(this, password));
-    }
-
-    void addPasswordReference(PasswordEntity password) {
-        passwords.add(password);
-    }
-
-    void removePasswordReference(PasswordEntity password) {
-        passwords.remove(password);
     }
 
     /**
@@ -304,14 +192,6 @@ public class UserEntity implements IdentifiedEntity {
     }
 
     /**
-     * Clears all {@link PasswordEntity}s from this user.
-     */
-    public void clearPasswords() {
-        log.debug("Clearing all PasswordEntities from user [{}]", getUsername());
-        Set.copyOf(passwords).forEach(this::removePassword);
-    }
-
-    /**
      * Clears all {@link UserPropertyEntity}s from this user.
      */
     public void clearProperties() {
@@ -356,7 +236,7 @@ public class UserEntity implements IdentifiedEntity {
 
     public void registerSuccessfulLogin() {
         log.debug("Resetting incorrect login attempts and updating lastLogin for user: ${user.getUsername}");
-        resetIncorrectLoginAttempts();
+        clearLockout();
         updateLastLogin();
     }
 
@@ -460,6 +340,11 @@ public class UserEntity implements IdentifiedEntity {
 
     public void setUsername(String username) {
         this.username = username;
+        this.normalizedUsername = UsernameNormalizer.normalize(username);
+    }
+
+    public String getNormalizedUsername() {
+        return normalizedUsername;
     }
 
     public String getPasswordHash() {
@@ -550,10 +435,6 @@ public class UserEntity implements IdentifiedEntity {
         userProperty.setValue(propertyValue);
     }
 
-    public Set<PasswordEntity> getPasswords() {
-        return Collections.unmodifiableSet(passwords);
-    }
-
     public Set<GroupEntity> getGroups() {
         return groups;
     }
@@ -594,11 +475,24 @@ public class UserEntity implements IdentifiedEntity {
     }
 
     public boolean isLockedOut() {
-        return isLockedOut;
+        return isLockedOutAt(Instant.now());
     }
 
-    public void setLockedOut(boolean isLockedOut) {
-        this.isLockedOut = isLockedOut;
+    public boolean isLockedOutAt(Instant timestamp) {
+        return lockoutUntil != null && timestamp != null && lockoutUntil.isAfter(timestamp);
+    }
+
+    public Instant getLockoutUntil() {
+        return lockoutUntil;
+    }
+
+    public void setLockoutUntil(Instant lockoutUntil) {
+        this.lockoutUntil = lockoutUntil;
+    }
+
+    public void clearLockout() {
+        lockoutUntil = null;
+        resetIncorrectLoginAttempts();
     }
 
     public int getIncorrectLoginAttempts() {
@@ -715,7 +609,7 @@ public class UserEntity implements IdentifiedEntity {
             ", changePasswordNextLogin=" + changePasswordNextLogin +
             ", passwordExpired=" + passwordExpired +
             ", passwordExpiresInDays=" + passwordExpiresInDays +
-            ", isLockedOut=" + isLockedOut +
+            ", lockoutUntil=" + lockoutUntil +
             ", isExternalIdentity=" + isExternalIdentity +
             '}';
     }

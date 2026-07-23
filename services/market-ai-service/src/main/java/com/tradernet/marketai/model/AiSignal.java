@@ -13,9 +13,9 @@ public class AiSignal {
     private final SignalSide side;
     private final double confidence;
     private final String modelVersion;
-    private final List<String> notes;
+    private final List<ExplanationItem> notes;
 
-    public AiSignal(String symbol, long eventTime, SignalSide side, double confidence, String modelVersion, List<String> notes) {
+    public AiSignal(String symbol, long eventTime, SignalSide side, double confidence, String modelVersion, List<ExplanationItem> notes) {
         this.symbol = symbol;
         this.eventTime = eventTime;
         this.side = side;
@@ -44,7 +44,7 @@ public class AiSignal {
         return modelVersion;
     }
 
-    public List<String> getNotes() {
+    public List<ExplanationItem> getNotes() {
         return notes;
     }
 }

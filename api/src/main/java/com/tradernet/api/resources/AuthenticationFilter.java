@@ -1,22 +1,23 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.user.dto.MessageResponseDto;
 import com.tradernet.user.dto.AuthUserDto;
-import com.tradernet.user.UserService;
-import com.tradernet.jpa.dao.ResourceDao;
-import com.tradernet.jpa.entities.ResourceEntity;
-import jakarta.inject.Inject;
+import com.tradernet.user.AuthSessionOperations;
+import com.tradernet.user.AuthenticationAudit;
+import com.tradernet.user.AuthorizationOperations;
+import com.tradernet.user.ResourcePathNormalizer;
 import jakarta.annotation.Priority;
+import jakarta.ejb.EJB;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Enforces authenticated sessions for all non-auth REST endpoints.
@@ -25,39 +26,28 @@ import java.util.stream.Collectors;
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
-    @Inject
-    private UserService userService;
+    @EJB
+    private AuthSessionOperations authSessionService;
 
-    @Inject
-    private ResourceDao resourceDao;
+    @EJB
+    private AuthorizationOperations authorizationService;
+
+    @EJB
+    private AuthenticationAudit auditService;
+
+    @Context
+    private HttpServletRequest servletRequest;
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
-        "auth",
         "auth/login",
         "auth/logout",
         "auth/session",
         "auth/forgot-password",
         "health"
     );
-    private String normalisePath(String path) {
-        if (path == null) {
-            return "";
-        }
-
-        String normalisedPath = path.startsWith("/") ? path.substring(1) : path;
-        if (normalisedPath.endsWith("/")) {
-            normalisedPath = normalisedPath.substring(0, normalisedPath.length() - 1);
-        }
-
-        return normalisedPath;
-    }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.contains(normalisePath(path));
-    }
-
-    private boolean hasAnyRole(AuthUserDto authUser, Set<String> allowedRoles) {
-        return authUser.getRoleNames() != null && authUser.getRoleNames().stream().anyMatch(allowedRoles::contains);
+        return PUBLIC_PATHS.contains(ResourcePathNormalizer.normalize(path));
     }
 
     @Override
@@ -69,55 +59,47 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
         Cookie sessionCookie = requestContext.getCookies().get(AuthResource.SESSION_COOKIE_NAME);
         String sessionId = sessionCookie == null ? null : sessionCookie.getValue();
-        Optional<AuthUserDto> authUser = AuthResource.getSessionUser(sessionId);
+        Optional<AuthUserDto> authUser = authSessionService.getSessionUser(sessionId);
 
         if (authUser.isEmpty()) {
-            requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new MessageResponseDto("Not authenticated"))
-                .build());
+            requestContext.abortWith(ApiErrors.response(Response.Status.UNAUTHORIZED, "Not authenticated"));
             return;
         }
 
-        AuthUserDto effectiveAuthUser = userService.findByUsernameWithRoles(authUser.get().getUsername())
-            .map(AuthUserDto::fromUser)
-            .orElse(authUser.get());
+        AuthUserDto effectiveAuthUser = authUser.get();
+        AuthenticatedRequest.setAuthenticatedUser(requestContext, effectiveAuthUser);
 
-        Set<String> requiredRoles = resourceDao.findAllWithRoles().stream()
-            .filter(resource -> pathMatchesResource(path, resource))
-            .flatMap(resource -> resource.getRoles().stream())
-            .map(role -> role.getName())
-            .collect(Collectors.toSet());
+        Set<String> requiredRoles = authorizationService.getRequiredRoles(requestContext.getMethod(), path);
 
-        if (canReadOwnUserByUsername(path, effectiveAuthUser)) {
+        if (authorizationService.canReadOwnUserByUsername(requestContext.getMethod(), path, effectiveAuthUser)) {
             return;
         }
 
-        if (!requiredRoles.isEmpty() && !hasAnyRole(effectiveAuthUser, requiredRoles)) {
-            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN)
-                .entity(new MessageResponseDto("Insufficient permissions"))
-                .build());
+        if (requiredRoles.isEmpty()) {
+            auditDenied(effectiveAuthUser, requestContext, "no_policy");
+            requestContext.abortWith(ApiErrors.response(Response.Status.FORBIDDEN, "No permissions configured for this resource"));
+            return;
+        }
+
+        if (!authorizationService.hasAnyRole(effectiveAuthUser, requiredRoles)) {
+            auditDenied(effectiveAuthUser, requestContext, "insufficient_permissions");
+            requestContext.abortWith(ApiErrors.response(Response.Status.FORBIDDEN, "Insufficient permissions"));
         }
     }
 
-    private boolean canReadOwnUserByUsername(String path, AuthUserDto authUser) {
-        String normalisedPath = normalisePath(path);
-        String byUsernamePrefix = "users/by-username/";
-        if (!normalisedPath.startsWith(byUsernamePrefix)) {
-            return false;
-        }
-
-        String requestedUsername = normalisedPath.substring(byUsernamePrefix.length());
-        if (requestedUsername.isBlank()) {
-            return false;
-        }
-
-        String currentUsername = authUser.getUsername();
-        return currentUsername != null && currentUsername.equalsIgnoreCase(requestedUsername);
-    }
-
-    private boolean pathMatchesResource(String path, ResourceEntity resource) {
-        String normalisedPath = normalisePath(path);
-        String pathPrefix = resource.getPathPrefix();
-        return pathPrefix != null && !pathPrefix.isBlank() && normalisedPath.startsWith(pathPrefix);
+    private void auditDenied(
+        AuthUserDto authUser,
+        ContainerRequestContext requestContext,
+        String reason
+    ) {
+        auditService.record(
+            "authorization",
+            "rejected",
+            authUser.getUsername(),
+            servletRequest == null ? null : servletRequest.getRemoteAddr(),
+            reason + "_" + requestContext.getMethod() + "_" + ResourcePathNormalizer.normalize(
+                requestContext.getUriInfo().getPath()
+            )
+        );
     }
 }

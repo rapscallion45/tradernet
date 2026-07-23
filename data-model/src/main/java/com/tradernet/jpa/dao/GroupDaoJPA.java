@@ -4,6 +4,7 @@ import com.tradernet.jpa.entities.GroupEntity;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +19,12 @@ public class GroupDaoJPA implements GroupDao {
     private EntityManager entityManager;
 
     @Override
-    public void save(GroupEntity group) {
-        entityManager.merge(group);
+    public GroupEntity save(GroupEntity group) {
+        if (group.getId() == null) {
+            entityManager.persist(group);
+            return group;
+        }
+        return entityManager.merge(group);
     }
 
     @Override
@@ -37,6 +42,12 @@ public class GroupDaoJPA implements GroupDao {
             .setParameter("id", id)
             .getResultStream()
             .findFirst();
+    }
+
+    @Override
+    public Optional<GroupEntity> findByIdForUpdate(long id) {
+        final GroupEntity locked = entityManager.find(GroupEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
+        return locked == null ? Optional.empty() : findById(id);
     }
 
     @Override

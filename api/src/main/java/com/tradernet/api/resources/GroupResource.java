@@ -1,28 +1,24 @@
 package com.tradernet.api.resources;
 
-import com.tradernet.jpa.dao.GroupDao;
-import com.tradernet.jpa.dao.RoleDao;
-import com.tradernet.jpa.entities.GroupEntity;
-import com.tradernet.jpa.entities.RoleEntity;
-import com.tradernet.jpa.entities.UserEntity;
-import com.tradernet.api.resources.dto.GroupDto;
-import com.tradernet.api.resources.dto.UpdateGroupRequestDto;
-import com.tradernet.user.UserService;
-import jakarta.inject.Inject;
+import com.tradernet.user.GroupManagementOperations;
+import com.tradernet.user.dto.GroupDto;
+import com.tradernet.user.dto.UpdateGroupRequestDto;
+import jakarta.ejb.EJB;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * REST API for querying groups.
@@ -32,71 +28,36 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class GroupResource {
 
-    @Inject
-    private GroupDao groupDao;
-
-    @Inject
-    private RoleDao roleDao;
-
-    @Inject
-    private UserService userService;
+    @EJB
+    private GroupManagementOperations groupManagementService;
 
     @GET
     public List<GroupDto> getGroups() {
-        return groupDao.findAll().stream().map(GroupDto::fromEntity).collect(Collectors.toList());
+        return groupManagementService.getGroups();
     }
 
     @GET
     @Path("/{id}")
-    public Response getGroup(@PathParam("id") long id) {
-        return groupDao.findById(id)
-            .map(group -> Response.ok(GroupDto.fromEntity(group)).build())
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+    public Response getGroup(@Positive(message = "id must be greater than 0") @PathParam("id") long id) {
+        return groupManagementService.getGroup(id)
+            .map(group -> Response.ok(group).build())
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
     }
 
     @PUT
     @Path("/{id}")
-    public Response updateGroup(@PathParam("id") long id, UpdateGroupRequestDto request) {
-        if (request == null) {
-            throw new BadRequestException("Request body is required");
-        }
-
-        return groupDao.findById(id)
-            .map(group -> {
-                group.setUsers(resolveUsers(request.getUsernames()));
-                group.setRoles(resolveRoles(request.getRoleNames()));
-                groupDao.save(group);
-
-                return Response.ok(GroupDto.fromEntity(group)).build();
-            })
-            .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
-    }
-
-    private Set<UserEntity> resolveUsers(Set<String> usernames) {
-        if (usernames == null || usernames.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        Set<UserEntity> users = new HashSet<>();
-        for (String username : usernames) {
-            UserEntity user = userService.findByUsernameWithRoles(username)
-                .orElseThrow(() -> new BadRequestException("User not found: " + username));
-            users.add(user);
-        }
-        return users;
-    }
-
-    private Set<RoleEntity> resolveRoles(Set<String> roleNames) {
-        if (roleNames == null || roleNames.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        Set<RoleEntity> roles = new HashSet<>();
-        for (String roleName : roleNames) {
-            RoleEntity role = roleDao.findByName(roleName)
-                .orElseThrow(() -> new BadRequestException("Role not found: " + roleName));
-            roles.add(role);
-        }
-        return roles;
+    public Response updateGroup(
+        @Positive(message = "id must be greater than 0") @PathParam("id") long id,
+        @NotNull(message = "Request body is required") @Valid UpdateGroupRequestDto request,
+        @Context SecurityContext securityContext
+    ) {
+        return groupManagementService.updateGroup(
+                id,
+                request.getUsernames(),
+                request.getRoleNames(),
+                AuthenticatedRequest.requireAuthenticatedUser(securityContext)
+            )
+            .map(group -> Response.ok(group).build())
+            .orElseGet(() -> ApiErrors.response(Response.Status.NOT_FOUND, "Group not found"));
     }
 }

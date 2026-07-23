@@ -12,6 +12,6 @@ export const useOrders = (): UseSuspenseQueryResult<OrderSummary[]> => {
 
   return useSuspenseQuery({
     queryKey: [QueryClientKeys.Orders, currency],
-    queryFn: () => getRestClient().ordersResource.getOrders(undefined, currency),
+    queryFn: () => getRestClient().ordersResource.getOrders(currency),
   })
 }

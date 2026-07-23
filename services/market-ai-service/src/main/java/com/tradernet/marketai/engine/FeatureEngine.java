@@ -1,8 +1,9 @@
 package com.tradernet.marketai.engine;
 
-import com.tradernet.marketai.context.MarketContextRegistry;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.MarketBar;
+
+import java.util.function.UnaryOperator;
 
 /**
  * Incremental EMA/RSI feature calculator.
@@ -13,7 +14,7 @@ public class FeatureEngine {
     private static final double ALPHA_FAST = 2.0 / (9.0 + 1.0);
     private static final double ALPHA_SLOW = 2.0 / (21.0 + 1.0);
 
-    private final MarketContextRegistry marketContextRegistry;
+    private final UnaryOperator<FeatureSnapshot> contextEnricher;
 
     private Double emaFast;
     private Double emaSlow;
@@ -22,11 +23,11 @@ public class FeatureEngine {
     private Double lastClose;
 
     public FeatureEngine() {
-        this(new MarketContextRegistry());
+        this(UnaryOperator.identity());
     }
 
-    public FeatureEngine(MarketContextRegistry marketContextRegistry) {
-        this.marketContextRegistry = marketContextRegistry == null ? new MarketContextRegistry() : marketContextRegistry;
+    public FeatureEngine(UnaryOperator<FeatureSnapshot> contextEnricher) {
+        this.contextEnricher = contextEnricher == null ? UnaryOperator.identity() : contextEnricher;
     }
 
     public synchronized FeatureSnapshot onClosedBar(MarketBar bar) {
@@ -56,6 +57,6 @@ public class FeatureEngine {
     }
 
     private FeatureSnapshot withMarketContext(FeatureSnapshot features) {
-        return marketContextRegistry.enrich(features);
+        return contextEnricher.apply(features);
     }
 }

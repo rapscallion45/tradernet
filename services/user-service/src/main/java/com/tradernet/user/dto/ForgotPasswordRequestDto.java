@@ -1,22 +1,18 @@
 package com.tradernet.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * Forgot password request payload.
  */
 public class ForgotPasswordRequestDto {
 
-    private String username;
+    @NotBlank(message = "newPassword is required")
+    @Size(max = 512, message = "newPassword input is too large")
     private String newPassword;
 
     public ForgotPasswordRequestDto() {
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getNewPassword() {

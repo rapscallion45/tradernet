@@ -63,7 +63,6 @@ const LoginPage: FC<LoginPageProps> = ({ onLogin }) => {
             </FormProvider>
           ) : (
             <ResetPasswordForm
-              username={loginForm.getValues("username")}
               resetLoginStatus={() => {
                 setLoginStatus(null)
                 loginForm.resetField("password")
@@ -104,10 +103,10 @@ const statusMapping: { [K in LoginStatus]: Feedback } = {
     summary: "Invalid Request",
     message: "The login request was malformed. Please try again or contact the System administrator.",
   },
-  [LoginStatus.UserNotFound]: {
+  [LoginStatus.RateLimited]: {
     icon: <IconAlertTriangle color={"red"} />,
-    summary: "User Not Found",
-    message: "A user with the given credentials was not found. Please try again or contact the System administrator.",
+    summary: "Too Many Attempts",
+    message: "Please wait before trying to log in again.",
   },
   [LoginStatus.IncorrectCredentials]: {
     icon: <IconAlertTriangle color={"red"} />,

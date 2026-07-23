@@ -27,6 +27,11 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>domain-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>web</artifactId>
             <version>${project.version}</version>
             <type>war</type>
@@ -57,6 +62,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>portfolio-service</artifactId>
+            <version>${project.version}</version>
+            <type>ejb</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>trade-service</artifactId>
             <version>${project.version}</version>
             <type>ejb</type>
@@ -64,12 +75,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>user-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>signal-service</artifactId>
             <version>${project.version}</version>
             <type>ejb</type>
         </dependency>
@@ -88,12 +93,6 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>facade-service</artifactId>
-            <version>${project.version}</version>
-            <type>ejb</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>data-model</artifactId>
             <version>${project.version}</version>
             <type>ejb</type>
@@ -101,6 +100,14 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jcl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -139,15 +146,15 @@
                         </ejbModule>
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
+                            <artifactId>portfolio-service</artifactId>
+                        </ejbModule>
+                        <ejbModule>
+                            <groupId>${project.groupId}</groupId>
                             <artifactId>trade-service</artifactId>
                         </ejbModule>
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>user-service</artifactId>
-                        </ejbModule>
-                        <ejbModule>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>signal-service</artifactId>
                         </ejbModule>
 
                         <ejbModule>
@@ -157,10 +164,6 @@
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>
                             <artifactId>currency-conversion-service</artifactId>
-                        </ejbModule>
-                        <ejbModule>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>facade-service</artifactId>
                         </ejbModule>
                         <ejbModule>
                             <groupId>${project.groupId}</groupId>

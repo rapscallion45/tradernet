@@ -3,6 +3,9 @@ package com.tradernet.marketai.context;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradernet.marketai.model.MarketContextSnapshot;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,18 +22,15 @@ import java.util.OptionalDouble;
 /**
  * Fetches no-key market context data that can be hydrated directly from the Java app.
  */
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MarketContextDataIngestionClient {
 
     private static final String BINANCE_FUTURES_BASE_URL = "https://fapi.binance.com";
     private static final String FEAR_AND_GREED_URL = "https://api.alternative.me/fng/?limit=30&format=json";
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-
-    public MarketContextDataIngestionClient(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
-    }
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public MarketContextSnapshot fetch(String symbol, MarketContextSnapshot current) {
         final MarketContextSnapshot next = copy(current);
@@ -154,16 +154,7 @@ public class MarketContextDataIngestionClient {
         if (source == null) {
             return MarketContextSnapshot.neutral();
         }
-        return new MarketContextSnapshot(
-                source.getEtfFlowZScore(),
-                source.getExchangeOutflowZScore(),
-                source.getFundingRateZScore(),
-                source.getOpenInterestChangeZScore(),
-                source.getMvrvZScore(),
-                source.getLiquidityGrowthZScore(),
-                source.getSentimentZScore(),
-                source.isAvailable()
-        );
+        return source.copy();
     }
 
     private void addDouble(List<Double> values, String value) {

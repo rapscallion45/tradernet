@@ -1,14 +1,12 @@
 import { FC } from "react"
 import { useForm } from "react-hook-form"
-import { isAxiosError } from "axios"
 import { Center, Group, Image, PasswordInput, Stack, Text, Title } from "@mantine/core"
 import TradernetLogo from "assets/tradernet-logo.svg"
 import { Button } from "components/Button/Button"
 import { useToast } from "hooks/useToast"
 import { validateFieldMatches } from "utils/forms"
-import { getPasswordValidationRules } from "utils/password"
-import { PasswordSettings } from "api/types"
 import { getRestClient } from "api/RestClient"
+import { getErrorMessage } from "api/util"
 
 /**
  * Reset-password form field data.
@@ -22,24 +20,14 @@ type ResetPasswordFormData = {
  * Reset-password form props.
  */
 type ResetPasswordFormProps = {
-  username: string
   resetLoginStatus: () => void
 }
 
 /**
  * Change password form that is shown when LoginStatus is AccountPasswordExpired.
- * At this point we are still not logged in, so we need to call an open servlet, passing through the credentials
- * to first retrieve the password settings, and then again to change the password.
+ * The backend issues a short-lived, HTTP-only reset cookie after validating the expired-password login.
  */
-const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginStatus }) => {
-  const resetPasswordSettings: PasswordSettings = {
-    repetitionThreshold: 100,
-    minLength: 6,
-    maxLength: 20,
-    alphasAndNumericsEnabled: true,
-    upperAndLowerAlphasEnabled: true,
-    startsWithAlphaEnabled: false,
-  }
+const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ resetLoginStatus }) => {
   const { toast } = useToast()
   const {
     register,
@@ -55,7 +43,7 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
     async ({ password, confirmPassword }) => {
       if (password !== confirmPassword) throw new Error("Passwords do not match! This is a fatal error and should have been caught in the form validation.")
       try {
-        await getRestClient().authResource.forgotPassword({ username, newPassword: password })
+        await getRestClient().authResource.forgotPassword({ newPassword: password })
         toast({
           id: "password-change",
           title: "Password changed successfully",
@@ -65,15 +53,13 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
         })
         resetLoginStatus()
       } catch (error: unknown) {
-        if (isAxiosError(error) && isPasswordErrorResponse(error.response?.data)) {
-          toast({
-            id: "password-change",
-            title: "Password change failed",
-            message: error.response?.data.error ?? "Please try again or contact an administrator",
-            variant: "error",
-            timestamp: Date.now(),
-          })
-        }
+        toast({
+          id: "password-change",
+          title: "Password change failed",
+          message: getErrorMessage(error),
+          variant: "error",
+          timestamp: Date.now(),
+        })
       }
     },
     (errors) => {
@@ -102,12 +88,11 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
         data-testid={"password"}
         {...register("password", {
           required: "Required",
-          validate: getPasswordValidationRules(resetPasswordSettings),
           deps: ["confirmPassword"],
         })}
         error={errors.password?.message}
         aria-label={"Password field"}
-        autoComplete={"current-password"}
+        autoComplete={"new-password"}
       />
       <PasswordInput
         label={"Confirm Password"}
@@ -130,11 +115,3 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ username, resetLoginSta
 }
 
 export default ResetPasswordForm
-
-type PasswordErrorResponse = {
-  error: string
-}
-
-function isPasswordErrorResponse(data: unknown): data is PasswordErrorResponse {
-  return (data as PasswordErrorResponse).error !== undefined
-}

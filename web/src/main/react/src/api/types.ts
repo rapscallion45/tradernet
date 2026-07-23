@@ -3,16 +3,13 @@
  */
 import { AxiosRequestConfig } from "axios"
 
-export type ApiErrorModel = {
-  errorCode: number
-  errorMessage: string
-  hostName: string
-  timestamp: number
-}
-
 export type ApiErrorBody = {
   error?: {
+    status?: number
+    code?: string
     errorMessage?: string
+    timestamp?: number
+    referenceId?: string
   }
 }
 
@@ -117,6 +114,13 @@ export type MarketContextSnapshot = {
   available?: boolean
 }
 
+export type ExplanationItem = {
+  key: string
+  label?: string
+  value?: string
+  numericValue?: number
+}
+
 export type MarketForecast = {
   symbol: string
   horizonDays: number
@@ -124,9 +128,8 @@ export type MarketForecast = {
   expectedReturn: number
   bullScore: number
   model: string
-  drivers: string[]
+  drivers: ExplanationItem[]
   narrative?: string
-  marketConditionSummary?: string
 }
 
 export type OrderBookStatus = "LIVE" | "SYNCING" | "SNAPSHOT_ONLY" | "STALE" | "UNAVAILABLE"
@@ -185,8 +188,8 @@ export type LoginResponse = {
 export enum LoginStatus {
   Success = "SUCCESS",
   IncorrectCredentials = "INCORRECT_CREDENTIALS",
-  UserNotFound = "USER_NOT_FOUND",
   InvalidRequest = "INVALID_REQUEST",
+  RateLimited = "RATE_LIMITED",
   AccountPasswordExpired = "ACCOUNT_PASSWORD_EXPIRED",
   Unknown = "UNKNOWN",
 }
@@ -203,22 +206,11 @@ export type SessionInfo = {
 }
 
 export type ForgotPasswordData = {
-  username: string
   newPassword: string
 }
 
 export type MessageResponse = {
   message: string
-}
-
-/** Reset password validation settings */
-export type PasswordSettings = {
-  alphasAndNumericsEnabled: boolean
-  minLength: number
-  maxLength: number
-  repetitionThreshold: number
-  startsWithAlphaEnabled: boolean
-  upperAndLowerAlphasEnabled: boolean
 }
 
 /**
@@ -253,25 +245,20 @@ export type OrderData = {
 
 export type OrderSummary = {
   id: number
-  orderId: number
   userId: number
   symbol: string
   side: OrderSide
+  currency: string
   quantity: number
   price: number
   status: string
   createdAt: string
   closedAt?: string
   closePrice?: number
-  createdAtDisplay?: string
   currentPrice?: number
-  currentPriceDisplay?: string
   pnl?: number
-  pnlDisplay?: string
   pnlPercent?: number
-  pnlPercentDisplay?: string
   netValue?: number
-  netValueDisplay?: string
   timing?: "GOOD" | "BAD" | "NEUTRAL" | "CLOSED"
   aiPrediction?: "BUY" | "SELL" | "HOLD" | string
   bullScore?: number

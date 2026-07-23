@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
-import type { AxiosError } from "axios"
+import axios, { type AxiosError } from "axios"
 import { useToast } from "hooks/useToast"
-import { ApiErrorBody, SafeResult, LoginData, LoginResponse, LogoutResponse } from "api/types"
+import { ApiErrorBody, SafeResult, LoginData, LoginResponse, LoginStatus, LogoutResponse } from "api/types"
 import useCrudHandling, { PartialHandlers } from "hooks/useCrudHandling"
 import { getErrorMessage } from "api/util"
 import { getRestClient } from "api/RestClient"
@@ -45,6 +45,7 @@ export function useLogin() {
   const mutation = useMutation<LoginResponse, AxiosError<ApiErrorBody>, LoginData>({
     mutationFn: (data) => getRestClient().authResource.login(data),
     onError: (error, variables) => {
+      if (getRateLimitedLoginResponse(error)) return
       try {
         handleError(error, { ...defaultHandlers(variables) })
       } catch {
@@ -65,11 +66,17 @@ export function useLogin() {
       const data = await mutation.mutateAsync(vars)
       return { ok: true, data }
     } catch (error) {
+      const rateLimited = getRateLimitedLoginResponse(error)
+      if (rateLimited) return { ok: true, data: rateLimited }
       return { ok: false, error }
     }
   }
 
   return { ...mutation, execute }
+}
+
+function getRateLimitedLoginResponse(error: unknown): LoginResponse | null {
+  return axios.isAxiosError(error) && error.response?.status === 429 ? { status: LoginStatus.RateLimited } : null
 }
 
 /**

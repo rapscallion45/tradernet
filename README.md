@@ -11,6 +11,7 @@ Use this README as the quickstart. Full details live in `/docs`:
 - [Architecture overview](docs/architecture-overview.md) — module map and request/data flow.
 - [Backend services](docs/backend-services.md) — domain services and market AI package layout.
 - [API layer](docs/api-layer.md) — REST resources, auth filter, and websocket boundary.
+- [Authentication security](docs/authentication-security.md) — passwords, sessions, throttling, cookies, audit, and production deployment gates.
 - [Frontend web app](docs/frontend-web.md) — React/Vite structure and runtime flow.
 - [Data + deployment](docs/data-and-deployment.md) — persistence, packaging, and runtime infrastructure.
 - [Market signal accuracy](docs/market-signal-accuracy.md) — market context scoring, forecasting, and Ollama/Gemma behavior.
@@ -65,6 +66,8 @@ docker compose -f deployment/docker-image/src/main/docker/docker-compose.yml up
 
 Compose starts Tradernet, TimescaleDB/Postgres, the Python forecasting service, and Ollama. TimescaleDB/Postgres data is stored in the named Docker volume `timescaledb_data`, so order history, trades, market bars, users, and forecasting inputs persist across normal container recreation. Do not run `docker compose down -v` unless you intentionally want to delete those volumes.
 
+The Compose stack explicitly opts into the local application bootstrap password fallback so the smoke-test users can log in with `changeme`. Non-local environments must leave `TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD` disabled and configure separate `TRADERNET_BOOTSTRAP_SUPERUSER_PASSWORD`, `TRADERNET_BOOTSTRAP_ADMIN_PASSWORD`, and `TRADERNET_BOOTSTRAP_STANDARD_PASSWORD` secrets only for the accounts they need. See [authentication security](docs/authentication-security.md).
+
 ## Smoke checks
 
 The health endpoints are public:
@@ -74,7 +77,9 @@ curl http://localhost:8080/api/health
 curl http://localhost:8000/health
 ```
 
-Application endpoints such as `/api/market/forecast` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
+Application endpoints such as `/api/market/forecast` and `/api/ws/market` require an authenticated `tradernet_session` cookie. Log in first, then reuse the session cookie.
+
+If login returns `ACCOUNT_PASSWORD_EXPIRED`, the response sets a short-lived, HTTP-only `tradernet_password_reset` cookie instead of a full session. Reuse that temporary cookie when calling `/api/auth/forgot-password`, then log in again to receive `tradernet_session`.
 
 PowerShell (run these as three separate commands, or keep the semicolons if you paste them as one line):
 
@@ -90,10 +95,11 @@ One-line PowerShell form:
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"changeme"}' -WebSession $session; Invoke-RestMethod -Uri 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1' -WebSession $session
 ```
 
-If login returns `INCORRECT_CREDENTIALS` in a reused persistent database, reset the bootstrap application user's password and try the login again:
+If login returns `ACCOUNT_PASSWORD_EXPIRED`, reset the password with the same web session and then try the login again:
 
 ```powershell
-Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","newPassword":"changeme"}'
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/forgot-password' -Method Post -ContentType 'application/json' -Body '{"newPassword":"Local-Portfolio-Password-2026"}' -WebSession $session
+Invoke-RestMethod -Uri 'http://localhost:8080/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"username":"superuser","password":"Local-Portfolio-Password-2026"}' -WebSession $session
 ```
 
 Bash/curl (run this in Bash, Git Bash, WSL, macOS/Linux shells, or use `curl.exe` in PowerShell because PowerShell aliases `curl` to `Invoke-WebRequest`):
@@ -111,10 +117,11 @@ curl.exe -c "$env:TEMP\tradernet.cookies" -H "Content-Type: application/json" --
 curl.exe -b "$env:TEMP\tradernet.cookies" 'http://localhost:8080/api/market/forecast?symbol=BTCUSDT&horizonDays=1'
 ```
 
-Bash/curl password reset, if needed:
+Bash/curl password reset after an `ACCOUNT_PASSWORD_EXPIRED` login response:
 
 ```bash
-curl -H 'Content-Type: application/json' -d '{"username":"superuser","newPassword":"changeme"}' http://localhost:8080/api/auth/forgot-password
+curl -b /tmp/tradernet.cookies -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"newPassword":"Local-Portfolio-Password-2026"}' http://localhost:8080/api/auth/forgot-password
+curl -c /tmp/tradernet.cookies -H 'Content-Type: application/json' -d '{"username":"superuser","password":"Local-Portfolio-Password-2026"}' http://localhost:8080/api/auth/login
 ```
 
 Open the app at:
@@ -158,11 +165,19 @@ DB_PORT=5432
 DB_NAME=tradernet
 DB_USER=tradernet
 DB_PASSWORD=tradernet
+TRADERNET_BOOTSTRAP_SUPERUSER_PASSWORD=<secret-manager value>
+TRADERNET_BOOTSTRAP_ADMIN_PASSWORD=<optional separate secret>
+TRADERNET_BOOTSTRAP_STANDARD_PASSWORD=<optional separate secret>
+TRADERNET_BOOTSTRAP_ALLOW_DEFAULT_PASSWORD=true
 market.ai.forecasting.url=http://forecasting-service:8000
+market.ai.live.maxSymbols=32
+market.ai.orderBook.maxSymbols=32
+market.ai.orderBook.idleTimeoutMs=300000
 market.ai.orderBullScoreHorizonDays=1
 market.ai.signalBullScore.enabled=true
 market.ai.signalBullScoreHorizonDays=1
 market.ai.signalBullScoreTtlMs=60000
+market.ai.forecast.ttlMs=60000
 market.ai.model.buyThreshold=0.56
 market.ai.model.sellThreshold=0.44
 market.ai.context.buyScoreThreshold=54

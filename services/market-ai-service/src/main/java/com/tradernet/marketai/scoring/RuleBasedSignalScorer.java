@@ -1,5 +1,6 @@
 package com.tradernet.marketai.scoring;
 
+import com.tradernet.marketai.model.ExplanationItem;
 import com.tradernet.marketai.model.FeatureSnapshot;
 import com.tradernet.marketai.model.SignalSide;
 
@@ -13,20 +14,20 @@ public class RuleBasedSignalScorer implements SignalScorer {
 
     @Override
     public ScoreResult score(FeatureSnapshot features) {
-        final List<String> notes = new ArrayList<>();
+        final List<ExplanationItem> notes = new ArrayList<>();
         SignalSide side = SignalSide.HOLD;
         double confidence = 0.5;
 
         if (features.getEmaFast() > features.getEmaSlow() && features.getRsi() < 65.0) {
             side = SignalSide.BUY;
             confidence = directionalConfidence(features.getEmaFast() - features.getEmaSlow(), features.getClose());
-            notes.add("ema_bullish");
-            notes.add("rsi_not_overbought");
+            notes.add(ExplanationItem.text("ema_bullish", "ema_bullish"));
+            notes.add(ExplanationItem.text("rsi_not_overbought", "rsi_not_overbought"));
         } else if (features.getEmaFast() < features.getEmaSlow() && features.getRsi() > 35.0) {
             side = SignalSide.SELL;
             confidence = directionalConfidence(features.getEmaSlow() - features.getEmaFast(), features.getClose());
-            notes.add("ema_bearish");
-            notes.add("rsi_not_oversold");
+            notes.add(ExplanationItem.text("ema_bearish", "ema_bearish"));
+            notes.add(ExplanationItem.text("rsi_not_oversold", "rsi_not_oversold"));
         }
 
         return new ScoreResult(side, confidence, "rules-v1", notes);

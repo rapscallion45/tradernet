@@ -2,6 +2,12 @@ package com.tradernet.marketai.forecast;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradernet.marketai.MarketAiConfiguration;
+import com.tradernet.marketai.model.ExplanationItem;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.EJB;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,41 +19,37 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Generates concise market commentary through Ollama-hosted Gemma 4.
  */
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class OllamaNarrativeClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(OllamaNarrativeClient.class);
 
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
-    private final URI generateUri;
-    private final String model;
-
-    public OllamaNarrativeClient(HttpClient httpClient, ObjectMapper objectMapper) {
-        this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
-        this.generateUri = URI.create(System.getProperty("market.ai.ollama.url", "http://ollama:11434")).resolve("/api/generate");
-        this.model = System.getProperty("market.ai.ollama.model", "gemma4:e4b");
-    }
+    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    @EJB
+    private MarketAiConfiguration configuration;
 
     public String summarize(MarketForecast forecast) {
-        if (!Boolean.parseBoolean(System.getProperty("market.ai.ollama.enabled", "true"))) {
+        if (!configuration.isOllamaEnabled()) {
             return fallbackNarrative(forecast);
         }
 
         final Map<String, Object> requestBody = new LinkedHashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", configuration.getOllamaModel());
         requestBody.put("stream", false);
         requestBody.put("prompt", prompt(forecast));
         requestBody.put("options", Map.of("temperature", 0.2, "num_predict", 80));
 
         try {
             final String json = objectMapper.writeValueAsString(requestBody);
-            final HttpRequest request = HttpRequest.newBuilder(generateUri)
+            final HttpRequest request = HttpRequest.newBuilder(configuration.getOllamaBaseUri().resolve("/api/generate"))
                     .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json))
@@ -81,8 +83,8 @@ public class OllamaNarrativeClient {
                 + "Data: score=" + Math.round(forecast.getBullScore())
                 + ", horizon=" + forecast.getHorizonDays()
                 + ", probability=" + Math.round(forecast.getProbabilityPositiveReturn() * 100.0)
-                + ", expected_return=" + String.format("%.2f", forecast.getExpectedReturn() * 100.0) + "%"
-                + ", drivers=" + String.join(", ", safeDrivers(forecast.getDrivers())) + ".";
+                + ", expected_return=" + String.format(Locale.ROOT, "%.2f", forecast.getExpectedReturn() * 100.0) + "%"
+                + ", drivers=" + String.join(", ", safeDriverLabels(forecast.getDrivers())) + ".";
     }
 
     private String displaySymbol(MarketForecast forecast) {
@@ -92,26 +94,44 @@ public class OllamaNarrativeClient {
         return forecast.getSymbol().trim().toUpperCase();
     }
 
-    private List<String> safeDrivers(List<String> drivers) {
-        return drivers == null ? List.of() : drivers.stream().limit(5).collect(java.util.stream.Collectors.toList());
+    private List<String> safeDriverLabels(List<ExplanationItem> drivers) {
+        return drivers == null ? List.of() : drivers.stream()
+                .map(this::driverLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .limit(5)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private String enforceSelectedSymbol(String narrative, MarketForecast forecast) {
         final String symbol = displaySymbol(forecast);
         return narrative
                 .replace("Today's Bitcoin Bull Score", "Today's " + symbol + " Bull Score")
-                .replace("Today’s Bitcoin Bull Score", "Today’s " + symbol + " Bull Score")
+                .replace("Today\u2019s Bitcoin Bull Score", "Today's " + symbol + " Bull Score")
                 .replace("Bitcoin Bull Score", symbol + " Bull Score")
                 .replace("Bitcoin", symbol)
                 .replace("bitcoin", symbol);
     }
 
     private String fallbackNarrative(MarketForecast forecast) {
-        final String drivers = forecast.getDrivers() == null || forecast.getDrivers().isEmpty()
+        final List<String> driverLabels = safeDriverLabels(forecast.getDrivers());
+        final String drivers = driverLabels.isEmpty()
                 ? "model drivers are mixed"
-                : String.join(", ", forecast.getDrivers().stream().limit(3).collect(java.util.stream.Collectors.toList()));
+                : String.join(", ", driverLabels.stream().limit(3).collect(java.util.stream.Collectors.toList()));
         return "Today's " + displaySymbol(forecast) + " Bull Score is " + Math.round(forecast.getBullScore())
                 + ". " + drivers + ". Probability of a positive " + forecast.getHorizonDays()
                 + "-day return: " + Math.round(forecast.getProbabilityPositiveReturn() * 100.0) + "%.";
+    }
+
+    private String driverLabel(ExplanationItem driver) {
+        if (driver == null) {
+            return "";
+        }
+        if (driver.getLabel() != null && !driver.getLabel().isBlank()) {
+            return driver.getLabel();
+        }
+        if (driver.getValue() != null && !driver.getValue().isBlank()) {
+            return driver.getValue();
+        }
+        return driver.getKey();
     }
 }
